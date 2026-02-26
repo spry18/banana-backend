@@ -1,0 +1,28 @@
+{
+  "name": "banana-backend",
+  "version": "1.0.0",
+  "description": "��#\u0000 \u0000b\u0000a\u0000n\u0000a\u0000n\u0000a\u0000-\u0000b\u0000a\u0000c\u0000k\u0000e\u0000n\u0000d\u0000\r\u0000 \u0000#\u0000 \u0000b\u0000a\u0000n\u0000a\u0000n\u0000a\u0000-\u0000b\u0000a\u0000c\u0000k\u0000e\u0000n\u0000d\u0000\r\u0000 \u0000",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github-ahirrao:spry18/banana-backend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.2.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
