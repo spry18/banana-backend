@@ -26,6 +26,24 @@ const getCompanies = async (req, res) => {
     }
 };
 
+const updateCompany = async (req, res) => {
+    try {
+        const company = await Company.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        res.json(company);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+const deleteCompany = async (req, res) => {
+    try {
+        await Company.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Company deleted' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
 // --- Brands ---
 const createBrand = async (req, res) => {
     try {
@@ -44,6 +62,24 @@ const getBrands = async (req, res) => {
     try {
         const brands = await Brand.find({ isActive: true }).populate('companyId', 'companyName');
         res.json(brands);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+const updateBrand = async (req, res) => {
+    try {
+        const brand = await Brand.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        res.json(brand);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+const deleteBrand = async (req, res) => {
+    try {
+        await Brand.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Brand deleted' });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -72,6 +108,24 @@ const getAgents = async (req, res) => {
     }
 };
 
+const updateAgent = async (req, res) => {
+    try {
+        const agent = await Agent.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        res.json(agent);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+const deleteAgent = async (req, res) => {
+    try {
+        await Agent.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Agent deleted' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
 // --- Vehicles ---
 const createVehicle = async (req, res) => {
     try {
@@ -95,13 +149,39 @@ const getVehicles = async (req, res) => {
     }
 };
 
+const updateVehicle = async (req, res) => {
+    try {
+        const vehicle = await Vehicle.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        res.json(vehicle);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+const deleteVehicle = async (req, res) => {
+    try {
+        await Vehicle.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Vehicle deleted' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
 module.exports = {
     createCompany,
     getCompanies,
+    updateCompany,
+    deleteCompany,
     createBrand,
     getBrands,
+    updateBrand,
+    deleteBrand,
     createAgent,
     getAgents,
+    updateAgent,
+    deleteAgent,
     createVehicle,
     getVehicles,
+    updateVehicle,
+    deleteVehicle,
 };

@@ -1,0 +1,17 @@
+const express = require('express');
+const router = express.Router();
+const {
+    createTrip,
+    getTrips,
+} = require('./trip.controller');
+const { protect, authorize } = require('../../middlewares/auth.middleware');
+
+// Apply 'protect' to all routes
+router.use(protect);
+
+router
+    .route('/')
+    .post(authorize('Admin', 'Driver (Eicher)', 'Driver (Pickup)'), createTrip)
+    .get(authorize('Admin', 'Operational Manager', 'Driver (Eicher)', 'Driver (Pickup)'), getTrips);
+
+module.exports = router;

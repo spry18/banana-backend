@@ -1,5 +1,6 @@
 const User = require('./user.model');
 const jwt = require('jsonwebtoken');
+const { logSystemAction } = require('../../utils/auditLogger');
 
 // Generate JWT
 const generateToken = (id, role) => {
@@ -64,6 +65,7 @@ const loginUser = async (req, res) => {
 
         // Check user & password match
         if (user && user.isActive && (await user.comparePassword(password))) {
+            await logSystemAction(user._id, 'LOGIN', 'Users', user._id, 'User logged into the system');
             res.json({
                 _id: user.id,
                 firstName: user.firstName,
@@ -80,7 +82,24 @@ const loginUser = async (req, res) => {
     }
 };
 
+// @desc    Get current logged in user
+// @route   GET /api/users/me
+// @access  Private
+const getMe = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id).select('-passwordHash');
+        if (user) {
+            res.json(user);
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
 module.exports = {
     registerUser,
     loginUser,
+    getMe,
 };
