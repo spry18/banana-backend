@@ -112,7 +112,8 @@ const getEnquiries = async (req, res) => {
             .limit(Number(limit))
             .sort({ createdAt: -1 })
             .populate('assignedSelectorId', 'firstName lastName mobileNo')
-            .populate('agentId', 'name');
+            .populate('agentId', 'name')
+            .populate('generation', 'name');
 
         const total = await Enquiry.countDocuments(query);
 
@@ -189,7 +190,8 @@ const getEnquiryById = async (req, res) => {
     try {
         const enquiry = await Enquiry.findById(req.params.id)
             .populate('assignedSelectorId', 'firstName lastName mobileNo')
-            .populate('agentId', 'name');
+            .populate('agentId', 'name')
+            .populate('generation', 'name');
 
         if (!enquiry) {
             return res.status(404).json({ message: 'Enquiry not found' });

@@ -18,6 +18,10 @@ const {
     getVehicles,
     updateVehicle,
     deleteVehicle,
+    createGeneration,
+    getGenerations,
+    updateGeneration,
+    deleteGeneration,
 } = require('./master.controller');
 
 // Apply protection and Admin authorization to all routes in this module
@@ -39,5 +43,9 @@ router.route('/agents/:id').put(authorize('Admin'), updateAgent).delete(authoriz
 // Vehicles
 router.route('/vehicles').post(createVehicle).get(getVehicles);
 router.route('/vehicles/:id').put(authorize('Admin'), updateVehicle).delete(authorize('Admin'), deleteVehicle);
+
+// Generations
+router.route('/generations').post(createGeneration).get(getGenerations);
+router.route('/generations/:id').put(authorize('Admin'), updateGeneration).delete(authorize('Admin'), deleteGeneration);
 
 module.exports = router;

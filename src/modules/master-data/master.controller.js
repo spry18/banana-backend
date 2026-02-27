@@ -2,6 +2,7 @@ const Company = require('./company.model');
 const Brand = require('./brand.model');
 const Agent = require('./agent.model');
 const Vehicle = require('./vehicle.model');
+const Generation = require('./generation.model');
 
 // --- Companies ---
 const createCompany = async (req, res) => {
@@ -167,6 +168,47 @@ const deleteVehicle = async (req, res) => {
     }
 };
 
+// --- Generations ---
+const createGeneration = async (req, res) => {
+    try {
+        const { name, description } = req.body;
+        if (!name) {
+            return res.status(400).json({ message: 'name is required' });
+        }
+        const generation = await Generation.create({ name, description });
+        res.status(201).json(generation);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+const getGenerations = async (req, res) => {
+    try {
+        const generations = await Generation.find({ isActive: true });
+        res.json(generations);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+const updateGeneration = async (req, res) => {
+    try {
+        const generation = await Generation.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        res.json(generation);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+const deleteGeneration = async (req, res) => {
+    try {
+        await Generation.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Generation deleted' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
 module.exports = {
     createCompany,
     getCompanies,
@@ -184,4 +226,8 @@ module.exports = {
     getVehicles,
     updateVehicle,
     deleteVehicle,
+    createGeneration,
+    getGenerations,
+    updateGeneration,
+    deleteGeneration,
 };

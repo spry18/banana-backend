@@ -33,8 +33,8 @@ const enquirySchema = new mongoose.Schema(
             min: [1000, 'Plant count must be at least 1000.'],
         },
         generation: {
-            type: String,
-            enum: ['Mother', 'F1', 'F2'],
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Generation',
             required: true,
         },
         agentId: {
