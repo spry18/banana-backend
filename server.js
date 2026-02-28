@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const connectDB = require('./src/config/db');
+const { notFound, errorHandler } = require('./src/middlewares/error.middleware');
 
 // Connect to the database
 connectDB();
@@ -28,7 +29,12 @@ app.use('/api/logistics', require('./src/modules/logistics/logistics.routes'));
 app.use('/api/execution/packing', require('./src/modules/execution/packing.routes'));
 app.use('/api/execution/trips', require('./src/modules/execution/trip.routes'));
 app.use('/api/system-audits', require('./src/modules/auditing/systemAudit.routes'));
+app.use('/api/daily-logs', require('./src/modules/auditing/dailyLog.routes'));
 app.use('/api/dashboard', require('./src/modules/dashboard/dashboard.routes'));
+
+// Error Handling Middlewares
+app.use(notFound);
+app.use(errorHandler);
 
 // Define the port
 const PORT = process.env.PORT || 5000;
