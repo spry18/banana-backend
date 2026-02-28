@@ -1,6 +1,7 @@
 const Trip = require('./trip.model');
 const Logistics = require('../logistics/logistics.model');
 const Enquiry = require('../enquiries/enquiry.model');
+const PdfService = require('../../services/pdf.service');
 
 // @desc    Create new trip
 // @route   POST /api/execution/trips
@@ -59,6 +60,10 @@ const createTrip = async (req, res) => {
             enquiry.status = 'COMPLETED';
             await enquiry.save();
         }
+
+        const reportUrl = await PdfService.generateTripReport(trip);
+        trip.systemReportUrl = reportUrl;
+        await trip.save();
 
         res.status(201).json(trip);
     } catch (error) {

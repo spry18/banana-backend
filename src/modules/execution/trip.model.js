@@ -68,6 +68,9 @@ const tripSchema = new mongoose.Schema(
             type: Boolean,
             default: true,
         },
+        systemReportUrl: {
+            type: String,
+        },
     },
     { timestamps: true }
 );
