@@ -1,5 +1,6 @@
 const Inspection = require('./inspection.model');
 const Enquiry = require('../enquiries/enquiry.model');
+const NotificationService = require('../../services/notification.service');
 const { logSystemAction } = require('../../utils/auditLogger');
 
 // @desc    Create new inspection
@@ -62,6 +63,8 @@ const createInspection = async (req, res) => {
             enquiry.status = 'REJECTED';
         }
         await enquiry.save();
+
+        NotificationService.sendFarmerStatusUpdate(enquiry.farmerMobile, enquiry.farmerFirstName, decision);
 
         await logSystemAction(req.user._id, decision === 'APPROVED' ? 'APPROVE' : 'REJECT', 'Inspections', inspection._id, `Inspection ${decision} for Enquiry ${enquiryId}`);
 

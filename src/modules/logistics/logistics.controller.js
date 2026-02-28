@@ -1,5 +1,7 @@
 const Logistics = require('./logistics.model');
 const Enquiry = require('../enquiries/enquiry.model');
+const User = require('../users/user.model');
+const NotificationService = require('../../services/notification.service');
 
 // @desc    Create new logistics assignment
 // @route   POST /api/logistics
@@ -46,6 +48,22 @@ const createAssignment = async (req, res) => {
         // CRITICAL TRIGGER: Update the original Enquiry document status
         enquiry.status = 'ASSIGNED';
         await enquiry.save();
+
+        if (munshiId) {
+            const munshi = await User.findById(munshiId);
+            if (munshi && munshi.mobileNo) {
+                NotificationService.sendLogisticsAlert(munshi.mobileNo, 'Munshi', 'You have been assigned a new packing task.');
+            }
+        }
+
+        if (driverId) {
+            const driver = await User.findById(driverId);
+            if (driver && driver.mobileNo) {
+                NotificationService.sendLogisticsAlert(driver.mobileNo, 'Driver', 'You have a new route assigned.');
+            }
+        }
+
+        NotificationService.sendFarmerStatusUpdate(enquiry.farmerMobile, enquiry.farmerFirstName, 'Team on the way for loading');
 
         res.status(201).json(assignment);
     } catch (error) {
