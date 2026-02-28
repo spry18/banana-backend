@@ -5,13 +5,18 @@ const {
     getTrips,
 } = require('./trip.controller');
 const { protect, authorize } = require('../../middlewares/auth.middleware');
+const upload = require('../../middlewares/upload.middleware');
 
 // Apply 'protect' to all routes
 router.use(protect);
 
 router
     .route('/')
-    .post(authorize('Admin', 'Driver (Eicher)', 'Driver (Pickup)'), createTrip)
+    .post(authorize('Admin', 'Driver (Eicher)', 'Driver (Pickup)'), upload.fields([
+        { name: 'weightSlipUrl', maxCount: 1 },
+        { name: 'dieselSlipUrl', maxCount: 1 },
+        { name: 'unloadSlipUrl', maxCount: 1 }
+    ]), createTrip)
     .get(authorize('Admin', 'Operational Manager', 'Driver (Eicher)', 'Driver (Pickup)'), getTrips);
 
 module.exports = router;

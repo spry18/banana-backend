@@ -21,9 +21,10 @@ const createInspection = async (req, res) => {
             generalNotes,
             isThroughPartner,
             partnerName,
-            photos,
             decision
         } = req.body;
+
+        const photos = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
 
         // Verify the enquiryId exists
         const enquiry = await Enquiry.findById(enquiryId);
