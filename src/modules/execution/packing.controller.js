@@ -1,5 +1,6 @@
 const Packing = require('./packing.model');
 const Logistics = require('../logistics/logistics.model');
+const NotificationService = require('../../services/notification.service');
 
 // @desc    Create new packing record
 // @route   POST /api/execution/packing
@@ -22,7 +23,7 @@ const createPacking = async (req, res) => {
         } = req.body;
 
         // Verify the assignmentId exists in Logistics collection
-        const logistics = await Logistics.findById(assignmentId);
+        const logistics = await Logistics.findById(assignmentId).populate('enquiryId');
         if (!logistics) {
             return res.status(404).json({ message: 'Logistics assignment not found with the provided ID' });
         }
@@ -59,6 +60,10 @@ const createPacking = async (req, res) => {
             wastageKg,
             wastageReason
         });
+
+        if (logistics.enquiryId) {
+            NotificationService.sendPackingSummary(logistics.enquiryId.farmerMobile, logistics.enquiryId.farmerFirstName, totalBoxes, wastageKg);
+        }
 
         res.status(201).json(packing);
     } catch (error) {

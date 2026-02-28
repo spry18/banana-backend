@@ -53,6 +53,7 @@ const createAssignment = async (req, res) => {
             const munshi = await User.findById(munshiId);
             if (munshi && munshi.mobileNo) {
                 NotificationService.sendLogisticsAlert(munshi.mobileNo, 'Munshi', 'You have been assigned a new packing task.');
+                NotificationService.sendScheduleConfirmed(enquiry.farmerMobile, enquiry.farmerFirstName, new Date().toLocaleDateString(), munshi.firstName, munshi.mobileNo);
             }
         }
 
@@ -62,8 +63,6 @@ const createAssignment = async (req, res) => {
                 NotificationService.sendLogisticsAlert(driver.mobileNo, 'Driver', 'You have a new route assigned.');
             }
         }
-
-        NotificationService.sendFarmerStatusUpdate(enquiry.farmerMobile, enquiry.farmerFirstName, 'Team on the way for loading');
 
         res.status(201).json(assignment);
     } catch (error) {

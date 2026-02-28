@@ -2,6 +2,7 @@ const Enquiry = require('./enquiry.model');
 const User = require('../users/user.model');
 const Agent = require('../master-data/agent.model'); // Ensure Agent model exists and is imported correctly, will verify after
 const { logSystemAction } = require('../../utils/auditLogger');
+const NotificationService = require('../../services/notification.service');
 
 // @desc    Create new enquiry
 // @route   POST /api/enquiries
@@ -59,6 +60,8 @@ const createEnquiry = async (req, res) => {
             assignedSelectorId,
             editableUntil,
         });
+
+        NotificationService.sendEnquiryReceived(enquiry.farmerMobile, enquiry.farmerFirstName, enquiry.enquiryId);
 
         await logSystemAction(req.user._id, 'CREATE', 'Enquiries', enquiry._id, 'Created a new farmer enquiry');
 
@@ -172,6 +175,11 @@ const updateEnquiry = async (req, res) => {
             updateData,
             { new: true, runValidators: true }
         );
+
+        // Commercial Rejection Notification
+        if (req.body.status && (req.body.status === 'CLOSED' || req.body.status === 'CANCELLED') && enquiry.status !== req.body.status) {
+            NotificationService.sendDealCancelled(updatedEnquiry.farmerMobile, updatedEnquiry.farmerFirstName);
+        }
 
         res.status(200).json(updatedEnquiry);
     } catch (error) {

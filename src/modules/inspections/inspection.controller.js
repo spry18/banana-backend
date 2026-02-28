@@ -64,7 +64,9 @@ const createInspection = async (req, res) => {
         }
         await enquiry.save();
 
-        NotificationService.sendFarmerStatusUpdate(enquiry.farmerMobile, enquiry.farmerFirstName, decision);
+        if (decision === 'REJECTED') {
+            NotificationService.sendInspectionRejected(enquiry.farmerMobile, enquiry.farmerFirstName);
+        }
 
         await logSystemAction(req.user._id, decision === 'APPROVED' ? 'APPROVE' : 'REJECT', 'Inspections', inspection._id, `Inspection ${decision} for Enquiry ${enquiryId}`);
 
