@@ -1,0 +1,491 @@
+{
+    "info": {
+        "name": "VaxTrack — Field Owner Module",
+        "_postman_id": "vaxtrack-field-owner-v1-2026",
+        "description": "Complete Field Owner API collection for VaxTrack. Login first (folder 0) to auto-capture the token into {{foToken}}. Set {{baseUrl}} = http://localhost:5000 in your environment.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:5000",
+            "type": "string"
+        },
+        {
+            "key": "foToken",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "enquiryId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        },
+        {
+            "key": "companyId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        },
+        {
+            "key": "agentId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        },
+        {
+            "key": "generationId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        },
+        {
+            "key": "selectorId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        },
+        {
+            "key": "logId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "0. Auth",
+            "item": [
+                {
+                    "name": "Login as Field Owner",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.token) {",
+                                    "  pm.collectionVariables.set('foToken', res.token);",
+                                    "  console.log('FO Token captured:', res.token);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"mobileNo\": \"8887776660\",\n  \"password\": \"password123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "login"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "1. Dashboard & Summary (Page 1)",
+            "item": [
+                {
+                    "name": "GET Field Owner Dashboard",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/dashboard",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "dashboard"
+                            ]
+                        },
+                        "description": "Returns 6 KPIs (Total, Selected, Rejected, Missed, FutureSelection, RateFixed) scoped to the logged-in FO + last 5 recent activity enquiries."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "2. Enquiry Creation (Page 2)",
+            "item": [
+                {
+                    "name": "POST Create Enquiry (Field Owner)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res._id) {",
+                                    "  pm.collectionVariables.set('enquiryId', res._id);",
+                                    "  console.log('Enquiry ID captured:', res._id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"farmerFirstName\": \"Ramesh\",\n  \"farmerLastName\": \"Jadhav\",\n  \"farmerMobile\": \"9812345678\",\n  \"location\": \"Kolhapur\",\n  \"subLocation\": \"Shirol Cluster\",\n  \"plantCount\": 4200,\n  \"generation\": \"{{generationId}}\",\n  \"agentAttached\": true,\n  \"agentId\": \"{{agentId}}\",\n  \"visitPriority\": \"High\",\n  \"assignedSelectorId\": \"{{selectorId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries"
+                            ]
+                        },
+                        "description": "FO is authorized on this route. The backend auto-sets fieldOwnerId = req.user._id. Test script captures _id into {{enquiryId}}."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3. All Plots Management (Page 3)",
+            "item": [
+                {
+                    "name": "GET All Plots (No Filter)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/plots?page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "plots"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        },
+                        "description": "Returns all enquiries owned by this FO, paginated."
+                    }
+                },
+                {
+                    "name": "GET Plots — Filter: Selected",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/plots?status=SELECTED",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "plots"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "SELECTED"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET Plots — Filter: Rejected",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/plots?status=REJECTED",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "plots"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "REJECTED"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET Plots — Filter: Missed",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/plots?status=Missed",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "plots"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "Missed"
+                                }
+                            ]
+                        },
+                        "description": "'Missed' is a derived filter (PENDING + scheduledDate < now). The backend translates this automatically."
+                    }
+                },
+                {
+                    "name": "GET Plots — Filter: Rescheduled",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/plots?status=Rescheduled",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "plots"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "Rescheduled"
+                                }
+                            ]
+                        },
+                        "description": "'Rescheduled' = PENDING + scheduledDate in the future. The backend translates this automatically."
+                    }
+                },
+                {
+                    "name": "GET Plots — Search by Farmer Name",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/plots?search=Ramesh",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "plots"
+                            ],
+                            "query": [
+                                {
+                                    "key": "search",
+                                    "value": "Ramesh"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "4. Commercials — Fix Rate (Page 4)",
+            "item": [
+                {
+                    "name": "PATCH Fix Rate (Field Owner)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"purchaseRate\": 920,\n  \"remarks\": \"Good quality G9 Cavendish. Recovery ~85%. Rate agreed after inspection review.\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries/fix-rate/{{enquiryId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries",
+                                "fix-rate",
+                                "{{enquiryId}}"
+                            ]
+                        },
+                        "description": "PREREQUISITES:\n1. Enquiry status must be 'SELECTED' (inspection must be completed first)\n2. FO can only fix rate for their OWN enquiries (backend checks fieldOwnerId)\n\nSets companyId, purchaseRate, remarks, and status → RATE_FIXED."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "5. Field Selector Tracking (Pages 5 & 6)",
+            "item": [
+                {
+                    "name": "GET Selectors Performance (All Time)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/selectors-performance",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "selectors-performance"
+                            ]
+                        },
+                        "description": "Returns all selectors assigned to this FO's enquiries with: totalKm, totalDays, visitedPlots, approvedPlots, rejectedPlots."
+                    }
+                },
+                {
+                    "name": "GET Selectors Performance (Date Filtered)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/selectors-performance?startDate=2026-03-01&endDate=2026-03-31",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "selectors-performance"
+                            ],
+                            "query": [
+                                {
+                                    "key": "startDate",
+                                    "value": "2026-03-01"
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2026-03-31"
+                                }
+                            ]
+                        },
+                        "description": "Filter performance stats by date range (month-wise or custom)."
+                    }
+                },
+                {
+                    "name": "GET Selector Mileage Detail (by LogId)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/selector-mileage/{{logId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "selector-mileage",
+                                "{{logId}}"
+                            ]
+                        },
+                        "description": "Returns: startKm, closeKm, totalDistance (endKm-startKm), vehicleNumber, startTime, endTime, selector info.\n\nNote: FO can only view mileage logs for selectors linked to their own enquiries."
+                    }
+                }
+            ]
+        }
+    ]
+}

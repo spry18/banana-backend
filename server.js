@@ -48,6 +48,9 @@ app.use('/api/daily-logs', require('./src/modules/auditing/dailyLog.routes'));
 // Phase 4+7: Admin aggregation routes (dashboard-stats, alerts, field-selection, performance)
 app.use('/api/admin', require('./src/modules/admin/admin.routes'));
 
+// Field Owner module
+app.use('/api/field-owner', require('./src/modules/field-owner/field-owner.routes'));
+
 // Phase 6: Notification feed + WhatsApp trigger
 app.use('/api/notifications', require('./src/modules/notifications/notification.routes'));
 

@@ -98,7 +98,13 @@ const getEnquiries = async (req, res) => {
         }
 
         if (status) {
-            query.status = status;
+            if (status === 'Missed') {
+                // 'Missed' = past scheduledDate but still PENDING (never visited)
+                query.scheduledDate = { $lt: new Date() };
+                query.status = 'PENDING';
+            } else {
+                query.status = status;
+            }
         }
 
         if (location) {
@@ -278,6 +284,15 @@ const fixRate = async (req, res) => {
         const enquiry = await Enquiry.findById(req.params.id);
         if (!enquiry) {
             return res.status(404).json({ message: 'Enquiry not found' });
+        }
+
+        // Ownership guard: Field Owner can only fix rate on their own enquiries
+        if (req.user.role === 'Field Owner') {
+            if (!enquiry.fieldOwnerId || enquiry.fieldOwnerId.toString() !== req.user._id.toString()) {
+                return res.status(403).json({
+                    message: 'Forbidden: You can only fix rates for your own enquiries',
+                });
+            }
         }
 
         if (enquiry.status !== 'SELECTED') {

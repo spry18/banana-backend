@@ -37,6 +37,10 @@ const dailyLogSchema = new mongoose.Schema(
             enum: ['STARTED', 'COMPLETED'],
             default: 'STARTED',
         },
+        vehicleNumber: {
+            type: String,
+            default: null,
+        },
     },
     { timestamps: true }
 );

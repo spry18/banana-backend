@@ -5,7 +5,7 @@ const DailyLog = require('./dailyLog.model');
 // @access  Protected
 const startDay = async (req, res) => {
     try {
-        const { startKm } = req.body;
+        const { startKm, vehicleNumber } = req.body;
 
         if (!startKm || !req.file) {
             return res.status(400).json({ message: 'startKm and startMeterPhoto are required' });
@@ -30,6 +30,7 @@ const startDay = async (req, res) => {
             userId: req.user._id,
             startKm,
             startMeterPhotoUrl: `/uploads/${req.file.filename}`,
+            vehicleNumber: vehicleNumber || null,
         });
 
         res.status(201).json(dailyLog);

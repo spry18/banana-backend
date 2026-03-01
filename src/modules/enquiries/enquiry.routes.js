@@ -15,7 +15,7 @@ router.use(protect);
 
 // --- Admin-specific patch routes (must come BEFORE /:id to avoid conflicts) ---
 router.patch('/reschedule/:id', authorize('Admin'), rescheduleEnquiry);
-router.patch('/fix-rate/:id', authorize('Admin'), fixRate);
+router.patch('/fix-rate/:id', authorize('Admin', 'Field Owner'), fixRate);
 
 // --- Standard CRUD ---
 router
