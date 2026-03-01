@@ -19,13 +19,18 @@ const createTrip = async (req, res) => {
             totalKm,
             tollExpense,
             farmerBoxBreakdown,
-            isLocked
+            isLocked,
+            weightSlipUrl: bodyWeightSlip,
+            dieselSlipUrl: bodyDieselSlip,
+            unloadSlipUrl: bodyUnloadSlip
         } = req.body;
 
-        const weightSlipUrl = req.files && req.files.weightSlipUrl ? `/uploads/${req.files.weightSlipUrl[0].filename}` : null;
-        const dieselSlipUrl = req.files && req.files.dieselSlipUrl ? `/uploads/${req.files.dieselSlipUrl[0].filename}` : null;
-        const unloadSlipUrl = req.files && req.files.unloadSlipUrl ? `/uploads/${req.files.unloadSlipUrl[0].filename}` : null;
-
+        // const weightSlipUrl = req.files && req.files.weightSlipUrl ? `/uploads/${req.files.weightSlipUrl[0].filename}` : null;
+        // const dieselSlipUrl = req.files && req.files.dieselSlipUrl ? `/uploads/${req.files.dieselSlipUrl[0].filename}` : null;
+        // const unloadSlipUrl = req.files && req.files.unloadSlipUrl ? `/uploads/${req.files.unloadSlipUrl[0].filename}` : null;
+        const weightSlipUrl = bodyWeightSlip || (req.files?.weightSlipUrl ? `/uploads/${req.files.weightSlipUrl[0].filename}` : null);
+        const dieselSlipUrl = bodyDieselSlip || (req.files?.dieselSlipUrl ? `/uploads/${req.files.dieselSlipUrl[0].filename}` : null);
+        const unloadSlipUrl = bodyUnloadSlip || (req.files?.unloadSlipUrl ? `/uploads/${req.files.unloadSlipUrl[0].filename}` : null);
         // Verify the assignmentId exists in Logistics collection
         const logistics = await Logistics.findById(assignmentId);
         if (!logistics) {

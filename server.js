@@ -15,7 +15,7 @@ const app = express();
 
 // Apply Global Middlewares
 app.use(express.json());
-app.use(mongoSanitize());
+// app.use(mongoSanitize()); comment it due to version issue
 app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
 app.use(cors());
