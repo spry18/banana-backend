@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+
 const enquirySchema = new mongoose.Schema(
     {
         enquiryId: {
@@ -42,6 +43,15 @@ const enquirySchema = new mongoose.Schema(
             ref: 'Agent',
             default: null,
         },
+        agentAttached: {
+            type: Boolean,
+            default: false,
+        },
+        visitPriority: {
+            type: String,
+            enum: ['High', 'Medium', 'Low'],
+            default: 'Medium',
+        },
         fieldOwnerId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
@@ -51,6 +61,22 @@ const enquirySchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
             required: true,
+        },
+        scheduledDate: {
+            type: Date,
+        },
+        scheduledTime: {
+            type: String,
+        },
+        companyId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Company',
+        },
+        purchaseRate: {
+            type: Number,
+        },
+        remarks: {
+            type: String,
         },
         status: {
             type: String,
@@ -62,6 +88,7 @@ const enquirySchema = new mongoose.Schema(
                 'ASSIGNED',
                 'COMPLETED',
                 'CLOSED',
+                'CANCELLED',
             ],
             default: 'PENDING',
         },

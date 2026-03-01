@@ -43,9 +43,19 @@ app.use('/api/inspections', require('./src/modules/inspections/inspection.routes
 app.use('/api/logistics', require('./src/modules/logistics/logistics.routes'));
 app.use('/api/execution/packing', require('./src/modules/execution/packing.routes'));
 app.use('/api/execution/trips', require('./src/modules/execution/trip.routes'));
-app.use('/api/system-audits', require('./src/modules/auditing/systemAudit.routes'));
 app.use('/api/daily-logs', require('./src/modules/auditing/dailyLog.routes'));
-app.use('/api/dashboard', require('./src/modules/dashboard/dashboard.routes'));
+
+// Phase 4+7: Admin aggregation routes (dashboard-stats, alerts, field-selection, performance)
+app.use('/api/admin', require('./src/modules/admin/admin.routes'));
+
+// Phase 6: Notification feed + WhatsApp trigger
+app.use('/api/notifications', require('./src/modules/notifications/notification.routes'));
+
+// Phase 8: Analytics & export
+app.use('/api/analytics', require('./src/modules/analytics/analytics.routes'));
+
+// Phase 9: Audit logs — correct path is now /api/audit/logs (GET /)
+app.use('/api/audit/logs', require('./src/modules/auditing/systemAudit.routes'));
 
 // Error Handling Middlewares
 app.use(notFound);

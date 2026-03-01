@@ -98,8 +98,82 @@ const getMe = async (req, res) => {
     }
 };
 
+// @desc    Get all users (Admin)
+// @route   GET /api/users
+// @access  Private (Admin)
+const getAllUsers = async (req, res) => {
+    try {
+        const { role, isActive, page = 1, limit = 20 } = req.query;
+        const filter = {};
+        if (role) filter.role = role;
+        if (isActive !== undefined) filter.isActive = isActive === 'true';
+
+        const skip = (Number(page) - 1) * Number(limit);
+        const [users, total] = await Promise.all([
+            User.find(filter)
+                .select('-passwordHash')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(Number(limit)),
+            User.countDocuments(filter),
+        ]);
+
+        res.json({
+            total,
+            page: Number(page),
+            pages: Math.ceil(total / Number(limit)),
+            data: users,
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Toggle user active/inactive status
+// @route   PATCH /api/users/:id/status
+// @access  Private (Admin)
+const toggleUserStatus = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id).select('-passwordHash');
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Prevent Admin from deactivating themselves
+        if (user._id.toString() === req.user._id.toString()) {
+            return res.status(400).json({ message: 'You cannot change your own account status' });
+        }
+
+        const before = { isActive: user.isActive };
+        user.isActive = !user.isActive;
+        await user.save();
+
+        await logSystemAction(
+            req.user._id,
+            'UPDATE',
+            'Users',
+            user._id,
+            `Admin toggled user status to ${user.isActive ? 'Active' : 'Inactive'}`,
+            before,
+            { isActive: user.isActive }
+        );
+
+        res.json({
+            message: `User account has been ${user.isActive ? 'activated' : 'deactivated'}`,
+            isActive: user.isActive,
+        });
+    } catch (error) {
+        if (error.name === 'CastError') {
+            return res.status(400).json({ message: 'Invalid user ID format' });
+        }
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
 module.exports = {
     registerUser,
     loginUser,
     getMe,
+    getAllUsers,
+    toggleUserStatus,
 };

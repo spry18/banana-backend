@@ -7,12 +7,15 @@ const {
 } = require('./logistics.controller');
 const { protect, authorize } = require('../../middlewares/auth.middleware');
 
-// Apply 'protect' to all routes
 router.use(protect);
+
+// Phase 5: Renamed from POST / to POST /assign
+router
+    .route('/assign')
+    .post(authorize('Admin', 'Operational Manager'), createAssignment);
 
 router
     .route('/')
-    .post(authorize('Admin', 'Operational Manager'), createAssignment)
     .get(authorize('Admin', 'Operational Manager', 'Munshi', 'Driver (Eicher)', 'Driver (Pickup)'), getAssignments);
 
 router.route('/:id').get(getAssignmentById);

@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { getSystemAudits } = require('./systemAudit.controller');
 const { protect, authorize } = require('../../middlewares/auth.middleware');
+const { masterReport, exportReport } = require('./analytics.controller');
 
 router.use(protect);
+router.use(authorize('Admin'));
 
-// Phase 9: Correct path, paginated, filterable
-router.get('/', authorize('Admin'), getSystemAudits);
+router.get('/master-report', masterReport);
+router.get('/export', exportReport);
 
 module.exports = router;

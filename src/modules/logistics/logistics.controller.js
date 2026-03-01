@@ -27,7 +27,14 @@ const createAssignment = async (req, res) => {
             return res.status(404).json({ message: 'Enquiry not found with the provided ID' });
         }
 
-        // Set omId to logged-in Operational Manager
+        // === PHASE 5 GUARD: Enquiry MUST be RATE_FIXED before logistics can be assigned ===
+        if (enquiry.status !== 'RATE_FIXED') {
+            return res.status(400).json({
+                message: `Cannot assign logistics. Enquiry status must be 'RATE_FIXED'. Current status: '${enquiry.status}'`,
+            });
+        }
+
+        // Set omId to logged-in Operational Manager / Admin
         const omId = req.user._id;
 
         // Save the logistics assignment document

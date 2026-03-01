@@ -7,11 +7,11 @@ const Generation = require('./generation.model');
 // --- Companies ---
 const createCompany = async (req, res) => {
     try {
-        const { companyName } = req.body;
-        if (!companyName) {
-            return res.status(400).json({ message: 'companyName is required' });
+        const { companyName, legalName, taxId, headquarters, procurementNotes } = req.body;
+        if (!companyName || !headquarters) {
+            return res.status(400).json({ message: 'companyName and headquarters are required' });
         }
-        const company = await Company.create({ companyName });
+        const company = await Company.create({ companyName, legalName, taxId, headquarters, procurementNotes });
         res.status(201).json(company);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -89,11 +89,11 @@ const deleteBrand = async (req, res) => {
 // --- Agents ---
 const createAgent = async (req, res) => {
     try {
-        const { agentName, mobileNo } = req.body;
-        if (!agentName || !mobileNo) {
-            return res.status(400).json({ message: 'agentName and mobileNo are required' });
+        const { agentName, mobileNo, contactPerson, location, notes } = req.body;
+        if (!agentName || !mobileNo || !contactPerson || !location) {
+            return res.status(400).json({ message: 'agentName, mobileNo, contactPerson, and location are required' });
         }
-        const agent = await Agent.create({ agentName, mobileNo });
+        const agent = await Agent.create({ agentName, mobileNo, contactPerson, location, notes });
         res.status(201).json(agent);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });

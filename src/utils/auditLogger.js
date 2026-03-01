@@ -10,7 +10,11 @@ const SystemAudit = require('../modules/auditing/systemAudit.model');
  * @param {String} [documentId] - The ID of the affected document (optional)
  * @param {String} [details] - Additional details about the action (optional)
  */
-const logSystemAction = async (userId, action, moduleName, documentId = null, details = '') => {
+/**
+ * @param {Object} [beforeChange=null] - Snapshot of the document BEFORE the change
+ * @param {Object} [afterChange=null]  - Snapshot of the document AFTER the change
+ */
+const logSystemAction = async (userId, action, moduleName, documentId = null, details = '', beforeChange = null, afterChange = null) => {
     try {
         await SystemAudit.create({
             userId,
@@ -18,6 +22,8 @@ const logSystemAction = async (userId, action, moduleName, documentId = null, de
             moduleName,
             documentId,
             details,
+            beforeChange,
+            afterChange,
         });
     } catch (error) {
         // Log the error to purely the console, don't throw it upward

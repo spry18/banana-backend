@@ -1,10 +1,25 @@
 const express = require('express');
 const router = express.Router();
-const { registerUser, loginUser, getMe } = require('./user.controller');
-const { protect } = require('../../middlewares/auth.middleware');
+const { protect, authorize } = require('../../middlewares/auth.middleware');
+const {
+    registerUser,
+    loginUser,
+    getMe,
+    getAllUsers,
+    toggleUserStatus,
+} = require('./user.controller');
 
-router.post('/register', registerUser);
+// Public
 router.post('/login', loginUser);
-router.route('/me').get(protect, getMe);
+
+// Admin-only: register new system users
+router.post('/register', protect, authorize('Admin'), registerUser);
+
+// Private
+router.get('/me', protect, getMe);
+
+// Admin-only: user management
+router.get('/', protect, authorize('Admin'), getAllUsers);
+router.patch('/:id/status', protect, authorize('Admin'), toggleUserStatus);
 
 module.exports = router;

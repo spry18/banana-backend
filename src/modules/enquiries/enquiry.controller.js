@@ -18,6 +18,8 @@ const createEnquiry = async (req, res) => {
             plantCount,
             generation,
             agentId,
+            agentAttached,
+            visitPriority,
             assignedSelectorId,
         } = req.body;
 
@@ -56,6 +58,8 @@ const createEnquiry = async (req, res) => {
             plantCount,
             generation,
             agentId,
+            agentAttached: agentAttached ?? false,
+            visitPriority: visitPriority || 'Medium',
             fieldOwnerId,
             assignedSelectorId,
             editableUntil,
@@ -214,9 +218,113 @@ const getEnquiryById = async (req, res) => {
     }
 };
 
+// @desc    Admin reschedules a missed inspection
+// @route   PATCH /api/enquiries/reschedule/:id
+// @access  Private (Admin)
+const rescheduleEnquiry = async (req, res) => {
+    try {
+        const { scheduledDate, scheduledTime } = req.body;
+
+        if (!scheduledDate) {
+            return res.status(400).json({ message: 'scheduledDate is required' });
+        }
+
+        const enquiry = await Enquiry.findById(req.params.id);
+        if (!enquiry) {
+            return res.status(404).json({ message: 'Enquiry not found' });
+        }
+
+        if (!['PENDING', 'SELECTED'].includes(enquiry.status)) {
+            return res.status(400).json({
+                message: `Cannot reschedule an enquiry with status '${enquiry.status}'`,
+            });
+        }
+
+        const before = { scheduledDate: enquiry.scheduledDate, scheduledTime: enquiry.scheduledTime };
+        enquiry.scheduledDate = new Date(scheduledDate);
+        enquiry.scheduledTime = scheduledTime || null;
+        await enquiry.save();
+
+        await logSystemAction(
+            req.user._id,
+            'UPDATE',
+            'Enquiries',
+            enquiry._id,
+            `Admin rescheduled inspection for Enquiry ${enquiry.enquiryId}`,
+            before,
+            { scheduledDate: enquiry.scheduledDate, scheduledTime: enquiry.scheduledTime }
+        );
+
+        res.json({ message: 'Inspection rescheduled successfully', enquiry });
+    } catch (error) {
+        if (error.name === 'CastError') {
+            return res.status(400).json({ message: `Invalid ID: ${error.path}` });
+        }
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Admin fixes the purchase rate for a selected plot
+// @route   PATCH /api/enquiries/fix-rate/:id
+// @access  Private (Admin)
+const fixRate = async (req, res) => {
+    try {
+        const { companyId, purchaseRate, remarks } = req.body;
+
+        if (!companyId || !purchaseRate) {
+            return res.status(400).json({ message: 'companyId and purchaseRate are required' });
+        }
+
+        const enquiry = await Enquiry.findById(req.params.id);
+        if (!enquiry) {
+            return res.status(404).json({ message: 'Enquiry not found' });
+        }
+
+        if (enquiry.status !== 'SELECTED') {
+            return res.status(400).json({
+                message: `Rate can only be fixed for enquiries with status 'SELECTED'. Current status: '${enquiry.status}'`,
+            });
+        }
+
+        // Validate company exists
+        const Company = require('../master-data/company.model');
+        const company = await Company.findById(companyId);
+        if (!company) {
+            return res.status(404).json({ message: 'Company not found with the provided ID' });
+        }
+
+        const before = { companyId: enquiry.companyId, purchaseRate: enquiry.purchaseRate, status: enquiry.status };
+
+        enquiry.companyId = companyId;
+        enquiry.purchaseRate = purchaseRate;
+        enquiry.remarks = remarks || '';
+        enquiry.status = 'RATE_FIXED';
+        await enquiry.save();
+
+        await logSystemAction(
+            req.user._id,
+            'UPDATE',
+            'Enquiries',
+            enquiry._id,
+            `Rate fixed at ₹${purchaseRate} for Enquiry ${enquiry.enquiryId}`,
+            before,
+            { companyId, purchaseRate, status: 'RATE_FIXED' }
+        );
+
+        res.json({ message: 'Rate fixed successfully', enquiry });
+    } catch (error) {
+        if (error.name === 'CastError') {
+            return res.status(400).json({ message: `Invalid ID: ${error.path}` });
+        }
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
 module.exports = {
     createEnquiry,
     getEnquiries,
     updateEnquiry,
     getEnquiryById,
+    rescheduleEnquiry,
+    fixRate,
 };

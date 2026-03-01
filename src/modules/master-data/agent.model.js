@@ -11,6 +11,17 @@ const agentSchema = new mongoose.Schema(
             required: true,
             match: [/^\d{10}$/, 'Valid 10 digit mobile number required'],
         },
+        contactPerson: {
+            type: String,
+            required: true,
+        },
+        location: {
+            type: String,
+            required: true,
+        },
+        notes: {
+            type: String,
+        },
         isActive: {
             type: Boolean,
             default: true,

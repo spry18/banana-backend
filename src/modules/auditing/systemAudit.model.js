@@ -22,6 +22,12 @@ const systemAuditSchema = new mongoose.Schema(
         details: {
             type: String,
         },
+        beforeChange: {
+            type: mongoose.Schema.Types.Mixed,
+        },
+        afterChange: {
+            type: mongoose.Schema.Types.Mixed,
+        },
     },
     { timestamps: true }
 );

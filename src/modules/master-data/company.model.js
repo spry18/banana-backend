@@ -6,6 +6,19 @@ const companySchema = new mongoose.Schema(
             type: String,
             required: true,
         },
+        legalName: {
+            type: String,
+        },
+        taxId: {
+            type: String,
+        },
+        headquarters: {
+            type: String,
+            required: true,
+        },
+        procurementNotes: {
+            type: String,
+        },
         isActive: {
             type: Boolean,
             default: true,

@@ -1,0 +1,1306 @@
+{
+    "info": {
+        "name": "VaxTrack — Admin Module API",
+        "_postman_id": "vaxtrack-admin-v1-2026",
+        "description": "Complete Admin Module collection for VaxTrack (Banana Logistics). Use the 'Auth' folder to login and capture the token into {{adminToken}}. Set {{baseUrl}} = http://localhost:5000 in your environment.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:5000",
+            "type": "string"
+        },
+        {
+            "key": "adminToken",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "enquiryId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        },
+        {
+            "key": "userId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        },
+        {
+            "key": "companyId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        },
+        {
+            "key": "agentId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        },
+        {
+            "key": "notificationId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "0. Auth",
+            "item": [
+                {
+                    "name": "Login as Admin",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.token) {",
+                                    "  pm.collectionVariables.set('adminToken', res.token);",
+                                    "  console.log('Token captured:', res.token);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"mobileNo\": \"9000000001\",\n  \"password\": \"Admin@123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "login"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Register Admin User",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"firstName\": \"Raj\",\n  \"lastName\": \"Sharma\",\n  \"mobileNo\": \"9000000001\",\n  \"email\": \"raj@vaxtrack.in\",\n  \"password\": \"Admin@123\",\n  \"role\": \"Admin\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/register",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "register"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "1. Dashboard & Alerts",
+            "item": [
+                {
+                    "name": "GET Admin Dashboard Stats",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/admin/dashboard-stats",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "admin",
+                                "dashboard-stats"
+                            ]
+                        },
+                        "description": "Returns: totalEnquiries, pendingVisits, selectedPlots, rejectedPlots, tripsCompleted, alertsCount"
+                    }
+                },
+                {
+                    "name": "GET Admin Alerts Feed",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/admin/alerts",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "admin",
+                                "alerts"
+                            ]
+                        },
+                        "description": "Returns three alert categories: missedFields (past scheduledDate still PENDING), missingUploads (Trips with no slip photos), eodIssues (DailyLogs STARTED > 12h ago)"
+                    }
+                },
+                {
+                    "name": "GET Field Selection Overview",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/admin/field-selection/overview",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "admin",
+                                "field-selection",
+                                "overview"
+                            ]
+                        },
+                        "description": "Returns daily inspection stats grouped by date, future scheduled visits, and status pipeline summary"
+                    }
+                },
+                {
+                    "name": "GET Staff Performance",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/admin/performance/staff",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "admin",
+                                "performance",
+                                "staff"
+                            ]
+                        },
+                        "description": "Returns total KM + visited plots per Field Selector, and total assigned plots per Field Owner"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "2. Enquiry Actions (Admin)",
+            "item": [
+                {
+                    "name": "POST Create Enquiry (Admin)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"farmerFirstName\": \"Suresh\",\n  \"farmerLastName\": \"Patil\",\n  \"farmerMobile\": \"9876543210\",\n  \"location\": \"Solapur\",\n  \"subLocation\": \"Akkalkot Cluster\",\n  \"plantCount\": 3500,\n  \"generation\": \"REPLACE_WITH_GENERATION_ID\",\n  \"agentAttached\": true,\n  \"agentId\": \"{{agentId}}\",\n  \"visitPriority\": \"High\",\n  \"assignedSelectorId\": \"REPLACE_WITH_SELECTOR_ID\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET All Enquiries (Paginated)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries?page=1&limit=10&status=PENDING",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                },
+                                {
+                                    "key": "status",
+                                    "value": "PENDING"
+                                },
+                                {
+                                    "key": "location",
+                                    "value": "",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "search",
+                                    "value": "",
+                                    "disabled": true
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "PATCH Reschedule Enquiry (Admin)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"scheduledDate\": \"2026-03-10\",\n  \"scheduledTime\": \"10:00 AM\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries/reschedule/{{enquiryId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries",
+                                "reschedule",
+                                "{{enquiryId}}"
+                            ]
+                        },
+                        "description": "Reschedules a missed field visit. Enquiry must be PENDING or SELECTED."
+                    }
+                },
+                {
+                    "name": "PATCH Fix Rate (Admin)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"purchaseRate\": 850,\n  \"remarks\": \"Rate finalized after negotiation with farmer. Good quality 4H boxes expected.\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries/fix-rate/{{enquiryId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries",
+                                "fix-rate",
+                                "{{enquiryId}}"
+                            ]
+                        },
+                        "description": "Enquiry must be SELECTED. Sets companyId, purchaseRate, remarks, and status -> RATE_FIXED."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3. Logistics",
+            "item": [
+                {
+                    "name": "POST Assign Logistics (Admin/OM)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"enquiryId\": \"{{enquiryId}}\",\n  \"companyId\": \"{{companyId}}\",\n  \"purchaseRate\": 850,\n  \"totalBoxes\": 280,\n  \"munshiId\": \"REPLACE_WITH_MUNSHI_ID\",\n  \"driverId\": \"REPLACE_WITH_DRIVER_ID\",\n  \"vehicleId\": \"REPLACE_WITH_VEHICLE_ID\",\n  \"priority\": \"HIGH\",\n  \"lightInTime\": \"06:00 AM\",\n  \"lightOutTime\": \"08:00 AM\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/logistics/assign",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "logistics",
+                                "assign"
+                            ]
+                        },
+                        "description": "Guard: Enquiry status MUST be RATE_FIXED or this returns 400. Triggers Munshi + Driver WhatsApp alerts."
+                    }
+                },
+                {
+                    "name": "GET All Assignments",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/logistics",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "logistics"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET Assignment by ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/logistics/REPLACE_WITH_ASSIGNMENT_ID",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "logistics",
+                                "REPLACE_WITH_ASSIGNMENT_ID"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "4. User Management",
+            "item": [
+                {
+                    "name": "GET All Users (Paginated & Filtered)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users?page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                },
+                                {
+                                    "key": "role",
+                                    "value": "Field Selector",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "isActive",
+                                    "value": "true",
+                                    "disabled": true
+                                }
+                            ]
+                        },
+                        "description": "Lists all system users. Filter by role or isActive status."
+                    }
+                },
+                {
+                    "name": "POST Register Staff User (Admin Protected)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"firstName\": \"Anil\",\n  \"lastName\": \"Desai\",\n  \"mobileNo\": \"9876500001\",\n  \"email\": \"anil.desai@vaxtrack.in\",\n  \"password\": \"Staff@123\",\n  \"role\": \"Field Selector\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/register",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "register"
+                            ]
+                        },
+                        "description": "Available roles: Admin | Field Owner | Field Selector | Operational Manager | Munshi | Driver (Eicher) | Driver (Pickup)"
+                    }
+                },
+                {
+                    "name": "PATCH Toggle User Status (Active↔Inactive)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/{{userId}}/status",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "{{userId}}",
+                                "status"
+                            ]
+                        },
+                        "description": "Flips isActive boolean. Admin cannot toggle their own account."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "5. Master Setup",
+            "item": [
+                {
+                    "name": "AGENTS",
+                    "item": [
+                        {
+                            "name": "POST Create Agent",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"agentName\": \"Vijay Agencies\",\n  \"mobileNo\": \"9823000001\",\n  \"contactPerson\": \"Vijay Kulkarni\",\n  \"location\": \"Sangli\",\n  \"notes\": \"Reliable agent for Sangli cluster. 5% commission.\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/master-data/agents",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "master-data",
+                                        "agents"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "GET All Agents",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/master-data/agents",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "master-data",
+                                        "agents"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "PUT Update Agent",
+                            "request": {
+                                "method": "PUT",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"agentName\": \"Vijay Premium Agencies\",\n  \"notes\": \"Commission revised to 4.5%\",\n  \"isActive\": true\n}"
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/master-data/agents/{{agentId}}",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "master-data",
+                                        "agents",
+                                        "{{agentId}}"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "DELETE Agent",
+                            "request": {
+                                "method": "DELETE",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/master-data/agents/{{agentId}}",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "master-data",
+                                        "agents",
+                                        "{{agentId}}"
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "COMPANIES",
+                    "item": [
+                        {
+                            "name": "POST Create Company",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"companyName\": \"Reliance Fresh Exports\",\n  \"legalName\": \"Reliance Fresh Pvt. Ltd.\",\n  \"taxId\": \"27AAECR1234F1ZP\",\n  \"headquarters\": \"Mumbai, Maharashtra\",\n  \"procurementNotes\": \"Prefers G9 Cavendish. Minimum 200 boxes per order. Payment within 7 days.\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/master-data/companies",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "master-data",
+                                        "companies"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "GET All Companies",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/master-data/companies",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "master-data",
+                                        "companies"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "PUT Update Company",
+                            "request": {
+                                "method": "PUT",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"procurementNotes\": \"Updated: Accepts mixed varieties now. Payment within 5 days.\",\n  \"isActive\": true\n}"
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/master-data/companies/{{companyId}}",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "master-data",
+                                        "companies",
+                                        "{{companyId}}"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "DELETE Company",
+                            "request": {
+                                "method": "DELETE",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/master-data/companies/{{companyId}}",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "master-data",
+                                        "companies",
+                                        "{{companyId}}"
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GENERATIONS",
+                    "item": [
+                        {
+                            "name": "POST Create Generation",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"name\": \"G9 Cavendish\",\n  \"description\": \"Most common export variety. High yield, disease resistant.\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/master-data/generations",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "master-data",
+                                        "generations"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "GET All Generations",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/master-data/generations",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "master-data",
+                                        "generations"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "PUT Update Generation",
+                            "request": {
+                                "method": "PUT",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"name\": \"G9 Cavendish (Premium)\",\n  \"description\": \"Updated: preferred variety for Reliance Fresh orders.\",\n  \"isActive\": true\n}"
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/master-data/generations/REPLACE_WITH_GENERATION_ID",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "master-data",
+                                        "generations",
+                                        "REPLACE_WITH_GENERATION_ID"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "DELETE Generation",
+                            "request": {
+                                "method": "DELETE",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/master-data/generations/REPLACE_WITH_GENERATION_ID",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "master-data",
+                                        "generations",
+                                        "REPLACE_WITH_GENERATION_ID"
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "VEHICLES",
+                    "item": [
+                        {
+                            "name": "POST Create Vehicle",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"vehicleNumber\": \"MH12AB1234\",\n  \"vehicleType\": \"Eicher\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/master-data/vehicles",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "master-data",
+                                        "vehicles"
+                                    ]
+                                },
+                                "description": "vehicleType enum: 'Eicher' or 'Pickup' only"
+                            }
+                        },
+                        {
+                            "name": "GET All Vehicles",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/master-data/vehicles",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "master-data",
+                                        "vehicles"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "PUT Update Vehicle",
+                            "request": {
+                                "method": "PUT",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"vehicleNumber\": \"MH12AB1234\",\n  \"vehicleType\": \"Pickup\",\n  \"isActive\": true\n}"
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/master-data/vehicles/REPLACE_WITH_VEHICLE_ID",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "master-data",
+                                        "vehicles",
+                                        "REPLACE_WITH_VEHICLE_ID"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "DELETE Vehicle",
+                            "request": {
+                                "method": "DELETE",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/master-data/vehicles/REPLACE_WITH_VEHICLE_ID",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "master-data",
+                                        "vehicles",
+                                        "REPLACE_WITH_VEHICLE_ID"
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "6. Notifications",
+            "item": [
+                {
+                    "name": "GET Notification Feed (Admin)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/notifications?page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "notifications"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                },
+                                {
+                                    "key": "unreadOnly",
+                                    "value": "true",
+                                    "disabled": true
+                                }
+                            ]
+                        },
+                        "description": "Returns paginated notification feed with unreadCount. Add ?unreadOnly=true to filter."
+                    }
+                },
+                {
+                    "name": "PATCH Mark Notification as Read",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/notifications/{{notificationId}}/read",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "notifications",
+                                "{{notificationId}}",
+                                "read"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "PATCH Mark All Notifications as Read",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/notifications/mark-all-read",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "notifications",
+                                "mark-all-read"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST Send WhatsApp to Farmer",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"mobile\": \"9876543210\",\n  \"farmerName\": \"Suresh Patil\",\n  \"message\": \"Dear Suresh ji, your banana rate has been fixed at ₹850/box by Reliance Fresh. Our team will arrive on 10-Mar-2026 at 6:00 AM. Please ensure your field is ready. - VaxTrack\",\n  \"enquiryId\": \"{{enquiryId}}\",\n  \"type\": \"RATE_FIXED\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/notifications/whatsapp",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "notifications",
+                                "whatsapp"
+                            ]
+                        },
+                        "description": "Triggers WhatsApp alert to farmer and logs a notification entry in the Admin feed."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "7. Analytics & Reports",
+            "item": [
+                {
+                    "name": "GET Master Analytics Report",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/analytics/master-report",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "analytics",
+                                "master-report"
+                            ],
+                            "query": [
+                                {
+                                    "key": "location",
+                                    "value": "Solapur",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "companyId",
+                                    "value": "{{companyId}}",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "startDate",
+                                    "value": "2026-01-01",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2026-03-01",
+                                    "disabled": true
+                                }
+                            ]
+                        },
+                        "description": "Returns total revenue, avg rate, wastage %, grouped by Location and Company. All query params are optional filters."
+                    }
+                },
+                {
+                    "name": "GET Export Analytics as Excel",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/analytics/export",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "analytics",
+                                "export"
+                            ],
+                            "query": [
+                                {
+                                    "key": "location",
+                                    "value": "",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "startDate",
+                                    "value": "2026-01-01",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2026-03-31",
+                                    "disabled": true
+                                }
+                            ]
+                        },
+                        "description": "Downloads a styled .xlsx file. Save response to file in Postman (Send and Download)."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "8. System Audit Logs",
+            "item": [
+                {
+                    "name": "GET Audit Logs (Paginated & Filtered)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/audit/logs?page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "audit",
+                                "logs"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                },
+                                {
+                                    "key": "action",
+                                    "value": "UPDATE",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "moduleName",
+                                    "value": "Enquiries",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "userId",
+                                    "value": "{{userId}}",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "startDate",
+                                    "value": "2026-03-01",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2026-03-31",
+                                    "disabled": true
+                                }
+                            ]
+                        },
+                        "description": "Returns paginated audit log with User (name, role), Action, Module, Before/After Change, DateTime. All query params optional."
+                    }
+                }
+            ]
+        }
+    ]
+}
