@@ -60,25 +60,53 @@ const loginUser = async (req, res) => {
     try {
         const { mobileNo, password } = req.body;
 
-        // Find user
-        const user = await User.findOne({ mobileNo });
-
-        // Check user & password match
-        if (user && user.isActive && (await user.comparePassword(password))) {
-            await logSystemAction(user._id, 'LOGIN', 'Users', user._id, 'User logged into the system');
-            res.json({
-                _id: user.id,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                mobileNo: user.mobileNo,
-                role: user.role,
-                token: generateToken(user._id, user.role),
-            });
-        } else {
-            res.status(401).json({ message: 'Invalid mobile number or password, or user inactive' });
+        // 1. Check if fields are provided at all
+        if (!mobileNo && !password) {
+            return res.status(400).json({ message: 'Mobile number and password are required.' });
         }
+        if (!mobileNo) {
+            return res.status(400).json({ message: 'Mobile number is required.' });
+        }
+        if (!password) {
+            return res.status(400).json({ message: 'Password is required.' });
+        }
+
+        // 2. Validate mobile number format (must be exactly 10 digits)
+        const mobileRegex = /^\d{10}$/;
+        if (!mobileRegex.test(mobileNo)) {
+            return res.status(400).json({ message: 'Invalid mobile number. Please enter a valid 10-digit mobile number.' });
+        }
+
+        // 3. Check if a user with this mobile number exists
+        const user = await User.findOne({ mobileNo });
+        if (!user) {
+            return res.status(401).json({ message: 'No account found with this mobile number.' });
+        }
+
+        // 4. Check if the account is active
+        if (!user.isActive) {
+            return res.status(403).json({ message: 'Your account has been deactivated. Please contact the administrator.' });
+        }
+
+        // 5. Verify the password
+        const isPasswordCorrect = await user.comparePassword(password);
+        if (!isPasswordCorrect) {
+            return res.status(401).json({ message: 'Incorrect password. Please try again.' });
+        }
+
+        // 6. All checks passed — issue token
+        await logSystemAction(user._id, 'LOGIN', 'Users', user._id, 'User logged into the system');
+        res.json({
+            _id: user.id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            mobileNo: user.mobileNo,
+            role: user.role,
+            token: generateToken(user._id, user.role),
+        });
+
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        res.status(500).json({ message: 'Server error. Please try again later.', error: error.message });
     }
 };
 
