@@ -212,10 +212,88 @@ const toggleUserStatus = async (req, res) => {
     }
 };
 
+// @desc    Update user
+// @route   PUT /api/users/:id
+// @access  Private (Admin)
+const updateUser = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const before = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            mobileNo: user.mobileNo,
+            email: user.email,
+            role: user.role
+        };
+
+        user.firstName = req.body.firstName || user.firstName;
+        user.lastName = req.body.lastName || user.lastName;
+        user.email = req.body.email !== undefined ? req.body.email : user.email;
+
+        if (req.body.mobileNo && req.body.mobileNo !== user.mobileNo) {
+            const mobileExists = await User.findOne({ mobileNo: req.body.mobileNo });
+            if (mobileExists) {
+                return res.status(400).json({ message: 'Mobile number already in use' });
+            }
+            user.mobileNo = req.body.mobileNo;
+        }
+
+        if (req.body.role) {
+            user.role = req.body.role;
+        }
+
+        if (req.body.password) {
+            user.passwordHash = req.body.password; // pre-save hook will hash it
+        }
+
+        const updatedUser = await user.save();
+
+        const after = {
+            firstName: updatedUser.firstName,
+            lastName: updatedUser.lastName,
+            mobileNo: updatedUser.mobileNo,
+            email: updatedUser.email,
+            role: updatedUser.role
+        };
+
+        if (req.user) {
+            await logSystemAction(
+                req.user._id,
+                'UPDATE',
+                'Users',
+                updatedUser._id,
+                'Admin updated user details',
+                before,
+                after
+            );
+        }
+
+        res.json({
+            _id: updatedUser.id,
+            firstName: updatedUser.firstName,
+            lastName: updatedUser.lastName,
+            mobileNo: updatedUser.mobileNo,
+            email: updatedUser.email,
+            role: updatedUser.role,
+            isActive: updatedUser.isActive,
+        });
+    } catch (error) {
+        if (error.name === 'CastError') {
+            return res.status(400).json({ message: 'Invalid user ID format' });
+        }
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
 module.exports = {
     registerUser,
     loginUser,
     getMe,
     getAllUsers,
     toggleUserStatus,
+    updateUser,
 };

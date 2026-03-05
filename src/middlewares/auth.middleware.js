@@ -16,8 +16,22 @@ const protect = async (req, res, next) => {
             // Verify token
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-            // Get user from the token
-            req.user = await User.findById(decoded.id).select('-passwordHash');
+            // Handle hardcoded mock Admin for dev/testing
+            if (decoded.id === '111111111111111111111111') {
+                req.user = {
+                    _id: decoded.id,
+                    role: 'Admin',
+                    firstName: 'Super',
+                    lastName: 'Admin'
+                };
+            } else {
+                // Get user from the token
+                req.user = await User.findById(decoded.id).select('-passwordHash');
+
+                if (!req.user) {
+                    return res.status(401).json({ message: 'Not authorized, user not found' });
+                }
+            }
 
             next();
         } catch (error) {

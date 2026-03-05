@@ -555,6 +555,38 @@
                         },
                         "description": "Flips isActive boolean. Admin cannot toggle their own account."
                     }
+                },
+                {
+                    "name": "PUT Update User (Admin)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"firstName\": \"Updated Name\",\n  \"email\": \"new.email@vaxtrack.in\",\n  \"role\": \"Field Owner\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/{{userId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "{{userId}}"
+                            ]
+                        },
+                        "description": "Updates user details. Can update firstName, lastName, mobileNo, email, role, and password. Admin protected."
+                    }
                 }
             ]
         },
