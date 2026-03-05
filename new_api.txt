@@ -1,0 +1,21 @@
+1] update API 
+        http://localhost:5000/api/users/:id
+        body
+
+                "firstName": "Raj",
+                "lastName": "Sharma",
+                "mobileNo": "9000000001",
+                "role": "Admin"
+
+        Reponse : 
+            {
+                    "_id": "69a994b438f417bace5d27bf",
+                    "firstName": "Yash",
+                    "lastName": "Ahirrao",
+                    "mobileNo": "1234567890",
+                    "role": "Admin",
+                    "isActive": true
+            }
+
+2]
+
