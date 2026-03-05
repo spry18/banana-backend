@@ -16,9 +16,18 @@ const app = express();
 // Apply Global Middlewares
 app.use(express.json());
 // app.use(mongoSanitize()); comment it due to version issue
-app.use(helmet());
-app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
-app.use(cors());
+// 1. CORS MUST come first so it can handle the preflight requests
+app.use(cors({
+    origin: '*', // Allows all origins (Safe for dev, lock down later!)
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+// 2. Helmet comes SECOND, configured specifically for an API server
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: false, // Disables CSP (not needed for APIs, only for serving HTML)
+}));
 
 // Rate Limiter
 const limiter = rateLimit({
