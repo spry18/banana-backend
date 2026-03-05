@@ -60,6 +60,20 @@ const loginUser = async (req, res) => {
     try {
         const { mobileNo, password } = req.body;
 
+        // --- HARDCODED ADMIN LOGIN FOR DEV/TESTING ---
+        if (mobileNo === '9999999999' && password === 'password123') {
+            const adminId = '111111111111111111111111'; // Mock 24-char hex ObjectId
+            return res.json({
+                _id: adminId,
+                firstName: 'Super',
+                lastName: 'Admin',
+                mobileNo: '9999999999',
+                role: 'Admin',
+                token: generateToken(adminId, 'Admin'),
+            });
+        }
+        // ---------------------------------------------
+
         // 1. Check if fields are provided at all
         if (!mobileNo && !password) {
             return res.status(400).json({ message: 'Mobile number and password are required.' });
