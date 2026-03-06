@@ -30,7 +30,7 @@ router.use(protect);
 
 // GET /api/master-data/dropdowns
 // Open to any authenticated role that needs to populate UI forms
-router.get('/dropdowns', authorize('Admin', 'Field Owner', 'Operational Manager'), getFormDropdowns);
+router.get('/dropdowns', authorize('Admin', 'Field Owner', 'Operational Manager', 'Munshi'), getFormDropdowns);
 
 // Companies — Admin only
 router.route('/companies').post(authorize('Admin'), createCompany).get(authorize('Admin'), getCompanies);

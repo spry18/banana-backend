@@ -1,0 +1,629 @@
+{
+    "info": {
+        "name": "VaxTrack — Operational Manager Module",
+        "_postman_id": "vaxtrack-om-v1-2026",
+        "description": "Complete Operational Manager API collection for VaxTrack. Login first (folder 0) to auto-capture the token into {{omToken}}. Set {{baseUrl}} = http://localhost:5000 in your environment.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:5000",
+            "type": "string"
+        },
+        {
+            "key": "omToken",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "assignmentId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        },
+        {
+            "key": "enquiryId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        },
+        {
+            "key": "driverId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        },
+        {
+            "key": "munshiId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        },
+        {
+            "key": "vehicleId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        },
+        {
+            "key": "companyId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "0. Auth",
+            "item": [
+                {
+                    "name": "Login as Operational Manager",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.token) {",
+                                    "  pm.collectionVariables.set('omToken', res.token);",
+                                    "  console.log('OM Token captured:', res.token);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"mobileNo\": \"0000000003\",\n  \"password\": \"password123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "login"
+                            ]
+                        },
+                        "description": "Login and auto-capture token into {{omToken}} via test script."
+                    }
+                },
+                {
+                    "name": "GET My Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "me"
+                            ]
+                        },
+                        "description": "Returns the logged-in OM's profile (name, role, mobile)."
+                    }
+                },
+                {
+                    "name": "POST Logout",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/logout",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "logout"
+                            ]
+                        },
+                        "description": "Writes a LOGOUT audit log entry. Client must delete the stored token after this call (JWT is stateless)."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "1. Dashboard",
+            "item": [
+                {
+                    "name": "GET OM Dashboard",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/operational-manager/dashboard",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "operational-manager",
+                                "dashboard"
+                            ]
+                        },
+                        "description": "Returns KPIs: fixedPlots (ready to assign), teamsAssigned, activeTrips (pending review), approvedTrips, pendingReview. Also returns recentActivity (last 5 assignments with farmer + team details)."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "2. Plots Pipeline",
+            "item": [
+                {
+                    "name": "GET Plots — Unassigned (RATE_FIXED, no logistics yet)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/operational-manager/plots?stage=Unassigned&page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "operational-manager",
+                                "plots"
+                            ],
+                            "query": [
+                                {
+                                    "key": "stage",
+                                    "value": "Unassigned"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                },
+                                {
+                                    "key": "search",
+                                    "value": "",
+                                    "disabled": true
+                                }
+                            ]
+                        },
+                        "description": "Returns RATE_FIXED enquiries that have no Logistics record yet. These are the plots the OM needs to assign a team to."
+                    }
+                },
+                {
+                    "name": "GET Plots — Assigned (Teams dispatched)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/operational-manager/plots?stage=Assigned&page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "operational-manager",
+                                "plots"
+                            ],
+                            "query": [
+                                {
+                                    "key": "stage",
+                                    "value": "Assigned"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        },
+                        "description": "Returns Logistics assignments where the Enquiry status = ASSIGNED. The team has been dispatched and is in progress."
+                    }
+                },
+                {
+                    "name": "GET Plots — Complete (OM Reviewed)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/operational-manager/plots?stage=Complete&page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "operational-manager",
+                                "plots"
+                            ],
+                            "query": [
+                                {
+                                    "key": "stage",
+                                    "value": "Complete"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        },
+                        "description": "Returns assignments where the Trip report has been OM-reviewed (APPROVED or REJECTED). Includes tripReview data merged into each record."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3. Assignments",
+            "item": [
+                {
+                    "name": "GET Form Dropdowns (Munshi, Driver, Vehicle, Company)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/master-data/dropdowns",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "master-data",
+                                "dropdowns"
+                            ]
+                        },
+                        "description": "Call on form load to populate Munshi, Driver, Vehicle, and Company select boxes. Returns: companies[], agents[], generations[], selectors[].\n\nNote: Use the User list filtered by role for Munshi/Driver — call GET /api/users?role=Munshi and GET /api/users?role=Driver (Eicher) separately if needed."
+                    }
+                },
+                {
+                    "name": "POST Assign Logistics Team",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res._id) {",
+                                    "  pm.collectionVariables.set('assignmentId', res._id);",
+                                    "  console.log('Assignment ID captured:', res._id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"enquiryId\":   \"{{enquiryId}}\",\n  \"companyId\":   \"{{companyId}}\",\n  \"purchaseRate\": 920,\n  \"totalBoxes\":  280,\n  \"munshiId\":    \"{{munshiId}}\",\n  \"driverId\":    \"{{driverId}}\",\n  \"vehicleId\":   \"{{vehicleId}}\",\n  \"priority\":    \"HIGH\",\n  \"lightInTime\": \"05:30 AM\",\n  \"lightOutTime\": \"07:00 AM\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/logistics/assign",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "logistics",
+                                "assign"
+                            ]
+                        },
+                        "description": "PREREQUISITES:\n1. Enquiry status must be RATE_FIXED\n2. Enquiry must not have an existing logistics record (use Unassigned list)\n\nTriggers WhatsApp alerts to:\n- Munshi: task assignment + light-in/out schedule\n- Driver: route assignment\n- Farmer: harvest schedule confirmation with Munshi contact\n\nTest script captures _id into {{assignmentId}}."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "4. Execution Monitoring & Approvals",
+            "item": [
+                {
+                    "name": "GET Execution Detail (Merged Assignment + Trip + Packing)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/execution/{{assignmentId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "execution",
+                                "{{assignmentId}}"
+                            ]
+                        },
+                        "description": "Returns a single unified JSON containing:\n- `assignment`: Full logistics record (company, munshi, driver, vehicle, light times)\n- `trip`: Driver's submitted report (KM, tolls, fuel slip, farmer box breakdown) + reviewStatus\n- `packing`: Munshi's packing report (box counts by type, wastage, brand)\n- `executionStatus`: { packingSubmitted, tripSubmitted, reviewStatus }\n\nValues are null if the respective team member hasn't submitted yet."
+                    }
+                },
+                {
+                    "name": "PATCH Approve Execution Report",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reviewStatus\": \"APPROVED\",\n  \"reviewNote\":   \"All documents verified. KM and box counts match packing report.\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/execution/{{assignmentId}}/review",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "execution",
+                                "{{assignmentId}}",
+                                "review"
+                            ]
+                        },
+                        "description": "PREREQUISITE: The Driver must have submitted their Trip report first (tripSubmitted = true in executionStatus).\n\nApproves the trip report. Sets reviewStatus = APPROVED, stores reviewedBy = OM's userId, logs the audit action."
+                    }
+                },
+                {
+                    "name": "PATCH Reject Execution Report",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reviewStatus\": \"REJECTED\",\n  \"reviewNote\":   \"Diesel slip missing. Driver must re-upload and resubmit.\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/execution/{{assignmentId}}/review",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "execution",
+                                "{{assignmentId}}",
+                                "review"
+                            ]
+                        },
+                        "description": "Rejects the trip report. reviewNote is REQUIRED when rejecting — this note is shown to the driver as the rejection reason."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "5. Diesel Advance",
+            "item": [
+                {
+                    "name": "POST Issue Diesel Advance to Driver",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res._id) {",
+                                    "  console.log('Diesel Advance ID:', res._id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "driverId",
+                                    "value": "{{driverId}}",
+                                    "type": "text",
+                                    "description": "MongoDB _id of the Driver user"
+                                },
+                                {
+                                    "key": "vehicleNumber",
+                                    "value": "MH-09-AB-1234",
+                                    "type": "text",
+                                    "description": "Vehicle registration number"
+                                },
+                                {
+                                    "key": "amount",
+                                    "value": "2500",
+                                    "type": "text",
+                                    "description": "Advance amount in ₹ INR"
+                                },
+                                {
+                                    "key": "remark",
+                                    "value": "Fuel for Solapur run",
+                                    "type": "text",
+                                    "description": "Optional reason/notes"
+                                },
+                                {
+                                    "key": "assignmentId",
+                                    "value": "{{assignmentId}}",
+                                    "type": "text",
+                                    "description": "Optional — link to a logistics assignment",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "receiptPhoto",
+                                    "src": "",
+                                    "type": "file",
+                                    "description": "Optional — photo of advance receipt"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/diesel-advance",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "diesel-advance"
+                            ]
+                        },
+                        "description": "Issues a fuel advance to the driver.\n\nTriggers WhatsApp receipt to the driver's registered mobile.\nAudit log is created automatically.\n\nreceiptPhoto is optional — submit without it if no physical receipt available yet."
+                    }
+                },
+                {
+                    "name": "GET Diesel Advance History",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/diesel-advance?page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "diesel-advance"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                },
+                                {
+                                    "key": "driverId",
+                                    "value": "",
+                                    "disabled": true,
+                                    "description": "Filter by a specific driver"
+                                },
+                                {
+                                    "key": "assignmentId",
+                                    "value": "",
+                                    "disabled": true,
+                                    "description": "Filter by a specific logistics assignment"
+                                }
+                            ]
+                        },
+                        "description": "Returns a paginated list of all diesel advances. Populated with driver name/mobile, OM name, and linked assignment details.\n\nUse ?driverId= to filter per driver or ?assignmentId= to see advances for a specific trip."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "6. Notifications",
+            "item": [
+                {
+                    "name": "GET Notification Feed",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/notifications",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "notifications"
+                            ]
+                        },
+                        "description": "Returns the notification feed for the logged-in OM. Use this to display alerts (missed trips, pending reviews, system messages) in the app notification panel."
+                    }
+                }
+            ]
+        }
+    ]
+}

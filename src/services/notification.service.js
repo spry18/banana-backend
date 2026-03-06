@@ -17,5 +17,8 @@ class NotificationService {
     static sendDealCancelled(mobile, name) {
         console.log(`[SMS OUT] To: ${mobile} | Msg: Hello ${name}, as discussed, your plot enquiry has been closed as we couldn't finalize the commercial terms. Thank you for considering VaxTrack.`);
     }
+    static sendDieselAdvanceReceipt(mobile, driverName, amount, vehicleNumber) {
+        console.log(`[WhatsApp OUT] To: ${mobile} | Msg: Hello ${driverName}, a diesel advance of ₹${amount} has been issued to you for vehicle ${vehicleNumber}. Please retain your fuel receipts for records.`);
+    }
 }
 module.exports = NotificationService;

@@ -20,12 +20,12 @@ router.post('/register', protect, authorize('Admin'), registerUser);
 // Private
 router.get('/me', protect, getMe);
 
-// Admin-only: user management
+// Logout — MUST come before /:id wildcards, otherwise "logout" is captured as :id
+router.post('/logout', protect, logoutUser);
+
+// Admin-only: user management (wildcard routes last)
 router.get('/', protect, authorize('Admin'), getAllUsers);
 router.patch('/:id/status', protect, authorize('Admin'), toggleUserStatus);
 router.put('/:id', protect, authorize('Admin'), updateUser);
-
-// Logout (requires valid token so audit log can be written)
-router.post('/logout', protect, logoutUser);
 
 module.exports = router;

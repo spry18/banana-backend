@@ -217,11 +217,12 @@ const deleteGeneration = async (req, res) => {
 const getFormDropdowns = async (req, res) => {
     try {
         // Run all queries in parallel for best performance
-        const [companies, agents, generations, selectors] = await Promise.all([
+        const [companies, agents, generations, selectors, brands] = await Promise.all([
             Company.find({ isActive: true }).select('_id companyName legalName headquarters').lean(),
             Agent.find({ isActive: true }).select('_id agentName mobileNo location').lean(),
             Generation.find({ isActive: true }).select('_id name description').lean(),
             User.find({ role: 'Field Selector', isActive: true }).select('_id firstName lastName mobileNo').lean(),
+            Brand.find({ isActive: true }).select('_id brandName companyId').populate('companyId', 'companyName').lean(),
         ]);
 
         res.status(200).json({
@@ -229,6 +230,7 @@ const getFormDropdowns = async (req, res) => {
             agents,
             generations,
             selectors,
+            brands,
         });
     } catch (error) {
         console.error('Error fetching form dropdowns:', error);

@@ -54,6 +54,18 @@ app.use('/api/execution/packing', require('./src/modules/execution/packing.route
 app.use('/api/execution/trips', require('./src/modules/execution/trip.routes'));
 app.use('/api/daily-logs', require('./src/modules/auditing/dailyLog.routes'));
 
+// Execution: merged detail view + OM review (GET /:id, PATCH /:id/review)
+app.use('/api/execution', require('./src/modules/execution/execution.routes'));
+
+// Diesel Advance module (OM fuel advances to drivers)
+app.use('/api/diesel-advance', require('./src/modules/diesel-advance/dieselAdvance.routes'));
+
+// Operational Manager module
+app.use('/api/operational-manager', require('./src/modules/operational-manager/om.routes'));
+
+// Munshi (Packing Supervisor) module
+app.use('/api/munshi', require('./src/modules/munshi/munshi.routes'));
+
 // Phase 4+7: Admin aggregation routes (dashboard-stats, alerts, field-selection, performance)
 app.use('/api/admin', require('./src/modules/admin/admin.routes'));
 

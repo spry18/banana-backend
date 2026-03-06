@@ -1,0 +1,247 @@
+
+____________________________________________________________________________________
+Field Owner UI-to-API Cheat Sheet
+Global App Shell
+
+Login: POST /api/users/login
+
+App Header: GET /api/users/me (Need to add to JSON)
+
+Logout: POST /api/users/logout (Need to add to JSON)
+
+Page 1: Summary Dashboard
+
+API: GET /api/field-owner/dashboard (Populates the 6 KPI boxes and Recent Activity feed).
+
+Page 2: Create Farmer Enquiry
+
+Action 1 (On Load): Fetch dropdown lists for Generations, Agents, and Selectors. (Need a Master Dropdown API).
+
+Action 2 (Submit): POST /api/enquiries
+
+Page 3: All Plots
+
+API: GET /api/field-owner/plots
+
+Filtering: Use ?status=SELECTED, ?status=REJECTED, or ?search=Name to filter the lists.
+
+Page 4: Plot Details & Fix Rate
+
+Action 1 (On Load): Fetch the specific plot details and 24 photos. GET /api/field-owner/plots/:id (MISSING)
+
+Action 2 (Dropdowns): Fetch Companies list for the assigned company dropdown.
+
+Action 3 (Submit): PATCH /api/enquiries/fix-rate/:id
+
+Page 5: All Field Selector (Performance List)
+
+API: GET /api/field-owner/selectors-performance
+
+Filtering: Add ?startDate=...&endDate=... for the Date Wise tabs.
+
+Page 6: Detailed Report (Mileage)
+
+API: GET /api/field-owner/selector-mileage/:logId (Shows exact KM and Eicher details).
+_________________________________________________________________________________
+```text
+# Field Selector Mobile App: UI-to-API Mapping
+
+## 🔐 Global / App Initialization (Pre-Dashboard)
+- **Login Screen**: `POST /api/users/login` (Sends `mobileNo` and `password`, returns the Bearer Token).
+- **App Header/Profile**: `GET /api/users/me` (Fetches the user's name to display "Welcome back, [Name]" across the app).
+
+## 🌅 Page 1: Morning Report
+- **Action**: Submitting the start-of-day reading and advance.
+- **API**: `POST /api/daily-logs/start`
+- **Payload**: formdata containing `startKm`, `startKmPhoto`, and optionally `petrolAdvance` and `petrolReceiptPhoto`.
+
+## 📊 Page 2: Dashboard (Home)
+- **Action**: Displaying the KPI counters and Today's Activity feed.
+- **API**: `GET /api/field-selector/dashboard` (Returns total, assigned, selected, rejected, missed, visited counts and recent history).
+
+## 📋 Page 3: All Fields List
+- **Action**: Viewing and searching the assigned farmer plots.
+- **API**: `GET /api/field-selector/fields`
+- **Notes**: Pass query parameters like `?status=Assigned` or `?page=1` to filter the tabs (All, Assigned, Selected, Rejected).
+
+## 🚜 Page 4: Field Visit Data (The Inspection Form)
+- **Action 1 (On Page Load)**: Fetch the dropdown options (Packing sizes, Harvesting times, etc.).
+  - **API**: `GET /api/inspections/config`
+- **Action 2 (On Page Load)**: Fetch the specific farmer and crop data to display at the top.
+  - **API**: `GET /api/field-selector/fields/:id` (Using the ID of the clicked enquiry).
+- **Action 3 (On Submit)**: Sending the composition percentages, 20 photos, and final decision.
+  - **API**: `POST /api/inspections` (Payload mapped safely to the DB, sending exactly 'SELECTED' or 'REJECTED').
+
+## 🌙 Page 5 & 6: EOD Report & Success Screen
+- **Action 1 (Submit Report)**: Logging the final odometer reading to calculate total distance.
+  - **API**: `PATCH /api/daily-logs/end` (Sends `endKm` and `endKmPhoto`).
+- **Action 2 (Logout)**: Securely ending the session from either the form page or the success page.
+  - **API**: `POST /api/users/logout`
+```
+
+
+
+_________________________________________________________________________________
+
+perational Manager App: UI-to-API Mapping
+🔐 Global / App Initialization
+
+Login Screen: POST /api/users/login (Sends mobileNo and password, returns Bearer Token).
+
+App Header/Profile: GET /api/users/me (Fetches the OM's name to display "Good Morning, [Name]").
+
+Logout: POST /api/users/logout
+
+📊 Page 1: Operational Dashboard
+
+Action: Displaying the 5 KPI counters and Recent Activity feed.
+
+API: GET /api/operational-manager/dashboard
+
+📋 Page 2: Fixed Plots (Assignments List)
+
+Action: Viewing the pipeline of plots across the 3 tabs (Unassigned, Assigned, Complete).
+
+API: GET /api/operational-manager/plots
+
+Notes: Pass query parameters to switch tabs:
+
+?stage=Unassigned (Shows RATE_FIXED plots waiting for dispatch).
+
+?stage=Assigned (Shows active, dispatched trips).
+
+?stage=Complete (Shows finished trips).
+
+🚚 Pages 3 & 4: Assign Team & Planning Report
+
+Action 1 (On Page Load): Fetch the dropdown options for Munshi, Driver, and Company.
+
+API: GET /api/master-data/dropdowns
+
+Action 2 (Submit & Send Report): Assigning the team, setting times, and firing WhatsApp alerts to all parties.
+
+API: POST /api/logistics/assign
+
+Payload: JSON body containing enquiryId, companyId, munshiId, driverId, vehicleId, lightInTime, and lightOutTime.
+
+📡 Page 5: Monitor Execution (Live Tracking)
+
+Action: Viewing the list of active/completed logistics runs.
+
+API: GET /api/operational-manager/plots (Use ?stage=Assigned for Pending and ?stage=Complete for Completed).
+
+✅ Page 6: Execution Report (Approval Screen)
+
+Action 1 (On Page Load): Fetch the fully merged Execution Report (Combines Assignment, Driver Trip Data, and Munshi Packing Data).
+
+API: GET /api/execution/:id (Replace :id with the Assignment ID).
+
+Action 2 (Approve/Reject): Submitting the OM's final decision on the load and docs.
+
+API: PATCH /api/execution/:id/review
+
+Payload: JSON body with reviewStatus ("APPROVED" or "REJECTED") and reviewNote (string).
+
+⛽ Page 7: Diesel Advance (Form)
+
+Action: Logging a fuel advance and sending a WhatsApp receipt to the driver.
+
+API: POST /api/diesel-advance
+
+Payload: multipart/form-data containing driverId, vehicleNumber, amount, remark, and an optional receiptPhoto file.
+
+📖 Page 8: Diesel Advance History
+
+Action: Viewing the financial audit trail of all fuel given out.
+
+API: GET /api/diesel-advance (Supports pagination and filtering).
+
+🔔 Page 9: Notifications & Alerts
+
+Action: Viewing system updates (Trip Submitted, Delayed, etc.).
+
+API: GET /api/notifications
+
+
+
+
+_________________________________________________________________________________
+Munshi App: UI-to-API Mapping
+🔐 Global / App Initialization
+
+Login Screen: POST /api/users/login (Sends mobileNo and password, returns Bearer Token).
+
+App Header: GET /api/users/me (Fetches the Munshi's name to display in the header).
+
+Logout: POST /api/users/logout
+
+📊 Page 1: Dashboard & Active Tabs
+
+KPI Counters (Top): GET /api/munshi/dashboard
+
+Lists (Bottom): GET /api/munshi/assignments
+
+Pass ?status=PENDING (or IN_PROGRESS) for the "Pickups" tab.
+
+Pass ?status=COMPLETED for the "Completed" tab.
+
+Pass ?status=CANCELLED for the "Cancelled" tab.
+
+🚚 Page 2: Assign Pick-Up Driver
+
+Action 1 (Dropdown): GET /api/master-data/dropdowns (Filter the response for users with the "Driver" role).
+
+Action 2 (Submit): PATCH /api/munshi/assignments/:id/pickup (Sends the pickupDriverId).
+
+📦 Pages 3, 4 & 5: Packing Entry Form & Photos
+
+Action 1 (Brand Dropdown): GET /api/master-data/dropdowns (Use the new brands array).
+
+Action 2 (Submit Success/Cancel): POST /api/munshi/packing/:id
+
+Payload: multipart/form-data
+
+Photos: Append multiple files using the photos key (up to 10).
+
+Success Flow: Send the counts for box4H, box5H, box6H, box8H, boxCL, box7Kg, boxOther, plus wastageKg, wastageReason (if any), and remarks.
+
+Cancel Flow: Send ONLY the cancellationReason string to cancel the assignment.
+
+📈 Page 6: Monthly Report & Earnings
+
+Action: GET /api/munshi/reports
+
+Filters: Pass ?month=3&year=2026 to fetch specific months. Returns total earnings, box breakdown, and the daily harvesting log.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

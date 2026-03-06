@@ -71,6 +71,21 @@ const tripSchema = new mongoose.Schema(
         systemReportUrl: {
             type: String,
         },
+        // OM Review fields
+        reviewStatus: {
+            type: String,
+            enum: ['PENDING', 'APPROVED', 'REJECTED'],
+            default: 'PENDING',
+        },
+        reviewNote: {
+            type: String,
+            default: '',
+        },
+        reviewedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: null,
+        },
     },
     { timestamps: true }
 );

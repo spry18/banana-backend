@@ -59,8 +59,14 @@ const createAssignment = async (req, res) => {
         if (munshiId) {
             const munshi = await User.findById(munshiId);
             if (munshi && munshi.mobileNo) {
-                NotificationService.sendLogisticsAlert(munshi.mobileNo, 'Munshi', 'You have been assigned a new packing task.');
-                NotificationService.sendScheduleConfirmed(enquiry.farmerMobile, enquiry.farmerFirstName, new Date().toLocaleDateString(), munshi.firstName, munshi.mobileNo);
+                NotificationService.sendLogisticsAlert(munshi.mobileNo, 'Munshi', `You have been assigned a new packing task. Light-In: ${lightInTime}, Light-Out: ${lightOutTime}.`);
+                NotificationService.sendScheduleConfirmed(
+                    enquiry.farmerMobile,
+                    enquiry.farmerFirstName,
+                    `${lightInTime} – ${lightOutTime}`,  // actual scheduled window, not runtime date
+                    munshi.firstName,
+                    munshi.mobileNo
+                );
             }
         }
 

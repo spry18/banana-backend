@@ -22,7 +22,7 @@ const packingSchema = new mongoose.Schema(
         },
         brandId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Brand', // Assuming Brand model exists
+            ref: 'Brand',
             required: true,
         },
         box4H: {
@@ -45,6 +45,14 @@ const packingSchema = new mongoose.Schema(
             type: Number,
             default: 0,
         },
+        box7Kg: {
+            type: Number,
+            default: 0,
+        },
+        boxOther: {
+            type: Number,
+            default: 0,
+        },
         totalBoxes: {
             type: Number,
             required: true,
@@ -55,6 +63,23 @@ const packingSchema = new mongoose.Schema(
         },
         wastageReason: {
             type: String,
+        },
+        remarks: {
+            type: String,
+            default: '',
+        },
+        photos: {
+            type: [String],
+            default: [],
+        },
+        cancellationReason: {
+            type: String,
+            default: null,
+        },
+        status: {
+            type: String,
+            enum: ['PENDING', 'SUBMITTED', 'CANCELLED'],
+            default: 'PENDING',
         },
     },
     { timestamps: true }

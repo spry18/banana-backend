@@ -1,0 +1,555 @@
+{
+    "info": {
+        "name": "VaxTrack — Munshi (Packing Supervisor) Module",
+        "_postman_id": "vaxtrack-munshi-v1-2026",
+        "description": "Complete Munshi API collection for VaxTrack. Login first (folder 0) to auto-capture the token into {{munshiToken}}. Set {{baseUrl}} = http://localhost:5000 in your environment.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:5000",
+            "type": "string"
+        },
+        {
+            "key": "munshiToken",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "assignmentId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        },
+        {
+            "key": "pickupDriverId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        },
+        {
+            "key": "brandId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "0. Auth",
+            "item": [
+                {
+                    "name": "Login as Munshi",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.token) {",
+                                    "  pm.collectionVariables.set('munshiToken', res.token);",
+                                    "  console.log('Munshi Token captured:', res.token);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"mobileNo\": \"0000000004\",\n  \"password\": \"password123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "login"
+                            ]
+                        },
+                        "description": "Login and auto-capture token into {{munshiToken}} via test script."
+                    }
+                },
+                {
+                    "name": "GET My Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "me"
+                            ]
+                        },
+                        "description": "Returns the logged-in Munshi's profile (name, role, mobile). Use to display \"Welcome, [Name]\" in the app header."
+                    }
+                },
+                {
+                    "name": "POST Logout",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/logout",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "logout"
+                            ]
+                        },
+                        "description": "Writes a LOGOUT audit log entry. Client must delete the stored token after this call (JWT is stateless)."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "1. Dashboard",
+            "item": [
+                {
+                    "name": "GET Munshi Dashboard",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/munshi/dashboard",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "munshi",
+                                "dashboard"
+                            ]
+                        },
+                        "description": "Returns KPIs scoped to the logged-in Munshi: pickups (PENDING+IN_PROGRESS), completed, cancelled, total. Also returns activeAssignments[] populated with farmer, company, driver, vehicle, and light-in/out times."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "2. Assignments List",
+            "item": [
+                {
+                    "name": "GET Assignments — Pickups (PENDING + IN_PROGRESS)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/munshi/assignments?status=PENDING&page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "munshi",
+                                "assignments"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "PENDING",
+                                    "description": "Options: PENDING, IN_PROGRESS, COMPLETED, CANCELLED. Omit for all."
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        },
+                        "description": "Paginated list of assignments for the logged-in Munshi. Populated with farmer details, company, driver, pickup driver, vehicle. Use the status query param to power Pickups / Completed / Cancelled tabs."
+                    }
+                },
+                {
+                    "name": "GET Assignments — Completed",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/munshi/assignments?status=COMPLETED&page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "munshi",
+                                "assignments"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "COMPLETED"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        },
+                        "description": "Completed assignments — Munshi submitted packing report and assignment was marked COMPLETED."
+                    }
+                },
+                {
+                    "name": "GET Assignments — Cancelled",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/munshi/assignments?status=CANCELLED&page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "munshi",
+                                "assignments"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "CANCELLED"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        },
+                        "description": "Cancelled assignments — Munshi cancelled the packing from the field."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3. Assign Pickup Driver",
+            "item": [
+                {
+                    "name": "PATCH Assign Pickup Driver",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"pickupDriverId\": \"{{pickupDriverId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/munshi/assignments/{{assignmentId}}/pickup",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "munshi",
+                                "assignments",
+                                "{{assignmentId}}",
+                                "pickup"
+                            ]
+                        },
+                        "description": "Assigns a secondary pickup driver to the assignment.\n\nVALIDATION:\n- Assignment must belong to the logged-in Munshi\n- Assignment must not be COMPLETED or CANCELLED\n- pickupDriverId must be a user with a 'driver' role\n\nSide effects:\n- Transitions assignmentStatus from PENDING → IN_PROGRESS\n- Sends WhatsApp alert to the pickup driver"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3. Packing Report",
+            "item": [
+                {
+                    "name": "POST Submit Packing Report (Success)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "lineNo",
+                                    "value": "L-001",
+                                    "type": "text",
+                                    "description": "Line/plot number"
+                                },
+                                {
+                                    "key": "teamName",
+                                    "value": "Team Alpha",
+                                    "type": "text",
+                                    "description": "Packing team name"
+                                },
+                                {
+                                    "key": "brandId",
+                                    "value": "{{brandId}}",
+                                    "type": "text",
+                                    "description": "MongoDB _id of the brand"
+                                },
+                                {
+                                    "key": "box4H",
+                                    "value": "50",
+                                    "type": "text",
+                                    "description": "4H box count"
+                                },
+                                {
+                                    "key": "box5H",
+                                    "value": "30",
+                                    "type": "text",
+                                    "description": "5H box count"
+                                },
+                                {
+                                    "key": "box6H",
+                                    "value": "20",
+                                    "type": "text",
+                                    "description": "6H box count"
+                                },
+                                {
+                                    "key": "box8H",
+                                    "value": "10",
+                                    "type": "text",
+                                    "description": "8H box count"
+                                },
+                                {
+                                    "key": "boxCL",
+                                    "value": "5",
+                                    "type": "text",
+                                    "description": "CL box count"
+                                },
+                                {
+                                    "key": "box7Kg",
+                                    "value": "15",
+                                    "type": "text",
+                                    "description": "7Kg box count"
+                                },
+                                {
+                                    "key": "boxOther",
+                                    "value": "0",
+                                    "type": "text",
+                                    "description": "Other box count"
+                                },
+                                {
+                                    "key": "totalBoxes",
+                                    "value": "130",
+                                    "type": "text",
+                                    "description": "Must equal sum of all box types (50+30+20+10+5+15+0 = 130)"
+                                },
+                                {
+                                    "key": "wastageKg",
+                                    "value": "12",
+                                    "type": "text",
+                                    "description": "Wastage in kg"
+                                },
+                                {
+                                    "key": "wastageReason",
+                                    "value": "Overripe bunches",
+                                    "type": "text",
+                                    "description": "Required when wastageKg > 0"
+                                },
+                                {
+                                    "key": "remarks",
+                                    "value": "Good quality harvest. Minor insect damage on outer rows.",
+                                    "type": "text",
+                                    "description": "Optional Munshi notes"
+                                },
+                                {
+                                    "key": "photos",
+                                    "src": "",
+                                    "type": "file",
+                                    "description": "Packing photo 1 (up to 10 files allowed)"
+                                },
+                                {
+                                    "key": "photos",
+                                    "src": "",
+                                    "type": "file",
+                                    "description": "Packing photo 2"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/munshi/packing/{{assignmentId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "munshi",
+                                "packing",
+                                "{{assignmentId}}"
+                            ]
+                        },
+                        "description": "Submits a completed packing report for an assignment.\n\nSide effects:\n- Packing status → SUBMITTED\n- Logistics assignmentStatus → COMPLETED\n- WhatsApp packing summary sent to farmer\n\nVALIDATION:\n- Assignment must belong to logged-in Munshi\n- totalBoxes must equal the sum of all 7 box types\n- wastageReason required if wastageKg > 0\n- Prevents duplicate submissions"
+                    }
+                },
+                {
+                    "name": "POST Cancel Assignment (via Packing)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"cancellationReason\": \"Farmer refused at site. Bananas not ready for harvest — too green.\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/munshi/packing/{{assignmentId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "munshi",
+                                "packing",
+                                "{{assignmentId}}"
+                            ]
+                        },
+                        "description": "Cancels an assignment from the field.\n\nSide effects:\n- Packing status → CANCELLED\n- Logistics assignmentStatus → CANCELLED\n- Enquiry status → CANCELLED\n\nOnly send `cancellationReason` in the body — no box counts needed."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "4. Reports & Earnings",
+            "item": [
+                {
+                    "name": "GET Munshi Monthly Report",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/munshi/reports?month=3&year=2026",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "munshi",
+                                "reports"
+                            ],
+                            "query": [
+                                {
+                                    "key": "month",
+                                    "value": "3",
+                                    "description": "Month number (1-12). Defaults to current month."
+                                },
+                                {
+                                    "key": "year",
+                                    "value": "2026",
+                                    "description": "Year. Defaults to current year."
+                                }
+                            ]
+                        },
+                        "description": "Returns monthly aggregation for the logged-in Munshi:\n- summary.totalRecords, totalBoxes, totalWasteKg\n- summary.boxBreakdown (all 7 types)\n- dailyHarvestingLog[] grouped by date, each containing per-entry details (line, team, brand, boxes, wastage)"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "5. Master Data",
+            "item": [
+                {
+                    "name": "GET Form Dropdowns (Pickup Drivers, Companies, etc.)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/master-data/dropdowns",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "master-data",
+                                "dropdowns"
+                            ]
+                        },
+                        "description": "Use on form load to populate the Pickup Driver dropdown. Returns: companies[], agents[], generations[], selectors[] — filter for Driver roles on the client side."
+                    }
+                }
+            ]
+        }
+    ]
+}
