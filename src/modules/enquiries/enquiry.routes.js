@@ -25,7 +25,7 @@ router
 
 router
     .route('/:id')
-    .get(getEnquiryById)
+    .get(authorize('Admin', 'Field Owner', 'Operational Manager'), getEnquiryById)
     .put(authorize('Admin', 'Field Owner'), updateEnquiry);
 
 module.exports = router;

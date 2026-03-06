@@ -3,6 +3,7 @@ const Brand = require('./brand.model');
 const Agent = require('./agent.model');
 const Vehicle = require('./vehicle.model');
 const Generation = require('./generation.model');
+const User = require('../users/user.model');
 
 // --- Companies ---
 const createCompany = async (req, res) => {
@@ -209,6 +210,32 @@ const deleteGeneration = async (req, res) => {
     }
 };
 
+// --- Form Dropdowns (single aggregated endpoint for all UI select boxes) ---
+// @desc    Get all dropdown data needed for Create Enquiry and Fix Rate forms
+// @route   GET /api/master-data/dropdowns
+// @access  Protected (Admin, Field Owner, Operational Manager)
+const getFormDropdowns = async (req, res) => {
+    try {
+        // Run all queries in parallel for best performance
+        const [companies, agents, generations, selectors] = await Promise.all([
+            Company.find({ isActive: true }).select('_id companyName legalName headquarters').lean(),
+            Agent.find({ isActive: true }).select('_id agentName mobileNo location').lean(),
+            Generation.find({ isActive: true }).select('_id name description').lean(),
+            User.find({ role: 'Field Selector', isActive: true }).select('_id firstName lastName mobileNo').lean(),
+        ]);
+
+        res.status(200).json({
+            companies,
+            agents,
+            generations,
+            selectors,
+        });
+    } catch (error) {
+        console.error('Error fetching form dropdowns:', error);
+        res.status(500).json({ message: 'Server error while fetching form dropdowns' });
+    }
+};
+
 module.exports = {
     createCompany,
     getCompanies,
@@ -230,4 +257,5 @@ module.exports = {
     getGenerations,
     updateGeneration,
     deleteGeneration,
+    getFormDropdowns,
 };

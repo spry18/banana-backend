@@ -89,6 +89,54 @@
                     }
                 },
                 {
+                    "name": "GET My Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "me"
+                            ]
+                        },
+                        "description": "Returns the logged-in Admin's profile."
+                    }
+                },
+                {
+                    "name": "POST Logout",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/logout",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "logout"
+                            ]
+                        },
+                        "description": "Writes a LOGOUT audit log entry. Client must delete the stored token after this call."
+                    }
+                },
+                {
                     "name": "Register Admin User",
                     "request": {
                         "method": "POST",
@@ -227,6 +275,30 @@
         {
             "name": "2. Enquiry Actions (Admin)",
             "item": [
+                {
+                    "name": "GET Single Enquiry Details (Plots + Inspection + Photos)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries/{{enquiryId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries",
+                                "{{enquiryId}}"
+                            ]
+                        },
+                        "description": "Returns the full enquiry record populated with: generation, agent, fieldOwner, assignedSelector, company — plus the joined Inspection record (all 20 photos + composition percentages)."
+                    }
+                },
                 {
                     "name": "POST Create Enquiry (Admin)",
                     "request": {
@@ -593,6 +665,30 @@
         {
             "name": "5. Master Setup",
             "item": [
+                {
+                    "name": "GET Form Dropdowns (Companies, Agents, Generations, Selectors)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/master-data/dropdowns",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "master-data",
+                                "dropdowns"
+                            ]
+                        },
+                        "description": "Single endpoint to populate all UI select boxes in Create Enquiry and Fix Rate forms. Returns: companies[], agents[], generations[], selectors[].\n\nAccess: Admin, Field Owner, Operational Manager."
+                    }
+                },
                 {
                     "name": "AGENTS",
                     "item": [

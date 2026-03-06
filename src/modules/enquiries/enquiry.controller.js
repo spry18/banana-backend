@@ -204,17 +204,40 @@ const updateEnquiry = async (req, res) => {
     }
 };
 
+// @desc    Get a single enquiry by ID with full details (for plot detail view)
+// @route   GET /api/enquiries/:id
+// @access  Protected (Admin, Field Owner, Operational Manager)
 const getEnquiryById = async (req, res) => {
     try {
         const enquiry = await Enquiry.findById(req.params.id)
+            .populate('generation', 'name description')
+            .populate('agentId', 'agentName mobileNo location')
+            .populate('fieldOwnerId', 'firstName lastName mobileNo')
             .populate('assignedSelectorId', 'firstName lastName mobileNo')
-            .populate('agentId', 'name')
-            .populate('generation', 'name');
+            .populate('companyId', 'companyName legalName headquarters');
 
         if (!enquiry) {
             return res.status(404).json({ message: 'Enquiry not found' });
         }
-        res.status(200).json(enquiry);
+
+        // Field Owner ownership guard — they may only view their own plots
+        if (
+            req.user.role === 'Field Owner' &&
+            enquiry.fieldOwnerId?._id?.toString() !== req.user._id.toString()
+        ) {
+            return res.status(403).json({ message: 'Forbidden: This plot does not belong to you' });
+        }
+
+        // Join the inspection record for this enquiry (photos + composition data)
+        const Inspection = require('../inspections/inspection.model');
+        const inspection = await Inspection.findOne({ enquiryId: enquiry._id })
+            .populate('selectorId', 'firstName lastName mobileNo')
+            .lean();
+
+        res.status(200).json({
+            ...enquiry.toObject(),
+            inspection: inspection || null,
+        });
     } catch (error) {
         console.error('Error fetching enquiry by ID:', error);
         if (error.name === 'CastError') {

@@ -92,6 +92,54 @@
                             ]
                         }
                     }
+                },
+                {
+                    "name": "GET My Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "me"
+                            ]
+                        },
+                        "description": "Returns the logged-in FO's profile (name, role, mobile). Use to display \"Welcome, [Name]\" in the app header."
+                    }
+                },
+                {
+                    "name": "POST Logout",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/logout",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "logout"
+                            ]
+                        },
+                        "description": "Writes a LOGOUT audit log entry. After 200, the client must delete the stored token to complete logout (JWT is stateless)."
+                    }
                 }
             ]
         },
@@ -127,6 +175,30 @@
         {
             "name": "2. Enquiry Creation (Page 2)",
             "item": [
+                {
+                    "name": "GET Form Dropdowns (Agents, Generations, Selectors, Companies)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/master-data/dropdowns",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "master-data",
+                                "dropdowns"
+                            ]
+                        },
+                        "description": "Call on form load to populate all select boxes. Returns: companies[], agents[], generations[], selectors[]."
+                    }
+                },
                 {
                     "name": "POST Create Enquiry (Field Owner)",
                     "event": [
@@ -364,6 +436,30 @@
         {
             "name": "4. Commercials — Fix Rate (Page 4)",
             "item": [
+                {
+                    "name": "GET Single Plot Details (with Inspection & Photos)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries/{{enquiryId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries",
+                                "{{enquiryId}}"
+                            ]
+                        },
+                        "description": "Fetches the full plot record plus its joined Inspection (photos + composition). Returns 403 if this plot doesn't belong to the logged-in FO."
+                    }
+                },
                 {
                     "name": "PATCH Fix Rate (Field Owner)",
                     "request": {

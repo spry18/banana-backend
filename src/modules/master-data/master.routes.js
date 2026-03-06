@@ -22,30 +22,34 @@ const {
     getGenerations,
     updateGeneration,
     deleteGeneration,
+    getFormDropdowns,
 } = require('./master.controller');
 
-// Apply protection and Admin authorization to all routes in this module
+// Apply protection to all routes
 router.use(protect);
-router.use(authorize('Admin'));
 
-// Companies
-router.route('/companies').post(createCompany).get(getCompanies);
+// GET /api/master-data/dropdowns
+// Open to any authenticated role that needs to populate UI forms
+router.get('/dropdowns', authorize('Admin', 'Field Owner', 'Operational Manager'), getFormDropdowns);
+
+// Companies — Admin only
+router.route('/companies').post(authorize('Admin'), createCompany).get(authorize('Admin'), getCompanies);
 router.route('/companies/:id').put(authorize('Admin'), updateCompany).delete(authorize('Admin'), deleteCompany);
 
-// Brands
-router.route('/brands').post(createBrand).get(getBrands);
+// Brands — Admin only
+router.route('/brands').post(authorize('Admin'), createBrand).get(authorize('Admin'), getBrands);
 router.route('/brands/:id').put(authorize('Admin'), updateBrand).delete(authorize('Admin'), deleteBrand);
 
-// Agents
-router.route('/agents').post(createAgent).get(getAgents);
+// Agents — Admin only
+router.route('/agents').post(authorize('Admin'), createAgent).get(authorize('Admin'), getAgents);
 router.route('/agents/:id').put(authorize('Admin'), updateAgent).delete(authorize('Admin'), deleteAgent);
 
-// Vehicles
-router.route('/vehicles').post(createVehicle).get(getVehicles);
+// Vehicles — Admin only
+router.route('/vehicles').post(authorize('Admin'), createVehicle).get(authorize('Admin'), getVehicles);
 router.route('/vehicles/:id').put(authorize('Admin'), updateVehicle).delete(authorize('Admin'), deleteVehicle);
 
-// Generations
-router.route('/generations').post(createGeneration).get(getGenerations);
+// Generations — Admin only
+router.route('/generations').post(authorize('Admin'), createGeneration).get(authorize('Admin'), getGenerations);
 router.route('/generations/:id').put(authorize('Admin'), updateGeneration).delete(authorize('Admin'), deleteGeneration);
 
 module.exports = router;
