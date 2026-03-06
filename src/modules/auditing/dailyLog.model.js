@@ -41,6 +41,15 @@ const dailyLogSchema = new mongoose.Schema(
             type: String,
             default: null,
         },
+        // Field Selector morning report — petrol expense tracking
+        petrolAdvance: {
+            type: Number,
+            default: null,
+        },
+        petrolReceiptPhoto: {
+            type: String,
+            default: null,
+        },
     },
     { timestamps: true }
 );

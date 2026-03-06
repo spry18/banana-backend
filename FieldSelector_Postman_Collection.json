@@ -1,0 +1,562 @@
+{
+    "info": {
+        "name": "Field Selector — Mobile App (Complete)",
+        "_postman_id": "fs-mobile-banana-v1",
+        "description": "Complete MVP suite for the Field Selector Mobile App.\n\nSetup:\n1. Set `baseUrl` → e.g. http://localhost:5000\n2. Hit Login → copy the returned token\n3. Paste it into the `selectorToken` collection variable\n4. All other requests are pre-wired to use that token.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:5000",
+            "type": "string"
+        },
+        {
+            "key": "selectorToken",
+            "value": "PASTE_JWT_TOKEN_HERE",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "1 · Authentication",
+            "item": [
+                {
+                    "name": "Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"mobileNo\": \"0000000002\",\n    \"password\": \"password123\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "login"
+                            ]
+                        },
+                        "description": "Public endpoint — no token needed.\n\nAfter a successful login, copy the `token` from the response and paste it into the collection variable `selectorToken`."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get My Profile",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{selectorToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "me"
+                            ]
+                        },
+                        "description": "Returns the logged-in user's full profile object. Useful for displaying name and role in the app header."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "2 · Daily Operations",
+            "item": [
+                {
+                    "name": "Start Day (Morning Report)",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{selectorToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "startKm",
+                                    "value": "15200",
+                                    "description": "Odometer reading at start of day — REQUIRED",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "vehicleNumber",
+                                    "value": "MH12AB1234",
+                                    "description": "Vehicle reg number — optional",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "petrolAdvance",
+                                    "value": "1000",
+                                    "description": "Petrol advance amount in ₹ — optional",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "startKmPhoto",
+                                    "description": "Odometer photo at start of day — REQUIRED. Attach an image file.",
+                                    "type": "file",
+                                    "src": []
+                                },
+                                {
+                                    "key": "petrolReceiptPhoto",
+                                    "description": "Petrol receipt photo — optional. Attach an image file.",
+                                    "type": "file",
+                                    "src": []
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/daily-logs/start",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "daily-logs",
+                                "start"
+                            ]
+                        },
+                        "description": "Submits the morning report to start the day's log.\n\n- Will return 400 if the selector already has an active log for today.\n- `petrolAdvance` and `petrolReceiptPhoto` are optional — only for Field Selectors claiming petrol expenses."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "End Day (EOD Report)",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{selectorToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PATCH",
+                        "header": [],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "endKm",
+                                    "value": "15450",
+                                    "description": "Odometer reading at end of day — REQUIRED. Must be greater than startKm.",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "endKmPhoto",
+                                    "description": "Odometer photo at end of day — REQUIRED. Attach an image file.",
+                                    "type": "file",
+                                    "src": []
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/daily-logs/end",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "daily-logs",
+                                "end"
+                            ]
+                        },
+                        "description": "Closes the active daily log. Calculates total KM driven from startKm to endKm.\n\n- Returns 404 if no active (STARTED) log exists for today.\n- Returns 400 if `endKm` is not greater than `startKm`.\n\n⚠️ This is a PATCH request, not PUT."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "3 · Dashboard & Assigned Fields",
+            "item": [
+                {
+                    "name": "Get Dashboard KPIs",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{selectorToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-selector/dashboard",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-selector",
+                                "dashboard"
+                            ]
+                        },
+                        "description": "Returns a scoped dashboard for the logged-in selector only.\n\nResponse shape:\n```json\n{\n  \"kpis\": {\n    \"total\": 42,\n    \"assigned\": 10,\n    \"selected\": 18,\n    \"rejected\": 7,\n    \"missed\": 3,\n    \"visited\": 25\n  },\n  \"recentActivity\": [ ... last 5 enquiries ... ]\n}\n```"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Assigned Fields (All)",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{selectorToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-selector/fields?page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-selector",
+                                "fields"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "PENDING",
+                                    "description": "Filter by status. Values: PENDING | SELECTED | REJECTED | RATE_FIXED | ASSIGNED | COMPLETED | CLOSED. Comma-separate for multiple: SELECTED,REJECTED",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "search",
+                                    "value": "Ravi",
+                                    "description": "Case-insensitive search on farmerFirstName, farmerLastName, location, subLocation, enquiryId",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        },
+                        "description": "Paginated list of all enquiries assigned to the logged-in selector.\n\nOptional query params:\n- `status` — e.g. `PENDING` or comma-separated `SELECTED,REJECTED`\n- `search` — free text search across farmer name and location\n- `page` — default 1\n- `limit` — default 20"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Single Field Details",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{selectorToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-selector/fields/REPLACE_WITH_ENQUIRY_OBJECT_ID",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-selector",
+                                "fields",
+                                "REPLACE_WITH_ENQUIRY_OBJECT_ID"
+                            ]
+                        },
+                        "description": "Fetches full details of one specific enquiry before the selector fills in the inspection form.\n\nSecurity: Returns 404 if the enquiry exists but is NOT assigned to the logged-in selector — prevents accessing other selectors' plots.\n\n⚠️ Replace `REPLACE_WITH_ENQUIRY_OBJECT_ID` with a real MongoDB ObjectId from the fields list."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "4 · Inspection Submission",
+            "item": [
+                {
+                    "name": "Submit Inspection (SELECTED)",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{selectorToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "enquiryId",
+                                    "value": "REPLACE_WITH_ENQUIRY_OBJECT_ID",
+                                    "description": "MongoDB ObjectId of the target Enquiry — REQUIRED",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "harvestingStage",
+                                    "value": "1st",
+                                    "description": "Stage of harvest: 1st or 2nd — REQUIRED",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "volumeBox",
+                                    "value": "800-1000",
+                                    "description": "Volume box range (UI name). Backend maps this → DB field 'volumeBoxRange' — REQUIRED",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "recoveryPercent",
+                                    "value": "82",
+                                    "description": "Recovery percentage — REQUIRED",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "packingSize",
+                                    "value": "13kg",
+                                    "description": "Enum: 5kg | 7kg | 13kg | 13.5kg | 14kg | 16kg — REQUIRED",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "chellingPercent",
+                                    "value": "5",
+                                    "description": "Chelling % (UI name). Backend maps this → DB field 'chelling' — REQUIRED",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "spiklingPercent",
+                                    "value": "3",
+                                    "description": "Spikling % (UI name). Backend maps this → DB field 'spikling' — REQUIRED",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "pulpePercent",
+                                    "value": "2",
+                                    "description": "Pulpe % (UI name). Backend maps this → DB field 'pulpe' — REQUIRED",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "phreepsPercent",
+                                    "value": "1",
+                                    "description": "Phreeps % (UI name). Backend maps this → DB field 'phreeps' — REQUIRED",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "harvestingTime",
+                                    "value": "After 3-4 days",
+                                    "description": "Enum: Immediate | After 3-4 days | After 1 week — REQUIRED",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "generalNotes",
+                                    "value": "Good quality plot. Moderate chelling. Ready soon.",
+                                    "description": "Free text notes — optional",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "isThroughPartner",
+                                    "value": "false",
+                                    "description": "Boolean — set true if sourced through an agent partner — optional",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "partnerName",
+                                    "value": "",
+                                    "description": "Partner agent name — only if isThroughPartner is true — optional",
+                                    "type": "text",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "decision",
+                                    "value": "SELECTED",
+                                    "description": "Send exactly 'SELECTED' or 'REJECTED'. Backend maps SELECTED → DB 'APPROVED' and sets Enquiry.status = 'SELECTED' — REQUIRED",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "photos",
+                                    "description": "Plot photo #1 — REQUIRED. In Postman, duplicate this row (up to 20 times) each with key 'photos' and type File to send multiple photos.",
+                                    "type": "file",
+                                    "src": []
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/inspections",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "inspections"
+                            ]
+                        },
+                        "description": "Submits a complete plot inspection with up to 20 photos.\n\n**Photo Upload Instructions for Postman:**\nIn the formdata body, add multiple rows all with the same key `photos`, each set to type `File`. Postman v10+ sends these as a proper array.\n\n**Payload Mapping (handled automatically by backend):**\n\n| Frontend field | Stored in DB as |\n|---|---|\n| volumeBox | volumeBoxRange |\n| chellingPercent | chelling |\n| spiklingPercent | spikling |\n| pulpePercent | pulpe |\n| phreepsPercent | phreeps |\n| decision: SELECTED | decision: APPROVED → Enquiry.status = SELECTED |\n| decision: REJECTED | decision: REJECTED → Enquiry.status = REJECTED |\n\n**Route Note:** `enquiryId` is sent in the request body (not the URL path) to protect existing Admin integrations."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Submit Inspection (REJECTED)",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{selectorToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "enquiryId",
+                                    "value": "REPLACE_WITH_ENQUIRY_OBJECT_ID",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "harvestingStage",
+                                    "value": "2nd",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "volumeBox",
+                                    "value": "400-600",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "recoveryPercent",
+                                    "value": "55",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "packingSize",
+                                    "value": "7kg",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "chellingPercent",
+                                    "value": "28",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "spiklingPercent",
+                                    "value": "20",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "pulpePercent",
+                                    "value": "15",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "phreepsPercent",
+                                    "value": "10",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "harvestingTime",
+                                    "value": "After 1 week",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "generalNotes",
+                                    "value": "High chelling and spikling. Plot not viable for purchase at current condition.",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "isThroughPartner",
+                                    "value": "false",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "decision",
+                                    "value": "REJECTED",
+                                    "description": "Sends 'REJECTED' — backend sets Enquiry.status = REJECTED and fires a WhatsApp rejection notification to the farmer.",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "photos",
+                                    "description": "Rejection evidence photo. Add multiple 'photos' rows (up to 20) for more images.",
+                                    "type": "file",
+                                    "src": []
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/inspections",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "inspections"
+                            ]
+                        },
+                        "description": "Submits a REJECTED inspection.\n\nOn REJECTED:\n1. Inspection saved with `decision: REJECTED`\n2. Parent `Enquiry.status` set to `REJECTED`\n3. WhatsApp rejection notification fired to the farmer's mobile number"
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ]
+}

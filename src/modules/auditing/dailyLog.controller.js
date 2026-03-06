@@ -5,10 +5,14 @@ const DailyLog = require('./dailyLog.model');
 // @access  Protected
 const startDay = async (req, res) => {
     try {
-        const { startKm, vehicleNumber } = req.body;
+        const { startKm, vehicleNumber, petrolAdvance } = req.body;
 
-        if (!startKm || !req.file) {
-            return res.status(400).json({ message: 'startKm and startMeterPhoto are required' });
+        // req.files is now an object keyed by field name (from upload.fields)
+        const startKmPhotoFile = req.files?.startKmPhoto?.[0];
+        const petrolReceiptPhotoFile = req.files?.petrolReceiptPhoto?.[0];
+
+        if (!startKm || !startKmPhotoFile) {
+            return res.status(400).json({ message: 'startKm and startKmPhoto are required' });
         }
 
         const startOfToday = new Date();
@@ -29,8 +33,13 @@ const startDay = async (req, res) => {
         const dailyLog = await DailyLog.create({
             userId: req.user._id,
             startKm,
-            startMeterPhotoUrl: `/uploads/${req.file.filename}`,
+            startMeterPhotoUrl: `/uploads/${startKmPhotoFile.filename}`,
             vehicleNumber: vehicleNumber || null,
+            // Petrol advance fields (optional — only submitted by Field Selectors)
+            petrolAdvance: petrolAdvance ? Number(petrolAdvance) : null,
+            petrolReceiptPhoto: petrolReceiptPhotoFile
+                ? `/uploads/${petrolReceiptPhotoFile.filename}`
+                : null,
         });
 
         res.status(201).json(dailyLog);
@@ -47,8 +56,9 @@ const endDay = async (req, res) => {
     try {
         const { endKm } = req.body;
 
+        // route uses upload.single('endKmPhoto') — file lands on req.file
         if (!endKm || !req.file) {
-            return res.status(400).json({ message: 'endKm and endMeterPhoto are required' });
+            return res.status(400).json({ message: 'endKm and endKmPhoto are required' });
         }
 
         const startOfToday = new Date();

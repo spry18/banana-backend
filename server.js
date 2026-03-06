@@ -60,6 +60,9 @@ app.use('/api/admin', require('./src/modules/admin/admin.routes'));
 // Field Owner module
 app.use('/api/field-owner', require('./src/modules/field-owner/field-owner.routes'));
 
+// Field Selector module
+app.use('/api/field-selector', require('./src/modules/field-selector/field-selector.routes'));
+
 // Phase 6: Notification feed + WhatsApp trigger
 app.use('/api/notifications', require('./src/modules/notifications/notification.routes'));
 

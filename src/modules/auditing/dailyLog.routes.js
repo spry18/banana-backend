@@ -6,8 +6,13 @@ const upload = require('../../middlewares/upload.middleware');
 
 router.use(protect);
 
-router.post('/start', upload.single('startMeterPhoto'), startDay);
-router.put('/end', upload.single('endMeterPhoto'), endDay);
+// Accept two named files: odometer photo + petrol receipt photo
+router.post('/start', upload.fields([
+    { name: 'startKmPhoto', maxCount: 1 },
+    { name: 'petrolReceiptPhoto', maxCount: 1 },
+]), startDay);
+// PATCH (not PUT) — partial update of existing day log
+router.patch('/end', upload.single('endKmPhoto'), endDay);
 router.get('/', authorize('Admin', 'Operational Manager'), getLogs);
 
 module.exports = router;

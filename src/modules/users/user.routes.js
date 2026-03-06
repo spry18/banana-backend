@@ -8,6 +8,7 @@ const {
     getAllUsers,
     toggleUserStatus,
     updateUser,
+    logoutUser,
 } = require('./user.controller');
 
 // Public
@@ -23,5 +24,8 @@ router.get('/me', protect, getMe);
 router.get('/', protect, authorize('Admin'), getAllUsers);
 router.patch('/:id/status', protect, authorize('Admin'), toggleUserStatus);
 router.put('/:id', protect, authorize('Admin'), updateUser);
+
+// Logout (requires valid token so audit log can be written)
+router.post('/logout', protect, logoutUser);
 
 module.exports = router;

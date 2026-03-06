@@ -289,6 +289,33 @@ const updateUser = async (req, res) => {
     }
 };
 
+// @desc    Logout user
+// @route   POST /api/users/logout
+// @access  Private
+//
+// Auth strategy note: Our JWTs are stateless — there is no server-side session
+// or token blacklist. True invalidation requires the mobile client to delete
+// the stored token after this call returns 200. This endpoint exists so we can:
+//   1. Write a LOGOUT system audit log entry for traceability.
+//   2. Give the mobile app a clean, explicit logout handshake endpoint.
+const logoutUser = async (req, res) => {
+    try {
+        await logSystemAction(
+            req.user._id,
+            'LOGOUT',
+            'Users',
+            req.user._id,
+            'User logged out of the system'
+        );
+
+        res.status(200).json({
+            message: 'Logged out successfully. Please delete the token on the client.',
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error during logout', error: error.message });
+    }
+};
+
 module.exports = {
     registerUser,
     loginUser,
@@ -296,4 +323,5 @@ module.exports = {
     getAllUsers,
     toggleUserStatus,
     updateUser,
+    logoutUser,
 };
