@@ -6,6 +6,7 @@ const {
     getFOPlots,
     getSelectorsPerformance,
     getSelectorMileage,
+    getFOSelectors,
 } = require('./field-owner.controller');
 
 router.use(protect);
@@ -22,5 +23,8 @@ router.get('/selectors-performance', getSelectorsPerformance);
 
 // GET /api/field-owner/selector-mileage/:logId
 router.get('/selector-mileage/:logId', getSelectorMileage);
+
+// GET /api/field-owner/selectors
+router.get('/selectors', getFOSelectors);
 
 module.exports = router;

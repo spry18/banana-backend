@@ -17,5 +17,21 @@
                     "isActive": true
             }
 
-2]
+2] get all field selector API (Protected - Field Owner, Admin)
+        GET http://localhost:5000/api/field-owner/selectors
 
+        Headers:
+            Authorization: Bearer <your_jwt_token>
+
+        Response: 
+           {
+                "data": [
+               {
+                        "_id": "69a87718f30bf72e0f978ba7",
+                        "firstName": "Vaishnav",
+                        "lastName": "Kadam",
+                        "mobileNo": "0000000002",
+                        "role": "Field Selector"
+                }
+            ]
+        }

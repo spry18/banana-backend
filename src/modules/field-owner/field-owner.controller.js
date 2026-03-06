@@ -1,6 +1,7 @@
 const Enquiry = require('../enquiries/enquiry.model');
 const Inspection = require('../inspections/inspection.model');
 const DailyLog = require('../auditing/dailyLog.model');
+const User = require('../users/user.model');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper: build base query scoped to this FO
@@ -177,7 +178,6 @@ const getSelectorsPerformance = async (req, res) => {
         const kmMap = Object.fromEntries(kmStats.map((s) => [s._id.toString(), s]));
         const plotMap = Object.fromEntries(plotStats.map((s) => [s._id.toString(), s]));
 
-        const User = require('../users/user.model');
         const selectors = await User.find({ _id: { $in: enquiries } }).select('firstName lastName mobileNo role');
 
         const data = selectors.map((user) => {
@@ -254,9 +254,26 @@ const getSelectorMileage = async (req, res) => {
     }
 };
 
+// @desc    Get all active Selectors for Field Owner assignment
+// @route   GET /api/field-owner/selectors
+// @access  Private (Field Owner, Admin)
+const getFOSelectors = async (req, res) => {
+    try {
+        const selectors = await User.find({ role: 'Field Selector', isActive: true })
+            .select('firstName lastName mobileNo role')
+            .sort({ firstName: 1, lastName: 1 });
+
+        res.json({ data: selectors });
+    } catch (error) {
+        console.error('Error fetching selectors:', error);
+        res.status(500).json({ message: 'Server error fetching selectors', error: error.message });
+    }
+};
+
 module.exports = {
     getFODashboard,
     getFOPlots,
     getSelectorsPerformance,
     getSelectorMileage,
+    getFOSelectors,
 };
