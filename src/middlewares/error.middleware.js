@@ -14,6 +14,13 @@ const errorHandler = (err, req, res, next) => {
         message = 'Resource not found';
     }
 
+    // Handle Mongoose Duplicate Key Error
+    if (err.code === 11000) {
+        statusCode = 400;
+        const field = Object.keys(err.keyValue)[0];
+        message = `Duplicate value entered for field: ${field}. Please use another value.`;
+    }
+
     res.status(statusCode).json({
         message: message,
         stack: process.env.NODE_ENV === 'production' ? null : err.stack,

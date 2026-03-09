@@ -39,8 +39,8 @@ const updateCompany = async (req, res) => {
 
 const deleteCompany = async (req, res) => {
     try {
-        await Company.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Company deleted' });
+        await Company.findByIdAndUpdate(req.params.id, { isActive: false });
+        res.json({ message: 'Company deleted (soft)' });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -80,8 +80,8 @@ const updateBrand = async (req, res) => {
 
 const deleteBrand = async (req, res) => {
     try {
-        await Brand.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Brand deleted' });
+        await Brand.findByIdAndUpdate(req.params.id, { isActive: false });
+        res.json({ message: 'Brand deleted (soft)' });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -121,8 +121,8 @@ const updateAgent = async (req, res) => {
 
 const deleteAgent = async (req, res) => {
     try {
-        await Agent.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Agent deleted' });
+        await Agent.findByIdAndUpdate(req.params.id, { isActive: false });
+        res.json({ message: 'Agent deleted (soft)' });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -162,8 +162,8 @@ const updateVehicle = async (req, res) => {
 
 const deleteVehicle = async (req, res) => {
     try {
-        await Vehicle.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Vehicle deleted' });
+        await Vehicle.findByIdAndUpdate(req.params.id, { isActive: false });
+        res.json({ message: 'Vehicle deleted (soft)' });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -203,8 +203,8 @@ const updateGeneration = async (req, res) => {
 
 const deleteGeneration = async (req, res) => {
     try {
-        await Generation.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Generation deleted' });
+        await Generation.findByIdAndUpdate(req.params.id, { isActive: false });
+        res.json({ message: 'Generation deleted (soft)' });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }

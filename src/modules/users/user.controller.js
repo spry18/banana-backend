@@ -61,16 +61,18 @@ const loginUser = async (req, res) => {
         const { mobileNo, password } = req.body;
 
         // --- HARDCODED ADMIN LOGIN FOR DEV/TESTING ---
-        if (mobileNo === '9999999999' && password === 'password123') {
-            const adminId = '111111111111111111111111'; // Mock 24-char hex ObjectId
-            return res.json({
-                _id: adminId,
-                firstName: 'Super',
-                lastName: 'Admin',
-                mobileNo: '9999999999',
-                role: 'Admin',
-                token: generateToken(adminId, 'Admin'),
-            });
+        if (process.env.NODE_ENV !== 'production') {
+            if (mobileNo === '9999999999' && password === 'password123') {
+                const adminId = '111111111111111111111111'; // Mock 24-char hex ObjectId
+                return res.json({
+                    _id: adminId,
+                    firstName: 'Super',
+                    lastName: 'Admin',
+                    mobileNo: '9999999999',
+                    role: 'Admin',
+                    token: generateToken(adminId, 'Admin'),
+                });
+            }
         }
         // ---------------------------------------------
 

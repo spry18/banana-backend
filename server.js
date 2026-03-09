@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
 const helmet = require('helmet');
@@ -7,6 +8,26 @@ const rateLimit = require('express-rate-limit');
 const mongoSanitize = require('express-mongo-sanitize');
 const connectDB = require('./src/config/db');
 const { notFound, errorHandler } = require('./src/middlewares/error.middleware');
+
+// Handle uncaught exceptions gracefully
+process.on('uncaughtException', (err) => {
+    console.error('UNCAUGHT EXCEPTION! 💥 Shutting down...');
+    console.error(err.name, err.message, err.stack);
+    process.exit(1);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err) => {
+    console.error('UNHANDLED REJECTION! 💥 Shutting down...');
+    console.error(err.name, err.message, err.stack);
+    // If using a server, gracefully close it before exiting
+    // server.close(() => {
+    process.exit(1);
+    // });
+});
+
+// Load Env variables
+dotenv.config();
 
 // Connect to the database
 connectDB();
@@ -65,6 +86,9 @@ app.use('/api/operational-manager', require('./src/modules/operational-manager/o
 
 // Munshi (Packing Supervisor) module
 app.use('/api/munshi', require('./src/modules/munshi/munshi.routes'));
+
+// Driver (Eicher & Pickup) module
+app.use('/api/driver', require('./src/modules/driver/driver.routes'));
 
 // Phase 4+7: Admin aggregation routes (dashboard-stats, alerts, field-selection, performance)
 app.use('/api/admin', require('./src/modules/admin/admin.routes'));

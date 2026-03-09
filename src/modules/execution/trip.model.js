@@ -1,5 +1,16 @@
 const mongoose = require('mongoose');
 
+const routeSubSchema = new mongoose.Schema(
+    {
+        startPoint: { type: String, required: true },
+        midPoint: { type: String, default: '' },
+        destination: { type: String, required: true },
+        task: { type: String, default: '' },
+        teamName: { type: String, default: '' },
+    },
+    { _id: false }
+);
+
 const tripSchema = new mongoose.Schema(
     {
         driverId: {
@@ -12,6 +23,11 @@ const tripSchema = new mongoose.Schema(
             ref: 'Logistics',
             required: true,
         },
+        driverType: {
+            type: String,
+            enum: ['Eicher', 'Pickup'],
+            required: true,
+        },
         isBackupTrip: {
             type: Boolean,
             default: false,
@@ -22,19 +38,25 @@ const tripSchema = new mongoose.Schema(
             default: null,
         },
         teamMembers: {
-            type: String, // E.g., names of helpers
-            required: true,
+            type: String,
+            default: '',
         },
+        // Flat route fields (Eicher — single route)
         startRoute: {
             type: String,
-            required: true,
+            default: '',
         },
         midRoute: {
             type: String,
         },
         destination: {
             type: String,
-            required: true,
+            default: '',
+        },
+        // Multi-route array (Pickup — multiple stops)
+        routes: {
+            type: [routeSubSchema],
+            default: [],
         },
         totalKm: {
             type: Number,
@@ -42,7 +64,15 @@ const tripSchema = new mongoose.Schema(
         },
         tollExpense: {
             type: Number,
-            required: true,
+            default: 0,
+        },
+        isHault: {
+            type: Boolean,
+            default: false,
+        },
+        isLineCancel: {
+            type: Boolean,
+            default: false,
         },
         farmerBoxBreakdown: {
             type: [
@@ -51,18 +81,34 @@ const tripSchema = new mongoose.Schema(
                     boxCount: { type: Number, required: true },
                 },
             ],
-            required: true,
+            default: [],
         },
+        // Eicher file uploads
         weightSlipUrl: {
             type: String,
-            required: true,
+            default: null,
         },
         dieselSlipUrl: {
             type: String,
-            required: true,
+            default: null,
         },
         unloadSlipUrl: {
             type: String,
+            default: null,
+        },
+        // Pickup file uploads
+        uploadSlipUrl: {
+            type: String,
+            default: null,
+        },
+        meterPhotoUrl: {
+            type: String,
+            default: null,
+        },
+        // Shared
+        endKmPhotoUrl: {
+            type: String,
+            default: null,
         },
         isLocked: {
             type: Boolean,

@@ -6,13 +6,15 @@ const upload = require('../../middlewares/upload.middleware');
 
 router.use(protect);
 
+const fieldRoles = ['Field Selector', 'Driver (Eicher)', 'Driver (Pickup)'];
+
 // Accept two named files: odometer photo + petrol receipt photo
-router.post('/start', upload.fields([
+router.post('/start', authorize(...fieldRoles), upload.fields([
     { name: 'startKmPhoto', maxCount: 1 },
     { name: 'petrolReceiptPhoto', maxCount: 1 },
 ]), startDay);
 // PATCH (not PUT) — partial update of existing day log
-router.patch('/end', upload.single('endKmPhoto'), endDay);
+router.patch('/end', authorize(...fieldRoles), upload.single('endKmPhoto'), endDay);
 router.get('/', authorize('Admin', 'Operational Manager'), getLogs);
 
 module.exports = router;

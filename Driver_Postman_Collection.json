@@ -1,0 +1,463 @@
+{
+    "info": {
+        "name": "VaxTrack — Driver (Eicher & Pickup) Module",
+        "_postman_id": "vaxtrack-driver-v1-2026",
+        "description": "Complete API collection for both Eicher and Pickup drivers in VaxTrack. Login first (folder 0) to auto-capture the token. The backend auto-detects driverType from the user role.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:5000",
+            "type": "string"
+        },
+        {
+            "key": "driverToken",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "assignmentId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "0. Auth",
+            "item": [
+                {
+                    "name": "Login as Driver",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.token) {",
+                                    "  pm.collectionVariables.set('driverToken', res.token);",
+                                    "  console.log('Driver Token captured:', res.token);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"mobileNo\": \"0000000006\",\n  \"password\": \"password123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "login"
+                            ]
+                        },
+                        "description": "Login. Important: The backend auto-detects if this user is an Eicher or Pickup driver from their role."
+                    }
+                },
+                {
+                    "name": "GET My Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{driverToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "me"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "POST Logout",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{driverToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/logout",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "logout"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "1. Daily Logs",
+            "item": [
+                {
+                    "name": "POST Start Day Log",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{driverToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "startKm",
+                                    "value": "45200",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "vehicleNumber",
+                                    "value": "MH-12-AB-1234",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "petrolAdvance",
+                                    "value": "0",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "startKmPhoto",
+                                    "type": "file",
+                                    "src": ""
+                                },
+                                {
+                                    "key": "petrolReceiptPhoto",
+                                    "type": "file",
+                                    "src": "",
+                                    "description": "Optional"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/daily-logs/start",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "daily-logs",
+                                "start"
+                            ]
+                        },
+                        "description": "Call this when the driver starts their day. Upload odometer photo."
+                    }
+                },
+                {
+                    "name": "PATCH End Day Log",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{driverToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "endKm",
+                                    "value": "45350",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "endKmPhoto",
+                                    "type": "file",
+                                    "src": ""
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/daily-logs/end",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "daily-logs",
+                                "end"
+                            ]
+                        },
+                        "description": "Call this to end the active day log."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "2. Dashboard",
+            "item": [
+                {
+                    "name": "GET Driver Dashboard (Active Trips)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{driverToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/driver/dashboard",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "driver",
+                                "dashboard"
+                            ]
+                        },
+                        "description": "Fetches active assignments where this driver is either the primary driverId (Eicher) or pickupDriverId (Pickup)."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3. Submit Trip Report",
+            "item": [
+                {
+                    "name": "A. Submit Trip Report (Eicher Example)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{driverToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "totalKm",
+                                    "value": "150",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "tollExpense",
+                                    "value": "200",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "isHault",
+                                    "value": "false",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "isLineCancel",
+                                    "value": "false",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "startRoute",
+                                    "value": "Farm A",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "midRoute",
+                                    "value": "Highway Cafe",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "destination",
+                                    "value": "Cold Storage",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "weightSlipPhoto",
+                                    "type": "file",
+                                    "src": ""
+                                },
+                                {
+                                    "key": "dieselSlipPhoto",
+                                    "type": "file",
+                                    "src": ""
+                                },
+                                {
+                                    "key": "unloadSlipPhoto",
+                                    "type": "file",
+                                    "src": ""
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/driver/trips/{{assignmentId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "driver",
+                                "trips",
+                                "{{assignmentId}}"
+                            ]
+                        },
+                        "description": "Submits a standard Eicher trip report with flat route fields and 3 specific file uploads."
+                    }
+                },
+                {
+                    "name": "B. Submit Trip Report (Pickup Example)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{driverToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "totalKm",
+                                    "value": "45",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "tollExpense",
+                                    "value": "0",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "routes",
+                                    "value": "[{\"startPoint\":\"Base\",\"destination\":\"Farm A\",\"task\":\"Pickup Crates\"},{\"startPoint\":\"Farm A\",\"destination\":\"Weighbridge\",\"task\":\"Weighing\"}]",
+                                    "type": "text",
+                                    "description": "Send array as JSON string if using form-data"
+                                },
+                                {
+                                    "key": "uploadSlipPhoto",
+                                    "type": "file",
+                                    "src": ""
+                                },
+                                {
+                                    "key": "meterPhoto",
+                                    "type": "file",
+                                    "src": ""
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/driver/trips/{{assignmentId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "driver",
+                                "trips",
+                                "{{assignmentId}}"
+                            ]
+                        },
+                        "description": "Submits a Pickup driver report using the multi-route array (sent as a JSON string in form-data) and 2 specific file uploads."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "4. History & Reports",
+            "item": [
+                {
+                    "name": "GET Paginated History",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{driverToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/driver/history?page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "driver",
+                                "history"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        },
+                        "description": "Returns completed trips scoped to this driver."
+                    }
+                },
+                {
+                    "name": "GET Monthly Report & Earnings",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{driverToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/driver/reports?month=3&year=2026",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "driver",
+                                "reports"
+                            ],
+                            "query": [
+                                {
+                                    "key": "month",
+                                    "value": "3"
+                                },
+                                {
+                                    "key": "year",
+                                    "value": "2026"
+                                }
+                            ]
+                        },
+                        "description": "Returns monthly totals (KM, tolls, trips, haults, fuel advances) and a daily trip log grouped by date."
+                    }
+                }
+            ]
+        }
+    ]
+}
