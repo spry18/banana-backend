@@ -86,15 +86,12 @@ const getEnquiries = async (req, res) => {
 
         let query = {};
 
-        if (req.user.role === 'Admin') {
-            // Admin gets all enquiries
+        if (req.user.role === 'Admin' || req.user.role === 'Field Owner') {
+            // Admin and Field Owner (Global Shared Pool) see all enquiries
             query = {};
-        } else if (req.user.role === 'Field Owner') {
-            // Field Owner gets only their own enquiries
-            query = { fieldOwnerId: req.user._id };
         } else {
-            // Other roles not defined in prompt, returning what they own or denying
-            query = { _id: null }; // or return 403
+            // Other roles: deny access
+            query = { _id: null };
         }
 
         if (status) {
@@ -220,13 +217,7 @@ const getEnquiryById = async (req, res) => {
             return res.status(404).json({ message: 'Enquiry not found' });
         }
 
-        // Field Owner ownership guard — they may only view their own plots
-        if (
-            req.user.role === 'Field Owner' &&
-            enquiry.fieldOwnerId?._id?.toString() !== req.user._id.toString()
-        ) {
-            return res.status(403).json({ message: 'Forbidden: This plot does not belong to you' });
-        }
+        // Global Shared Pool: Field Owners can view all enquiries — no ownership guard needed
 
         // Join the inspection record for this enquiry (photos + composition data)
         const Inspection = require('../inspections/inspection.model');
@@ -309,14 +300,7 @@ const fixRate = async (req, res) => {
             return res.status(404).json({ message: 'Enquiry not found' });
         }
 
-        // Ownership guard: Field Owner can only fix rate on their own enquiries
-        if (req.user.role === 'Field Owner') {
-            if (!enquiry.fieldOwnerId || enquiry.fieldOwnerId.toString() !== req.user._id.toString()) {
-                return res.status(403).json({
-                    message: 'Forbidden: You can only fix rates for your own enquiries',
-                });
-            }
-        }
+        // Global Shared Pool: any Field Owner can fix the rate on any enquiry — no ownership guard
 
         if (enquiry.status !== 'SELECTED') {
             return res.status(400).json({
@@ -337,6 +321,8 @@ const fixRate = async (req, res) => {
         enquiry.purchaseRate = purchaseRate;
         enquiry.remarks = remarks || '';
         enquiry.status = 'RATE_FIXED';
+        // Record which FO actually closed the deal (Global Shared Pool model)
+        enquiry.rateFixedBy = req.user._id;
         await enquiry.save();
 
         await logSystemAction(

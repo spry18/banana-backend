@@ -4,16 +4,15 @@ const DailyLog = require('../auditing/dailyLog.model');
 const User = require('../users/user.model');
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Helper: build base query scoped to this FO
+// Global Shared Pool: all FOs see all enquiries — no per-FO scoping
 // ─────────────────────────────────────────────────────────────────────────────
-const foQuery = (req) => ({ fieldOwnerId: req.user._id });
 
 // @desc    Field Owner dashboard KPIs + recent activity
 // @route   GET /api/field-owner/dashboard
 // @access  Private (Field Owner, Admin)
 const getFODashboard = async (req, res) => {
     try {
-        const base = req.user.role === 'Admin' ? {} : foQuery(req);
+        const base = {}; // Global Shared Pool: all enquiries regardless of role
         const now = new Date();
 
         const [
@@ -99,7 +98,7 @@ const getFOPlots = async (req, res) => {
         const skip = (Number(page) - 1) * Number(limit);
         const now = new Date();
 
-        const base = req.user.role === 'Admin' ? {} : foQuery(req);
+        const base = {}; // Global Shared Pool: all enquiries regardless of role
         let query = { ...base };
 
         // Status filter — 'Missed' is a derived state, not a real enum value
@@ -155,9 +154,8 @@ const getSelectorsPerformance = async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
 
-        // Step 1: Find all selectorIds assigned to this FO's enquiries
-        const foBase = req.user.role === 'Admin' ? {} : { fieldOwnerId: req.user._id };
-        const enquiries = await Enquiry.find(foBase).distinct('assignedSelectorId');
+        // Step 1: Find all selectorIds across all enquiries (Global Shared Pool)
+        const enquiries = await Enquiry.find({}).distinct('assignedSelectorId');
 
         if (!enquiries.length) {
             return res.json({ data: [] });
@@ -249,16 +247,7 @@ const getSelectorMileage = async (req, res) => {
             return res.status(404).json({ message: 'Daily log not found' });
         }
 
-        // If FO, verify the selector belongs to one of their enquiries
-        if (req.user.role === 'Field Owner') {
-            const foBase = { fieldOwnerId: req.user._id, assignedSelectorId: log.userId };
-            const linked = await Enquiry.exists(foBase);
-            if (!linked) {
-                return res.status(403).json({
-                    message: 'Forbidden: This log does not belong to a selector assigned to your enquiries',
-                });
-            }
-        }
+        // Global Shared Pool: any FO can view any selector's mileage log — no ownership guard
 
         const totalDistance =
             log.endKm && log.startKm ? log.endKm - log.startKm : null;
