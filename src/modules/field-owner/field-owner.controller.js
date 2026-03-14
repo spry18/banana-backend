@@ -23,30 +23,63 @@ const getFODashboard = async (req, res) => {
             ratFixed,
             missed,
             futureSelection,
-            recentActivity,
+            recentEnquiries,
         ] = await Promise.all([
             Enquiry.countDocuments(base),
             Enquiry.countDocuments({ ...base, status: 'SELECTED' }),
             Enquiry.countDocuments({ ...base, status: 'REJECTED' }),
-            Enquiry.countDocuments({ ...base, status: 'RATE_FIXED' }),
-            // Missed: past scheduledDate, still PENDING
-            Enquiry.countDocuments({ ...base, status: 'PENDING', scheduledDate: { $lt: now } }),
+            Enquiry.countDocuments({ ...base, status: { $in: ['RATE_FIXED', 'ASSIGNED', 'COMPLETED'] } }),
+            // Missed: PENDING and either past scheduledDate OR completely missing a scheduledDate
+            Enquiry.countDocuments({
+                ...base,
+                status: 'PENDING',
+                $or: [
+                    { scheduledDate: { $lt: now } },
+                    { scheduledDate: null },
+                    { scheduledDate: { $exists: false } },
+                ],
+            }),
             // Future Selection: scheduledDate in the future, still PENDING
             Enquiry.countDocuments({ ...base, status: 'PENDING', scheduledDate: { $gt: now } }),
-            // Recent Activity: last 5 updated enquiries for this FO
-            Enquiry.find(base)
+            // Recent Activity: last 5 updated actionable enquiries for this FO
+            Enquiry.find({ ...base, status: { $in: ['SELECTED', 'RATE_FIXED', 'ASSIGNED', 'COMPLETED'] } })
                 .sort({ updatedAt: -1 })
                 .limit(5)
-                .select('enquiryId farmerFirstName farmerLastName status location updatedAt visitPriority')
-                .populate('assignedSelectorId', 'firstName lastName'),
+                .select('enquiryId farmerFirstName farmerLastName farmerMobile status location updatedAt generation companyId')
+                .populate('generation', 'name')
+                .populate('companyId', 'companyName')
+                .lean(),
         ]);
+
+        const recentActivity = await Promise.all(
+            recentEnquiries.map(async (enq) => {
+                const inspection = await Inspection.findOne({ enquiryId: enq._id })
+                    .select('packingSize volumeBoxRange recoveryPercent')
+                    .lean();
+
+                return {
+                    _id: enq._id,
+                    enquiryId: enq.enquiryId,
+                    farmerName: `${enq.farmerFirstName} ${enq.farmerLastName}`.trim(),
+                    mobileNo: enq.farmerMobile,
+                    location: enq.location,
+                    status: enq.status,
+                    generation: enq.generation ? enq.generation.name : 'Unknown',
+                    companyName: enq.companyId ? enq.companyId.companyName : 'Pending',
+                    packing: inspection ? inspection.packingSize : '-',
+                    volume: inspection ? inspection.volumeBoxRange : '-',
+                    recovery: inspection ? inspection.recoveryPercent : '-',
+                    updatedAt: enq.updatedAt,
+                };
+            })
+        );
 
         res.json({
             kpis: {
                 total,
                 selected,
                 rejected,
-                ratFixed,
+                fixedRate: ratFixed,
                 missed,
                 futureSelection,
             },

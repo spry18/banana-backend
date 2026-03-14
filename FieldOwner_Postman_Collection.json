@@ -167,7 +167,7 @@
                                 "dashboard"
                             ]
                         },
-                        "description": "Returns 6 KPIs (Total, Selected, Rejected, Missed, FutureSelection, RateFixed) scoped to the logged-in FO + last 5 recent activity enquiries."
+                        "description": "Returns 6 KPIs (total, selected, rejected, missed, futureSelection, fixedRate) scoped to the logged-in FO + last 5 recent actionable plots (Selected, Rate Fixed, Assigned, Completed) with rich populated fields (generation, companyName, packing, volume, recovery)."
                     }
                 }
             ]
