@@ -41,10 +41,9 @@ const getFODashboard = async (req, res) => {
             }),
             // Future Selection: scheduledDate in the future, still PENDING
             Enquiry.countDocuments({ ...base, status: 'PENDING', scheduledDate: { $gt: now } }),
-            // Recent Activity: last 5 updated actionable enquiries for this FO
-            Enquiry.find({ ...base, status: { $in: ['SELECTED', 'RATE_FIXED', 'ASSIGNED', 'COMPLETED'] } })
+            // Recent Activity: all strictly SELECTED enquiries for this FO (To-Do list)
+            Enquiry.find({ ...base, status: 'SELECTED' })
                 .sort({ updatedAt: -1 })
-                .limit(5)
                 .select('enquiryId farmerFirstName farmerLastName farmerMobile status location updatedAt generation companyId')
                 .populate('generation', 'name')
                 .populate('companyId', 'companyName')
