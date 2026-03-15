@@ -4,16 +4,15 @@ const DailyLog = require('../auditing/dailyLog.model');
 const User = require('../users/user.model');
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Helper: build base query scoped to this FO
+// Global Shared Pool: all FOs see all enquiries — no per-FO scoping
 // ─────────────────────────────────────────────────────────────────────────────
-const foQuery = (req) => ({ fieldOwnerId: req.user._id });
 
 // @desc    Field Owner dashboard KPIs + recent activity
 // @route   GET /api/field-owner/dashboard
 // @access  Private (Field Owner, Admin)
 const getFODashboard = async (req, res) => {
     try {
-        const base = req.user.role === 'Admin' ? {} : foQuery(req);
+        const base = {}; // Global Shared Pool: all enquiries regardless of role
         const now = new Date();
 
         const [
@@ -23,30 +22,62 @@ const getFODashboard = async (req, res) => {
             ratFixed,
             missed,
             futureSelection,
-            recentActivity,
+            recentEnquiries,
         ] = await Promise.all([
             Enquiry.countDocuments(base),
             Enquiry.countDocuments({ ...base, status: 'SELECTED' }),
             Enquiry.countDocuments({ ...base, status: 'REJECTED' }),
-            Enquiry.countDocuments({ ...base, status: 'RATE_FIXED' }),
-            // Missed: past scheduledDate, still PENDING
-            Enquiry.countDocuments({ ...base, status: 'PENDING', scheduledDate: { $lt: now } }),
+            Enquiry.countDocuments({ ...base, status: { $in: ['RATE_FIXED', 'ASSIGNED', 'COMPLETED'] } }),
+            // Missed: PENDING and either past scheduledDate OR completely missing a scheduledDate
+            Enquiry.countDocuments({
+                ...base,
+                status: 'PENDING',
+                $or: [
+                    { scheduledDate: { $lt: now } },
+                    { scheduledDate: null },
+                    { scheduledDate: { $exists: false } },
+                ],
+            }),
             // Future Selection: scheduledDate in the future, still PENDING
             Enquiry.countDocuments({ ...base, status: 'PENDING', scheduledDate: { $gt: now } }),
-            // Recent Activity: last 5 updated enquiries for this FO
-            Enquiry.find(base)
+            // Recent Activity: all strictly SELECTED enquiries for this FO (To-Do list)
+            Enquiry.find({ ...base, status: 'SELECTED' })
                 .sort({ updatedAt: -1 })
-                .limit(5)
-                .select('enquiryId farmerFirstName farmerLastName status location updatedAt visitPriority')
-                .populate('assignedSelectorId', 'firstName lastName'),
+                .select('enquiryId farmerFirstName farmerLastName farmerMobile status location updatedAt generation companyId')
+                .populate('generation', 'name')
+                .populate('companyId', 'companyName')
+                .lean(),
         ]);
+
+        const recentActivity = await Promise.all(
+            recentEnquiries.map(async (enq) => {
+                const inspection = await Inspection.findOne({ enquiryId: enq._id })
+                    .select('packingSize volumeBoxRange recoveryPercent')
+                    .lean();
+
+                return {
+                    _id: enq._id,
+                    enquiryId: enq.enquiryId,
+                    farmerName: `${enq.farmerFirstName} ${enq.farmerLastName}`.trim(),
+                    mobileNo: enq.farmerMobile,
+                    location: enq.location,
+                    status: enq.status,
+                    generation: enq.generation ? enq.generation.name : 'Unknown',
+                    companyName: enq.companyId ? enq.companyId.companyName : 'Pending',
+                    packing: inspection ? inspection.packingSize : '-',
+                    volume: inspection ? inspection.volumeBoxRange : '-',
+                    recovery: inspection ? inspection.recoveryPercent : '-',
+                    updatedAt: enq.updatedAt,
+                };
+            })
+        );
 
         res.json({
             kpis: {
                 total,
                 selected,
                 rejected,
-                ratFixed,
+                fixedRate: ratFixed,
                 missed,
                 futureSelection,
             },
@@ -67,7 +98,7 @@ const getFOPlots = async (req, res) => {
         const skip = (Number(page) - 1) * Number(limit);
         const now = new Date();
 
-        const base = req.user.role === 'Admin' ? {} : foQuery(req);
+        const base = {}; // Global Shared Pool: all enquiries regardless of role
         let query = { ...base };
 
         // Status filter — 'Missed' is a derived state, not a real enum value
@@ -123,9 +154,8 @@ const getSelectorsPerformance = async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
 
-        // Step 1: Find all selectorIds assigned to this FO's enquiries
-        const foBase = req.user.role === 'Admin' ? {} : { fieldOwnerId: req.user._id };
-        const enquiries = await Enquiry.find(foBase).distinct('assignedSelectorId');
+        // Step 1: Find all selectorIds across all enquiries (Global Shared Pool)
+        const enquiries = await Enquiry.find({}).distinct('assignedSelectorId');
 
         if (!enquiries.length) {
             return res.json({ data: [] });
@@ -217,16 +247,7 @@ const getSelectorMileage = async (req, res) => {
             return res.status(404).json({ message: 'Daily log not found' });
         }
 
-        // If FO, verify the selector belongs to one of their enquiries
-        if (req.user.role === 'Field Owner') {
-            const foBase = { fieldOwnerId: req.user._id, assignedSelectorId: log.userId };
-            const linked = await Enquiry.exists(foBase);
-            if (!linked) {
-                return res.status(403).json({
-                    message: 'Forbidden: This log does not belong to a selector assigned to your enquiries',
-                });
-            }
-        }
+        // Global Shared Pool: any FO can view any selector's mileage log — no ownership guard
 
         const totalDistance =
             log.endKm && log.startKm ? log.endKm - log.startKm : null;

@@ -75,6 +75,11 @@ const enquirySchema = new mongoose.Schema(
         purchaseRate: {
             type: Number,
         },
+        rateFixedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: null,
+        },
         remarks: {
             type: String,
         },

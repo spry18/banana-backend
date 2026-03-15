@@ -36,6 +36,11 @@ const logisticsSchema = new mongoose.Schema(
             ref: 'User',
             required: true,
         },
+        pickupDriverId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: null,
+        },
         vehicleId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Vehicle',
@@ -53,6 +58,11 @@ const logisticsSchema = new mongoose.Schema(
         lightOutTime: {
             type: String,
             required: true,
+        },
+        assignmentStatus: {
+            type: String,
+            enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
+            default: 'PENDING',
         },
     },
     { timestamps: true }
