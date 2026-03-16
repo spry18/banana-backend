@@ -15,6 +15,6 @@ router.post('/start', authorize(...fieldRoles), upload.fields([
 ]), startDay);
 // PATCH (not PUT) — partial update of existing day log
 router.patch('/end', authorize(...fieldRoles), upload.single('endKmPhoto'), endDay);
-router.get('/', authorize('Admin', 'Operational Manager'), getLogs);
+router.get('/', authorize('Admin', 'Operational Manager', 'Field Owner'), getLogs);
 
 module.exports = router;
