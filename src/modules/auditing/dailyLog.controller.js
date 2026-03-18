@@ -95,27 +95,63 @@ const endDay = async (req, res) => {
     }
 };
 
-// @desc    Get all daily logs (Admin, OM)
+// @desc    Get all daily logs (Admin, OM, Field Owner)
 // @route   GET /api/daily-logs
 // @access  Protected
+// @query   userId, role, status, startDate, endDate, page, limit
 const getLogs = async (req, res) => {
     try {
-        const { page = 1, limit = 10 } = req.query;
+        const { userId, role, status, startDate, endDate, page = 1, limit = 10 } = req.query;
         const skip = (page - 1) * limit;
 
-        const logs = await DailyLog.find()
-            .skip(skip)
-            .limit(Number(limit))
-            .sort({ createdAt: -1 })
-            .populate('userId', 'firstName lastName role');
+        // Build match filter
+        const match = {};
+        if (userId) match.userId = userId;
+        if (status) match.status = status;
+        if (startDate || endDate) {
+            match.date = {};
+            if (startDate) match.date.$gte = new Date(startDate);
+            if (endDate)   match.date.$lte = new Date(endDate);
+        }
 
-        const total = await DailyLog.countDocuments();
+        // If filtering by role, we need a lookup + match on the user document
+        let logs, total;
+        if (role) {
+            const pipeline = [
+                { $match: match },
+                { $lookup: { from: 'users', localField: 'userId', foreignField: '_id', as: 'user' } },
+                { $unwind: '$user' },
+                { $match: { 'user.role': role } },
+                { $sort: { createdAt: -1 } },
+                {
+                    $project: {
+                        date: 1, startKm: 1, endKm: 1, startTime: 1, endTime: 1,
+                        vehicleNumber: 1, status: 1, startMeterPhotoUrl: 1, endMeterPhotoUrl: 1,
+                        petrolAdvance: 1, createdAt: 1,
+                        userId: { _id: '$user._id', firstName: '$user.firstName', lastName: '$user.lastName', role: '$user.role' },
+                    },
+                },
+            ];
+            const countPipeline = [...pipeline, { $count: 'total' }];
+            const [countResult] = await DailyLog.aggregate(countPipeline);
+            total = countResult?.total || 0;
+            logs = await DailyLog.aggregate([...pipeline, { $skip: skip }, { $limit: Number(limit) }]);
+        } else {
+            [logs, total] = await Promise.all([
+                DailyLog.find(match)
+                    .skip(skip)
+                    .limit(Number(limit))
+                    .sort({ createdAt: -1 })
+                    .populate('userId', 'firstName lastName role'),
+                DailyLog.countDocuments(match),
+            ]);
+        }
 
         res.status(200).json({
             total,
             page: Number(page),
             pages: Math.ceil(total / Number(limit)),
-            data: logs
+            data: logs,
         });
     } catch (error) {
         console.error('Error fetching logs:', error);
@@ -123,8 +159,40 @@ const getLogs = async (req, res) => {
     }
 };
 
+// @desc    Check if the logged-in user has already started their day today
+// @route   GET /api/daily-logs/check-today
+// @access  Protected (Field Selector, Driver (Eicher), Driver (Pickup), Munshi)
+const checkTodayLogStatus = async (req, res) => {
+    try {
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+
+        const endOfToday = new Date();
+        endOfToday.setHours(23, 59, 59, 999);
+
+        const log = await DailyLog.findOne({
+            userId: req.user._id,
+            date: { $gte: startOfToday, $lte: endOfToday },
+        }).lean();
+
+        if (log) {
+            return res.status(200).json({
+                isStarted: true,
+                logId: log._id,
+                role: req.user.role,
+            });
+        }
+
+        return res.status(200).json({ isStarted: false });
+    } catch (error) {
+        console.error('Error checking today log status:', error);
+        res.status(500).json({ message: 'Server error while checking today log status' });
+    }
+};
+
 module.exports = {
     startDay,
     endDay,
-    getLogs
+    getLogs,
+    checkTodayLogStatus,
 };

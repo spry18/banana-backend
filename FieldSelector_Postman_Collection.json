@@ -91,6 +91,30 @@
             "name": "2 · Daily Operations",
             "item": [
                 {
+                    "name": "GET Check Today Log Status",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{selectorToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/daily-logs/check-today",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "daily-logs", "check-today"]
+                        },
+                        "description": "🚦 CALL THIS FIRST ON APP OPEN.\n\nChecks if the logged-in Field Selector has already submitted a Start Day log for today.\n\n- `isStarted: true`  → skip the meter photo screen, jump to the dashboard. Use the returned `logId` for any log-specific operations.\n- `isStarted: false` → show the Start Day / Meter Photo screen.\n\nResponse:\n```json\n// Day already started:\n{ \"isStarted\": true, \"logId\": \"<ObjectId>\", \"role\": \"Field Selector\" }\n\n// Day not started:\n{ \"isStarted\": false }\n```"
+                    },
+                    "response": []
+                },
+                {
                     "name": "Start Day (Morning Report)",
                     "request": {
                         "auth": {

@@ -557,6 +557,30 @@
                     }
                 },
                 {
+                    "name": "GET Selectors List (for assignment dropdowns)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/selectors",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "selectors"
+                            ]
+                        },
+                        "description": "Returns all active users with role 'Field Selector' (firstName, lastName, mobileNo, role), sorted A-Z. Use this to populate the 'Assign Selector' dropdown when creating or editing an enquiry."
+                    }
+                },
+                {
                     "name": "GET Selector Mileage Detail (by LogId)",
                     "request": {
                         "method": "GET",
@@ -578,7 +602,214 @@
                                 "{{logId}}"
                             ]
                         },
-                        "description": "Returns: startKm, closeKm, totalDistance (endKm-startKm), vehicleNumber, startTime, endTime, selector info.\n\nNote: FO can only view mileage logs for selectors linked to their own enquiries."
+                        "description": "Returns full mileage detail for a single DailyLog record: startKm, closeKm, totalDistance (endKm - startKm), vehicleNumber, startTime, endTime, status, odometer photo URLs, and populated selector info (name, mobile, role).\n\nPREREQUISITE: Get a valid {{logId}} from 'GET /api/daily-logs?userId=<selectorId>' (folder 6 below).\n\nGlobal Shared Pool: any Field Owner can view any selector's mileage log — no ownership restriction."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "6. Daily Logs — Selector & Driver Mileage",
+            "item": [
+                {
+                    "name": "GET All Daily Logs (No Filter)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/daily-logs?page=1&limit=10",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "daily-logs"
+                            ],
+                            "query": [
+                                { "key": "page", "value": "1" },
+                                { "key": "limit", "value": "10" }
+                            ]
+                        },
+                        "description": "Returns all DailyLog records across all roles, paginated. Each record includes: date, startKm, endKm, vehicleNumber, startTime, endTime, status (STARTED | COMPLETED), startMeterPhotoUrl, endMeterPhotoUrl, petrolAdvance, and a populated userId (firstName, lastName, role).\n\nAccess: Admin, Operational Manager, Field Owner."
+                    }
+                },
+                {
+                    "name": "GET Daily Logs — Filter by UserId (copy selectorId from performance API)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data && res.data.length > 0) {",
+                                    "  pm.collectionVariables.set('logId', res.data[0]._id);",
+                                    "  console.log('logId captured:', res.data[0]._id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/daily-logs?userId={{selectorId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "daily-logs"
+                            ],
+                            "query": [
+                                { "key": "userId", "value": "{{selectorId}}" }
+                            ]
+                        },
+                        "description": "Filter logs by a specific user's MongoDB _id. Copy the selectorId from 'GET /api/field-owner/selectors-performance' (folder 5) and paste it into {{selectorId}}.\n\nTest script: automatically captures the first result's _id into {{logId}} — ready to use in 'GET Selector Mileage Detail'."
+                    }
+                },
+                {
+                    "name": "GET Daily Logs — Filter by Role: Field Selector",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/daily-logs?role=Field Selector",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "daily-logs"
+                            ],
+                            "query": [
+                                { "key": "role", "value": "Field Selector" }
+                            ]
+                        },
+                        "description": "Returns DailyLogs only for users with role 'Field Selector'. The backend does a $lookup on the users collection so role filtering is accurate.\n\nOther valid role values: 'Driver (Eicher)', 'Driver (Pickup)'."
+                    }
+                },
+                {
+                    "name": "GET Daily Logs — Filter by Role: Driver (Eicher)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/daily-logs?role=Driver (Eicher)",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "daily-logs"
+                            ],
+                            "query": [
+                                { "key": "role", "value": "Driver (Eicher)" }
+                            ]
+                        },
+                        "description": "Returns DailyLogs only for Eicher drivers. Use this on any FE screen that shows a 'Driver Logs' tab."
+                    }
+                },
+                {
+                    "name": "GET Daily Logs — Filter by Date Range",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/daily-logs?startDate=2026-03-01&endDate=2026-03-16",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "daily-logs"
+                            ],
+                            "query": [
+                                { "key": "startDate", "value": "2026-03-01" },
+                                { "key": "endDate", "value": "2026-03-16" }
+                            ]
+                        },
+                        "description": "Filter logs within a date range (matches the log's 'date' field). Useful for month-wise reports. Combinable with userId and role filters."
+                    }
+                },
+                {
+                    "name": "GET Daily Logs — Filter: Completed Only",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/daily-logs?status=COMPLETED",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "daily-logs"
+                            ],
+                            "query": [
+                                { "key": "status", "value": "COMPLETED" }
+                            ]
+                        },
+                        "description": "Filter by status. Values: STARTED (day begun, endKm not submitted yet) or COMPLETED (endKm submitted, totalDistance calculable)."
+                    }
+                },
+                {
+                    "name": "GET Daily Logs — Combined: Role + Date + Status",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/daily-logs?role=Field Selector&startDate=2026-03-01&endDate=2026-03-31&status=COMPLETED",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "daily-logs"
+                            ],
+                            "query": [
+                                { "key": "role", "value": "Field Selector" },
+                                { "key": "startDate", "value": "2026-03-01" },
+                                { "key": "endDate", "value": "2026-03-31" },
+                                { "key": "status", "value": "COMPLETED" }
+                            ]
+                        },
+                        "description": "All filters can be combined freely. This example: all completed Field Selector logs for March 2026. Ideal for a monthly mileage report screen."
                     }
                 }
             ]
