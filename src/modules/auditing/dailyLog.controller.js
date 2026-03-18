@@ -159,8 +159,40 @@ const getLogs = async (req, res) => {
     }
 };
 
+// @desc    Check if the logged-in user has already started their day today
+// @route   GET /api/daily-logs/check-today
+// @access  Protected (Field Selector, Driver (Eicher), Driver (Pickup), Munshi)
+const checkTodayLogStatus = async (req, res) => {
+    try {
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+
+        const endOfToday = new Date();
+        endOfToday.setHours(23, 59, 59, 999);
+
+        const log = await DailyLog.findOne({
+            userId: req.user._id,
+            date: { $gte: startOfToday, $lte: endOfToday },
+        }).lean();
+
+        if (log) {
+            return res.status(200).json({
+                isStarted: true,
+                logId: log._id,
+                role: req.user.role,
+            });
+        }
+
+        return res.status(200).json({ isStarted: false });
+    } catch (error) {
+        console.error('Error checking today log status:', error);
+        res.status(500).json({ message: 'Server error while checking today log status' });
+    }
+};
+
 module.exports = {
     startDay,
     endDay,
-    getLogs
+    getLogs,
+    checkTodayLogStatus,
 };

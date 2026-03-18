@@ -130,7 +130,109 @@
             ]
         },
         {
-            "name": "1. Dashboard",
+            "name": "1. Daily Logs",
+            "item": [
+                {
+                    "name": "GET Check Today Log Status",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/daily-logs/check-today",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "daily-logs", "check-today"]
+                        },
+                        "description": "🚦 CALL THIS FIRST ON APP OPEN.\n\nChecks if the logged-in Munshi has already submitted a Start Day log for today.\n\n- `isStarted: true`  → skip the meter photo screen, jump to dashboard.\n- `isStarted: false` → show the Start Day / Meter Photo screen.\n\nResponse:\n```json\n// Day already started:\n{ \"isStarted\": true, \"logId\": \"<ObjectId>\", \"role\": \"Munshi\" }\n\n// Day not started:\n{ \"isStarted\": false }\n```"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "POST Start Day Log",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "startKm",
+                                    "value": "12000",
+                                    "type": "text",
+                                    "description": "Odometer reading at start of day — REQUIRED"
+                                },
+                                {
+                                    "key": "vehicleNumber",
+                                    "value": "MH-12-CD-5678",
+                                    "type": "text",
+                                    "description": "Vehicle registration number — optional"
+                                },
+                                {
+                                    "key": "startKmPhoto",
+                                    "type": "file",
+                                    "src": "",
+                                    "description": "Odometer photo at start of day — REQUIRED. Attach an image file."
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/daily-logs/start",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "daily-logs", "start"]
+                        },
+                        "description": "Submits the morning odometer reading to start the day's log.\n\n- Returns 400 if the Munshi already has an active log for today (use check-today first).\n- `vehicleNumber` is optional."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "PATCH End Day Log",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "endKm",
+                                    "value": "12150",
+                                    "type": "text",
+                                    "description": "Odometer reading at end of day — REQUIRED. Must be greater than startKm."
+                                },
+                                {
+                                    "key": "endKmPhoto",
+                                    "type": "file",
+                                    "src": "",
+                                    "description": "Odometer photo at end of day — REQUIRED. Attach an image file."
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/daily-logs/end",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "daily-logs", "end"]
+                        },
+                        "description": "Closes the active daily log for today.\n\n- Returns 404 if no active (STARTED) log exists for today.\n- Returns 400 if endKm ≤ startKm.\n\n⚠️ This is a PATCH request, not PUT."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "2. Dashboard",
             "item": [
                 {
                     "name": "GET Munshi Dashboard",

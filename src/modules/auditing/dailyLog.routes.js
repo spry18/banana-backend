@@ -1,12 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const { startDay, endDay, getLogs } = require('./dailyLog.controller');
+const { startDay, endDay, getLogs, checkTodayLogStatus } = require('./dailyLog.controller');
 const { protect, authorize } = require('../../middlewares/auth.middleware');
 const upload = require('../../middlewares/upload.middleware');
 
 router.use(protect);
 
-const fieldRoles = ['Field Selector', 'Driver (Eicher)', 'Driver (Pickup)'];
+const fieldRoles = ['Field Selector', 'Driver (Eicher)', 'Driver (Pickup)', 'Munshi'];
+
+// Check if the user has already started their day (no file upload needed)
+router.get('/check-today', authorize(...fieldRoles), checkTodayLogStatus);
 
 // Accept two named files: odometer photo + petrol receipt photo
 router.post('/start', authorize(...fieldRoles), upload.fields([
