@@ -7,6 +7,7 @@ const {
     getEnquiryById,
     rescheduleEnquiry,
     fixRate,
+    foRescheduleEnquiry,
 } = require('./enquiry.controller');
 const { protect, authorize } = require('../../middlewares/auth.middleware');
 
@@ -14,6 +15,7 @@ const { protect, authorize } = require('../../middlewares/auth.middleware');
 router.use(protect);
 
 // --- Admin-specific patch routes (must come BEFORE /:id to avoid conflicts) ---
+router.put('/:id/reschedule', authorize('Field Owner', 'Admin'), foRescheduleEnquiry);
 router.patch('/reschedule/:id', authorize('Admin'), rescheduleEnquiry);
 router.patch('/fix-rate/:id', authorize('Admin', 'Field Owner'), fixRate);
 

@@ -343,6 +343,54 @@
                         "description": "Fetches full details of one specific enquiry before the selector fills in the inspection form.\n\nSecurity: Returns 404 if the enquiry exists but is NOT assigned to the logged-in selector — prevents accessing other selectors' plots.\n\n⚠️ Replace `REPLACE_WITH_ENQUIRY_OBJECT_ID` with a real MongoDB ObjectId from the fields list."
                     },
                     "response": []
+                },
+                {
+                    "name": "Get Companies",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{selectorToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/master-data/companies",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "master-data", "companies"]
+                        },
+                        "description": "Fetches active companies list."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Agents",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{selectorToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/master-data/agents",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "master-data", "agents"]
+                        },
+                        "description": "Fetches active agents list."
+                    },
+                    "response": []
                 }
             ]
         },
