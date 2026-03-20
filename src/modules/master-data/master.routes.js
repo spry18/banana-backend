@@ -33,7 +33,7 @@ router.use(protect);
 router.get('/dropdowns', authorize('Admin', 'Field Owner', 'Operational Manager', 'Munshi'), getFormDropdowns);
 
 // Companies — Admin only
-router.route('/companies').post(authorize('Admin'), createCompany).get(authorize('Admin'), getCompanies);
+router.route('/companies').post(authorize('Admin'), createCompany).get(authorize('Admin', 'FieldOwner', 'FieldSelector'), getCompanies);
 router.route('/companies/:id').put(authorize('Admin'), updateCompany).delete(authorize('Admin'), deleteCompany);
 
 // Brands — Admin only
@@ -41,7 +41,7 @@ router.route('/brands').post(authorize('Admin'), createBrand).get(authorize('Adm
 router.route('/brands/:id').put(authorize('Admin'), updateBrand).delete(authorize('Admin'), deleteBrand);
 
 // Agents — Admin only
-router.route('/agents').post(authorize('Admin'), createAgent).get(authorize('Admin'), getAgents);
+router.route('/agents').post(authorize('Admin'), createAgent).get(authorize('Admin', 'FieldOwner', 'FieldSelector'), getAgents);
 router.route('/agents/:id').put(authorize('Admin'), updateAgent).delete(authorize('Admin'), deleteAgent);
 
 // Vehicles — Admin only
