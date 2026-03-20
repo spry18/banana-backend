@@ -81,8 +81,11 @@ const getAssignedFields = async (req, res) => {
         const selectorId = req.user._id;
         const { status, search, page = 1, limit = 20 } = req.query;
 
-        // Base filter: only this selector's enquiries
-        const filter = { assignedSelectorId: selectorId };
+        // Base filter: only this selector's enquiries created in the last 24 hours
+        const filter = {
+            assignedSelectorId: selectorId,
+            createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+        };
 
         // Optional status filter (single value or comma-separated list)
         if (status) {
