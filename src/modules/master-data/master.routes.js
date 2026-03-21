@@ -49,7 +49,7 @@ router.route('/vehicles').post(authorize('Admin'), createVehicle).get(authorize(
 router.route('/vehicles/:id').put(authorize('Admin'), updateVehicle).delete(authorize('Admin'), deleteVehicle);
 
 // Generations — Admin only
-router.route('/generations').post(authorize('Admin'), createGeneration).get(authorize('Admin'), getGenerations);
+router.route('/generations').post(authorize('Admin'), createGeneration).get(authorize('Admin', 'Field Owner', 'Field Selector'), getGenerations);
 router.route('/generations/:id').put(authorize('Admin'), updateGeneration).delete(authorize('Admin'), deleteGeneration);
 
 module.exports = router;
