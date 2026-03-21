@@ -60,7 +60,7 @@ const enquirySchema = new mongoose.Schema(
         assignedSelectorId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
-            required: true,
+            required: false,
         },
         scheduledDate: {
             type: Date,
@@ -90,6 +90,7 @@ const enquirySchema = new mongoose.Schema(
                 'SELECTED',
                 'REJECTED',
                 'RATE_FIXED',
+                'RESCHEDULED',
                 'ASSIGNED',
                 'COMPLETED',
                 'CLOSED',
@@ -97,6 +98,18 @@ const enquirySchema = new mongoose.Schema(
             ],
             default: 'PENDING',
         },
+        rescheduleDate: {
+            type: Date,
+            default: null,
+        },
+        rescheduleHistory: [
+            {
+                rescheduleDate: { type: Date },
+                reason: { type: String },
+                rescheduledBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+                timestamp: { type: Date, default: Date.now },
+            }
+        ],
         editableUntil: {
             type: Date,
             required: true,

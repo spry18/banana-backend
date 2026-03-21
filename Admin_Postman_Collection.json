@@ -330,6 +330,38 @@
                     }
                 },
                 {
+                    "name": "PUT Update/Assign Enquiry (Admin)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"assignedSelectorId\": \"{{selectorId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries/{{enquiryId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries",
+                                "{{enquiryId}}"
+                            ]
+                        },
+                        "description": "Updates an enquiry. If a new assignedSelectorId is provided, the status automatically shifts to ASSIGNED."
+                    }
+                },
+                {
                     "name": "GET All Enquiries (Paginated)",
                     "request": {
                         "method": "GET",

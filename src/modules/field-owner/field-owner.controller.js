@@ -22,6 +22,7 @@ const getFODashboard = async (req, res) => {
             ratFixed,
             missed,
             futureSelection,
+            rescheduled,
             recentEnquiries,
         ] = await Promise.all([
             Enquiry.countDocuments(base),
@@ -40,8 +41,9 @@ const getFODashboard = async (req, res) => {
             }),
             // Future Selection: scheduledDate in the future, still PENDING
             Enquiry.countDocuments({ ...base, status: 'PENDING', scheduledDate: { $gt: now } }),
-            // Recent Activity: all strictly SELECTED enquiries for this FO (To-Do list)
-            Enquiry.find({ ...base, status: 'SELECTED' })
+            Enquiry.countDocuments({ ...base, status: 'RESCHEDULED' }),
+            // Recent Activity: all strictly SELECTED or RESCHEDULED enquiries for this FO (To-Do list)
+            Enquiry.find({ ...base, status: { $in: ['SELECTED', 'RESCHEDULED'] } })
                 .sort({ updatedAt: -1 })
                 .select('enquiryId farmerFirstName farmerLastName farmerMobile status location updatedAt generation companyId')
                 .populate('generation', 'name')
@@ -80,6 +82,7 @@ const getFODashboard = async (req, res) => {
                 fixedRate: ratFixed,
                 missed,
                 futureSelection,
+                rescheduled,
             },
             recentActivity,
         });

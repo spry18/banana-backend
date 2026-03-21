@@ -176,6 +176,11 @@ const updateEnquiry = async (req, res) => {
         delete updateData.enquiryId;
         delete updateData.fieldOwnerId; // Usually shouldn't change the creator implicitly
 
+        // If a new selector is being assigned, automatically set the status to 'ASSIGNED'
+        if (updateData.assignedSelectorId && updateData.assignedSelectorId !== enquiry.assignedSelectorId?.toString()) {
+            updateData.status = 'ASSIGNED';
+        }
+
         // However, standard Mongoose findByIdAndUpdate uses req.body directly
         const updatedEnquiry = await Enquiry.findByIdAndUpdate(
             req.params.id,
@@ -344,6 +349,63 @@ const fixRate = async (req, res) => {
     }
 };
 
+// @desc    Field Owner reschedules a SELECTED enquiry
+// @route   PUT /api/enquiries/:id/reschedule
+// @access  Protected (Field Owner, Admin)
+const foRescheduleEnquiry = async (req, res) => {
+    try {
+        const { rescheduleDate, reason } = req.body;
+
+        if (!rescheduleDate || !reason) {
+            return res.status(400).json({ message: 'rescheduleDate and reason are required' });
+        }
+
+        const enquiry = await Enquiry.findById(req.params.id);
+        if (!enquiry) {
+            return res.status(404).json({ message: 'Enquiry not found' });
+        }
+
+        if (enquiry.status !== 'SELECTED') {
+            return res.status(400).json({
+                message: `Only 'SELECTED' enquiries can be rescheduled. Current status: '${enquiry.status}'`,
+            });
+        }
+
+        const before = { status: enquiry.status, rescheduleDate: enquiry.rescheduleDate, assignedSelectorId: enquiry.assignedSelectorId };
+
+        // Record the history
+        enquiry.rescheduleHistory.push({
+            rescheduleDate: new Date(rescheduleDate),
+            reason: reason,
+            rescheduledBy: req.user._id,
+        });
+
+        enquiry.status = 'RESCHEDULED';
+        enquiry.rescheduleDate = new Date(rescheduleDate);
+        enquiry.assignedSelectorId = null;
+
+        await enquiry.save();
+
+        await logSystemAction(
+            req.user._id,
+            'UPDATE',
+            'Enquiries',
+            enquiry._id,
+            `Field Owner rescheduled Enquiry ${enquiry.enquiryId}`,
+            before,
+            { status: 'RESCHEDULED', rescheduleDate: enquiry.rescheduleDate, assignedSelectorId: null }
+        );
+
+        res.json({ message: 'Enquiry rescheduled successfully', enquiry });
+    } catch (error) {
+        if (error.name === 'CastError') {
+            return res.status(400).json({ message: `Invalid ID format for field: ${error.path}` });
+        }
+        console.error('Error rescheduling enquiry:', error);
+        res.status(500).json({ message: 'Server error while rescheduling enquiry', error: error.message });
+    }
+};
+
 module.exports = {
     createEnquiry,
     getEnquiries,
@@ -351,4 +413,5 @@ module.exports = {
     getEnquiryById,
     rescheduleEnquiry,
     fixRate,
+    foRescheduleEnquiry,
 };

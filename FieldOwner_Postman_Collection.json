@@ -78,7 +78,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"mobileNo\": \"8887776660\",\n  \"password\": \"password123\"\n}"
+                            "raw": "{\n  \"mobileNo\": \"0000000001\",\n  \"password\": \"password123\"\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/users/login",
@@ -243,6 +243,62 @@
                             ]
                         },
                         "description": "FO is authorized on this route. The backend auto-sets fieldOwnerId = req.user._id. Test script captures _id into {{enquiryId}}."
+                    }
+                },
+                {
+                    "name": "GET All Selectors (Field Owner)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/selectors",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "selectors"
+                            ]
+                        },
+                        "description": "Fetches a list of all Field Selectors (id, firstName, lastName, mobileNo). Used right before assigning or re-assigning an enquiry to pick a selector."
+                    }
+                },
+                {
+                    "name": "PUT Update/Assign Enquiry (Field Owner)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"assignedSelectorId\": \"{{selectorId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries/{{enquiryId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries",
+                                "{{enquiryId}}"
+                            ]
+                        },
+                        "description": "Updates an enquiry. If a new assignedSelectorId is provided, the status automatically shifts to ASSIGNED."
                     }
                 }
             ]
@@ -492,6 +548,39 @@
                         },
                         "description": "PREREQUISITES:\n1. Enquiry status must be 'SELECTED' (inspection must be completed first)\n2. FO can only fix rate for their OWN enquiries (backend checks fieldOwnerId)\n\nSets companyId, purchaseRate, remarks, and status → RATE_FIXED."
                     }
+                },
+                {
+                    "name": "PUT Reschedule Enquiry (Field Owner)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"rescheduleDate\": \"2026-04-15\",\n  \"reason\": \"Farmer requested delay due to sudden rain and harvesting issues.\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries/{{enquiryId}}/reschedule",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries",
+                                "{{enquiryId}}",
+                                "reschedule"
+                            ]
+                        },
+                        "description": "When FO reviews a SELECTED plot, they can either Fix Rate OR Reschedule. This API sets status to 'RESCHEDULED', updates rescheduleDate, clears assignedSelectorId, and logs the reason in rescheduleHistory."
+                    }
                 }
             ]
         },
@@ -630,8 +719,14 @@
                                 "daily-logs"
                             ],
                             "query": [
-                                { "key": "page", "value": "1" },
-                                { "key": "limit", "value": "10" }
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
                             ]
                         },
                         "description": "Returns all DailyLog records across all roles, paginated. Each record includes: date, startKm, endKm, vehicleNumber, startTime, endTime, status (STARTED | COMPLETED), startMeterPhotoUrl, endMeterPhotoUrl, petrolAdvance, and a populated userId (firstName, lastName, role).\n\nAccess: Admin, Operational Manager, Field Owner."
@@ -672,7 +767,10 @@
                                 "daily-logs"
                             ],
                             "query": [
-                                { "key": "userId", "value": "{{selectorId}}" }
+                                {
+                                    "key": "userId",
+                                    "value": "{{selectorId}}"
+                                }
                             ]
                         },
                         "description": "Filter logs by a specific user's MongoDB _id. Copy the selectorId from 'GET /api/field-owner/selectors-performance' (folder 5) and paste it into {{selectorId}}.\n\nTest script: automatically captures the first result's _id into {{logId}} — ready to use in 'GET Selector Mileage Detail'."
@@ -698,7 +796,10 @@
                                 "daily-logs"
                             ],
                             "query": [
-                                { "key": "role", "value": "Field Selector" }
+                                {
+                                    "key": "role",
+                                    "value": "Field Selector"
+                                }
                             ]
                         },
                         "description": "Returns DailyLogs only for users with role 'Field Selector'. The backend does a $lookup on the users collection so role filtering is accurate.\n\nOther valid role values: 'Driver (Eicher)', 'Driver (Pickup)'."
@@ -724,7 +825,10 @@
                                 "daily-logs"
                             ],
                             "query": [
-                                { "key": "role", "value": "Driver (Eicher)" }
+                                {
+                                    "key": "role",
+                                    "value": "Driver (Eicher)"
+                                }
                             ]
                         },
                         "description": "Returns DailyLogs only for Eicher drivers. Use this on any FE screen that shows a 'Driver Logs' tab."
@@ -750,8 +854,14 @@
                                 "daily-logs"
                             ],
                             "query": [
-                                { "key": "startDate", "value": "2026-03-01" },
-                                { "key": "endDate", "value": "2026-03-16" }
+                                {
+                                    "key": "startDate",
+                                    "value": "2026-03-01"
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2026-03-16"
+                                }
                             ]
                         },
                         "description": "Filter logs within a date range (matches the log's 'date' field). Useful for month-wise reports. Combinable with userId and role filters."
@@ -777,7 +887,10 @@
                                 "daily-logs"
                             ],
                             "query": [
-                                { "key": "status", "value": "COMPLETED" }
+                                {
+                                    "key": "status",
+                                    "value": "COMPLETED"
+                                }
                             ]
                         },
                         "description": "Filter by status. Values: STARTED (day begun, endKm not submitted yet) or COMPLETED (endKm submitted, totalDistance calculable)."
@@ -803,10 +916,22 @@
                                 "daily-logs"
                             ],
                             "query": [
-                                { "key": "role", "value": "Field Selector" },
-                                { "key": "startDate", "value": "2026-03-01" },
-                                { "key": "endDate", "value": "2026-03-31" },
-                                { "key": "status", "value": "COMPLETED" }
+                                {
+                                    "key": "role",
+                                    "value": "Field Selector"
+                                },
+                                {
+                                    "key": "startDate",
+                                    "value": "2026-03-01"
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2026-03-31"
+                                },
+                                {
+                                    "key": "status",
+                                    "value": "COMPLETED"
+                                }
                             ]
                         },
                         "description": "All filters can be combined freely. This example: all completed Field Selector logs for March 2026. Ideal for a monthly mileage report screen."
