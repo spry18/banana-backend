@@ -8,6 +8,8 @@ const {
     rescheduleEnquiry,
     fixRate,
     foRescheduleEnquiry,
+    runSlaTimeoutCheck,
+    getMissedPlots,
 } = require('./enquiry.controller');
 const { protect, authorize } = require('../../middlewares/auth.middleware');
 
@@ -15,8 +17,10 @@ const { protect, authorize } = require('../../middlewares/auth.middleware');
 router.use(protect);
 
 // --- Admin-specific patch routes (must come BEFORE /:id to avoid conflicts) ---
+router.get('/reports/missed', authorize('Admin', 'Field Owner'), getMissedPlots);
+router.post('/run-sla-check', authorize('Admin', 'Field Owner'), runSlaTimeoutCheck);
 router.put('/:id/reschedule', authorize('Field Owner', 'Admin'), foRescheduleEnquiry);
-router.patch('/reschedule/:id', authorize('Admin'), rescheduleEnquiry);
+router.patch('/reschedule/:id', authorize('Admin', 'Field Owner'), rescheduleEnquiry);
 router.patch('/fix-rate/:id', authorize('Admin', 'Field Owner'), fixRate);
 
 // --- Standard CRUD ---

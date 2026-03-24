@@ -110,6 +110,12 @@ const enquirySchema = new mongoose.Schema(
                 timestamp: { type: Date, default: Date.now },
             }
         ],
+        missedAssignments: [
+            {
+                selectorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+                missedAt: { type: Date, default: Date.now },
+            }
+        ],
         editableUntil: {
             type: Date,
             required: true,

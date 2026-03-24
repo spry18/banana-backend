@@ -3,6 +3,7 @@ const User = require('../users/user.model');
 const Agent = require('../master-data/agent.model'); // Ensure Agent model exists and is imported correctly, will verify after
 const { logSystemAction } = require('../../utils/auditLogger');
 const NotificationService = require('../../services/notification.service');
+const { checkAndResetExpiredEnquiries } = require('../../utils/enquiryService');
 
 // @desc    Create new enquiry
 // @route   POST /api/enquiries
@@ -406,6 +407,49 @@ const foRescheduleEnquiry = async (req, res) => {
     }
 };
 
+// @desc    SLA automation – reset ASSIGNED enquiries not visited within 24 hours
+// @route   POST /api/enquiries/run-sla-check
+// @access  Private (Admin, Field Owner)
+const runSlaTimeoutCheck = async (req, res) => {
+    try {
+        const { resetCount, affectedEnquiryIds } = await checkAndResetExpiredEnquiries();
+
+        return res.status(200).json({
+            message: resetCount === 0
+                ? 'SLA check complete. No expired assignments found.'
+                : `SLA check complete. ${resetCount} enquiry/enquiries reset to PENDING.`,
+            resetCount,
+            affectedEnquiryIds,
+        });
+    } catch (error) {
+        console.error('Error running SLA timeout check:', error);
+        res.status(500).json({ message: 'Server error during SLA check', error: error.message });
+    }
+};
+
+// @desc    Get all enquiries that missed their 24-hour SLA (missed plots report)
+// @route   GET /api/enquiries/reports/missed
+// @access  Private (Admin, Field Owner)
+const getMissedPlots = async (req, res) => {
+    try {
+        const missedEnquiries = await Enquiry.find({
+            'missedAssignments.0': { $exists: true },
+        })
+            .sort({ updatedAt: -1 })
+            .populate('missedAssignments.selectorId', 'firstName lastName mobileNo')
+            .populate('fieldOwnerId', 'firstName lastName mobileNo')
+            .populate('generation', 'name');
+
+        res.status(200).json({
+            total: missedEnquiries.length,
+            data: missedEnquiries,
+        });
+    } catch (error) {
+        console.error('Error fetching missed plots report:', error);
+        res.status(500).json({ message: 'Server error while fetching missed plots report' });
+    }
+};
+
 module.exports = {
     createEnquiry,
     getEnquiries,
@@ -414,4 +458,6 @@ module.exports = {
     rescheduleEnquiry,
     fixRate,
     foRescheduleEnquiry,
+    runSlaTimeoutCheck,
+    getMissedPlots,
 };

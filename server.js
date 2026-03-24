@@ -32,6 +32,9 @@ dotenv.config();
 // Connect to the database
 connectDB();
 
+// Initialize background cron jobs
+require('./src/cron/slaCron');
+
 const app = express();
 
 // Apply Global Middlewares
