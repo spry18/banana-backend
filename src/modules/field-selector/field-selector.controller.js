@@ -8,6 +8,8 @@ const Enquiry = require('../enquiries/enquiry.model');
 const getDashboard = async (req, res) => {
     try {
         const selectorId = req.user._id;
+        const createdWithin24Hours = { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) };
+        const baseFilter = { assignedSelectorId: selectorId, createdAt: createdWithin24Hours };
 
         // Run all aggregation counters in parallel for performance
         const [
@@ -20,28 +22,28 @@ const getDashboard = async (req, res) => {
             recentActivity,
         ] = await Promise.all([
             // All enquiries ever linked to this selector
-            Enquiry.countDocuments({ assignedSelectorId: selectorId }),
+            Enquiry.countDocuments(baseFilter),
 
             // Assigned = still in PENDING (not yet inspected)
-            Enquiry.countDocuments({ assignedSelectorId: selectorId, status: 'PENDING' }),
+            Enquiry.countDocuments({ ...baseFilter, status: 'PENDING' }),
 
             // Selector marked the plot as SELECTED (inspection approved)
-            Enquiry.countDocuments({ assignedSelectorId: selectorId, status: 'SELECTED' }),
+            Enquiry.countDocuments({ ...baseFilter, status: 'SELECTED' }),
 
             // Selector rejected the plot
-            Enquiry.countDocuments({ assignedSelectorId: selectorId, status: 'REJECTED' }),
+            Enquiry.countDocuments({ ...baseFilter, status: 'REJECTED' }),
 
             // Admin rescheduled = selector missed the visit window
-            Enquiry.countDocuments({ assignedSelectorId: selectorId, status: 'CANCELLED' }),
+            Enquiry.countDocuments({ ...baseFilter, status: 'CANCELLED' }),
 
             // Visited = inspection was submitted (SELECTED + REJECTED + downstream statuses)
             Enquiry.countDocuments({
-                assignedSelectorId: selectorId,
+                ...baseFilter,
                 status: { $in: ['SELECTED', 'REJECTED', 'RATE_FIXED', 'ASSIGNED', 'COMPLETED', 'CLOSED'] },
             }),
 
             // Last 5 activity items for the feed
-            Enquiry.find({ assignedSelectorId: selectorId })
+            Enquiry.find(baseFilter)
                 .sort({ updatedAt: -1 })
                 .limit(5)
                 .select('enquiryId farmerFirstName farmerLastName location status scheduledDate updatedAt')
@@ -81,10 +83,10 @@ const getAssignedFields = async (req, res) => {
         const selectorId = req.user._id;
         const { status, search, page = 1, limit = 20 } = req.query;
 
-        // Base filter: only this selector's enquiries updated in the last 24 hours
+        // Base filter: only this selector's enquiries created in the last 24 hours
         const filter = {
             assignedSelectorId: selectorId,
-            updatedAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+            createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
         };
 
         // Optional status filter (single value or comma-separated list)
@@ -143,13 +145,14 @@ const getFieldDetails = async (req, res) => {
         const enquiry = await Enquiry.findOne({
             _id: enquiryId,
             assignedSelectorId: selectorId,
+            createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
         })
             .populate('generation', 'name')
             .populate('fieldOwnerId', 'firstName lastName mobileNo')
             .lean();
 
         if (!enquiry) {
-            return res.status(404).json({ message: 'Enquiry not found or not assigned to you' });
+            return res.status(404).json({ message: 'Enquiry not found, not assigned to you, or no longer visible' });
         }
 
         res.status(200).json(enquiry);
