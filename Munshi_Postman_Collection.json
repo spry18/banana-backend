@@ -25,11 +25,6 @@
             "key": "pickupDriverId",
             "value": "REPLACE_WITH_REAL_ID",
             "type": "string"
-        },
-        {
-            "key": "brandId",
-            "value": "REPLACE_WITH_REAL_ID",
-            "type": "string"
         }
     ],
     "item": [
@@ -416,6 +411,36 @@
                         },
                         "description": "Assigns a secondary pickup driver to the assignment.\n\nVALIDATION:\n- Assignment must belong to the logged-in Munshi\n- Assignment must not be COMPLETED or CANCELLED\n- pickupDriverId must be a user with a 'driver' role\n\nSide effects:\n- Transitions assignmentStatus from PENDING → IN_PROGRESS\n- Sends WhatsApp alert to the pickup driver"
                     }
+                },
+                {
+                    "name": "POST Rollover Assignment (Next Day)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"nextDate\": \"2026-03-25\"\n}",
+                            "options": {
+                                "raw": { "language": "json" }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/munshi/assignments/{{assignmentId}}/rollover",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "munshi", "assignments", "{{assignmentId}}", "rollover"]
+                        },
+                        "description": "Clones the current dispatch to the next harvest day with the exact same Munshi, Driver, Pickup Driver, and Vehicle. Fresh assignmentStatus = PENDING. isRollover = true. parentAssignmentId links back to today's assignment.\n\nGUARDS:\n- nextDate is required (YYYY-MM-DD)\n- Cannot roll over a CANCELLED assignment\n- Only works for your own assignments (or Admin)\n\nAfter rolling over, submit a new packing report against the returned assignment _id."
+                    },
+                    "response": []
                 }
             ]
         },
@@ -435,24 +460,6 @@
                         "body": {
                             "mode": "formdata",
                             "formdata": [
-                                {
-                                    "key": "lineNo",
-                                    "value": "L-001",
-                                    "type": "text",
-                                    "description": "Line/plot number"
-                                },
-                                {
-                                    "key": "teamName",
-                                    "value": "Team Alpha",
-                                    "type": "text",
-                                    "description": "Packing team name"
-                                },
-                                {
-                                    "key": "brandId",
-                                    "value": "{{brandId}}",
-                                    "type": "text",
-                                    "description": "MongoDB _id of the brand"
-                                },
                                 {
                                     "key": "box4H",
                                     "value": "50",

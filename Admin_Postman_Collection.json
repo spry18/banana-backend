@@ -605,6 +605,46 @@
               ]
             }
           }
+        },
+        {
+          "name": "POST Rollover Assignment (Next Day)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nextDate\": \"2026-03-25\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/munshi/assignments/{{enquiryId}}/rollover",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "munshi",
+                "assignments",
+                "{{enquiryId}}",
+                "rollover"
+              ]
+            },
+            "description": "Admin can roll over any Logistics assignment to the next harvest day. Clones same Munshi, Driver, Pickup Driver, Vehicle with fresh PENDING status. isRollover=true, parentAssignmentId links to the original.\n\nReplace {{enquiryId}} with the actual Logistics assignment _id (not enquiry _id)."
+          },
+          "response": []
         }
       ]
     },

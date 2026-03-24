@@ -12,19 +12,6 @@ const packingSchema = new mongoose.Schema(
             ref: 'User',
             required: true,
         },
-        lineNo: {
-            type: String,
-            required: true,
-        },
-        teamName: {
-            type: String,
-            required: true,
-        },
-        brandId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Brand',
-            required: true,
-        },
         box4H: {
             type: Number,
             default: 0,

@@ -189,9 +189,6 @@ const submitPackingReport = async (req, res) => {
         }
 
         const {
-            lineNo,
-            teamName,
-            brandId,
             box4H = 0,
             box5H = 0,
             box6H = 0,
@@ -211,20 +208,18 @@ const submitPackingReport = async (req, res) => {
             const packing = await Packing.create({
                 assignmentId,
                 munshiId,
-                lineNo: lineNo || 'N/A',
-                teamName: teamName || 'N/A',
-                brandId: brandId || null,
                 totalBoxes: 0,
                 wastageKg: 0,
                 cancellationReason,
                 status: 'CANCELLED',
             });
 
-            // Cascade: update logistics and enquiry status
+            // Cascade: update logistics status
             assignment.assignmentStatus = 'CANCELLED';
             await assignment.save();
 
-            if (assignment.enquiryId) {
+            // Only cancel the enquiry if this is the ORIGINAL assignment (not a rollover day)
+            if (!assignment.isRollover && assignment.enquiryId) {
                 await Enquiry.findByIdAndUpdate(assignment.enquiryId._id || assignment.enquiryId, {
                     status: 'CANCELLED',
                 });
@@ -237,10 +232,6 @@ const submitPackingReport = async (req, res) => {
         }
 
         // ── SUCCESS FLOW ──
-        // Validate required fields
-        if (!lineNo || !teamName || !brandId) {
-            return res.status(400).json({ message: 'lineNo, teamName, and brandId are required' });
-        }
 
         // Validate totalBoxes sum
         const calculatedTotal = Number(box4H) + Number(box5H) + Number(box6H) + Number(box8H)
@@ -262,9 +253,6 @@ const submitPackingReport = async (req, res) => {
         const packing = await Packing.create({
             assignmentId,
             munshiId,
-            lineNo,
-            teamName,
-            brandId,
             box4H,
             box5H,
             box6H,
@@ -381,10 +369,77 @@ const getMunshiReports = async (req, res) => {
     }
 };
 
+// @desc    Rollover an assignment to the next day (same crew, fresh packing record)
+// @route   POST /api/munshi/assignments/:id/rollover
+// @access  Protected (Munshi, Admin, Operational Manager)
+const rolloverAssignment = async (req, res) => {
+    try {
+        const { nextDate } = req.body;
+        const munshiId = req.user._id;
+
+        if (!nextDate) {
+            return res.status(400).json({ message: 'nextDate is required (YYYY-MM-DD)' });
+        }
+
+        const parsedDate = new Date(nextDate);
+        if (isNaN(parsedDate.getTime())) {
+            return res.status(400).json({ message: 'nextDate must be a valid date in YYYY-MM-DD format' });
+        }
+
+        // Fetch the original assignment
+        const original = await Logistics.findById(req.params.id);
+        if (!original) {
+            return res.status(404).json({ message: 'Assignment not found' });
+        }
+
+        // Guard: only this Munshi (or Admin) can roll it over
+        if (original.munshiId.toString() !== munshiId.toString() && req.user.role !== 'Admin') {
+            return res.status(403).json({ message: 'You can only roll over assignments assigned to you' });
+        }
+
+        // Guard: cannot roll over a cancelled assignment
+        if (original.assignmentStatus === 'CANCELLED') {
+            return res.status(400).json({ message: 'Cannot roll over a CANCELLED assignment' });
+        }
+
+        // Clone with same crew/vehicle, reset operational fields
+        const rolled = await Logistics.create({
+            enquiryId:          original.enquiryId,
+            omId:               original.omId,
+            companyId:          original.companyId,
+            purchaseRate:       original.purchaseRate,
+            totalBoxes:         original.totalBoxes,
+            munshiId:           original.munshiId,
+            driverId:           original.driverId,
+            pickupDriverId:     original.pickupDriverId || null,
+            vehicleId:          original.vehicleId,
+            priority:           original.priority,
+            lightInTime:        original.lightInTime,
+            lightOutTime:       original.lightOutTime,
+            scheduledDate:      parsedDate,
+            assignmentStatus:   'PENDING',
+            isRollover:         true,
+            parentAssignmentId: original._id,
+        });
+
+        res.status(201).json({
+            message: `Assignment rolled over to ${nextDate} successfully.`,
+            rolledAssignment: rolled,
+        });
+    } catch (error) {
+        console.error('Error rolling over assignment:', error);
+        if (error.name === 'CastError') {
+            return res.status(400).json({ message: `Invalid ID format for field: ${error.path}` });
+        }
+        res.status(500).json({ message: 'Server error while rolling over assignment', error: error.message });
+    }
+};
+
 module.exports = {
     getMunshiDashboard,
     getMunshiAssignments,
     assignPickupDriver,
     submitPackingReport,
     getMunshiReports,
+    rolloverAssignment,
 };

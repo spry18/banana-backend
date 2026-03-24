@@ -6,7 +6,6 @@ const logisticsSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Enquiry',
             required: true,
-            unique: true,
         },
         omId: {
             type: mongoose.Schema.Types.ObjectId,
@@ -58,6 +57,19 @@ const logisticsSchema = new mongoose.Schema(
         lightOutTime: {
             type: String,
             required: true,
+        },
+        scheduledDate: {
+            type: Date,
+            default: null,
+        },
+        isRollover: {
+            type: Boolean,
+            default: false,
+        },
+        parentAssignmentId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Logistics',
+            default: null,
         },
         assignmentStatus: {
             type: String,

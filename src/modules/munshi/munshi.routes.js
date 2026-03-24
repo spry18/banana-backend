@@ -6,6 +6,7 @@ const {
     assignPickupDriver,
     submitPackingReport,
     getMunshiReports,
+    rolloverAssignment,
 } = require('./munshi.controller');
 const { protect, authorize } = require('../../middlewares/auth.middleware');
 const upload = require('../../middlewares/upload.middleware');
@@ -19,6 +20,7 @@ const roles = ['Munshi', 'Admin', 'Operational Manager'];
 router.get('/dashboard', authorize(...roles), getMunshiDashboard);
 router.get('/assignments', authorize(...roles), getMunshiAssignments);
 router.patch('/assignments/:id/pickup', authorize(...roles), assignPickupDriver);
+router.post('/assignments/:id/rollover', authorize(...roles), rolloverAssignment);
 
 // Phase 3 routes
 router.post(
