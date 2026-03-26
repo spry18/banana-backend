@@ -56,17 +56,74 @@ const getOmDashboard = async (req, res) => {
     }
 };
 
-// @desc    Get plots pipeline for OM (Unassigned → Assigned → Complete)
+// @desc    Get plots pipeline for OM (All → Unassigned → Assigned → Complete)
 // @route   GET /api/operational-manager/plots
 // @access  Protected (Admin, Operational Manager)
-// @query   ?stage=Unassigned|Assigned|Complete  ?page=1  ?limit=20  ?search=...
+// @query   ?stage=All|Unassigned|Assigned|Complete  ?page=1  ?limit=20  ?search=...
 const getOmPlots = async (req, res) => {
     try {
         const { stage, search, page = 1, limit = 20 } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
 
+        // ---- Stage: All (default) = combined active workload view ----
+        // Returns all RATE_FIXED and ASSIGNED enquiries with their logistics record (if any) attached.
+        // purchaseRate is strictly excluded from all logistics objects.
+        if (!stage || stage === 'All') {
+            const query = {
+                status: { $in: ['RATE_FIXED', 'ASSIGNED'] },
+            };
+
+            if (search) {
+                query.$or = [
+                    { farmerFirstName: { $regex: search, $options: 'i' } },
+                    { farmerLastName: { $regex: search, $options: 'i' } },
+                    { enquiryId: { $regex: search, $options: 'i' } },
+                    { location: { $regex: search, $options: 'i' } },
+                ];
+            }
+
+            const [enquiries, total] = await Promise.all([
+                Enquiry.find(query)
+                    .sort({ createdAt: -1 })
+                    .skip(skip)
+                    .limit(Number(limit))
+                    .populate('companyId', 'companyName')
+                    .populate('assignedSelectorId', 'firstName lastName')
+                    .populate('fieldOwnerId', 'firstName lastName')
+                    .lean(),
+                Enquiry.countDocuments(query),
+            ]);
+
+            // Build a lookup map of enquiryId → logistics assignment (purchaseRate excluded)
+            const enquiryObjectIds = enquiries.map(e => e._id);
+            const logisticsRecords = await Logistics.find({ enquiryId: { $in: enquiryObjectIds } })
+                .select('-purchaseRate')
+                .populate('munshiId', 'firstName lastName mobileNo')
+                .populate('driverId', 'firstName lastName mobileNo')
+                .populate('vehicleId', 'vehicleNumber')
+                .lean();
+
+            const logisticsMap = {};
+            logisticsRecords.forEach(l => {
+                logisticsMap[l.enquiryId.toString()] = l;
+            });
+
+            const data = enquiries.map(e => ({
+                ...e,
+                logistics: logisticsMap[e._id.toString()] || null,
+            }));
+
+            return res.status(200).json({
+                stage: 'All',
+                total,
+                page: Number(page),
+                pages: Math.ceil(total / Number(limit)),
+                data,
+            });
+        }
+
         // ---- Stage: Unassigned = RATE_FIXED enquiries that have NO logistics record ----
-        if (!stage || stage === 'Unassigned') {
+        if (stage === 'Unassigned') {
             // Find all enquiryIds that already have a logistics assignment
             const assignedEnquiryIds = await Logistics.distinct('enquiryId');
 
@@ -107,11 +164,9 @@ const getOmPlots = async (req, res) => {
 
         // ---- Stage: Assigned = logistics records with enquiry status ASSIGNED ----
         if (stage === 'Assigned') {
-            const query = {};
             const assignmentQuery = {};
 
             // Build a join-like filter via two queries
-            let matchingEnquiryIds;
             if (search) {
                 const matchingEnquiries = await Enquiry.find({
                     status: 'ASSIGNED',
@@ -121,16 +176,16 @@ const getOmPlots = async (req, res) => {
                         { enquiryId: { $regex: search, $options: 'i' } },
                     ],
                 }).select('_id');
-                matchingEnquiryIds = matchingEnquiries.map(e => e._id);
-                assignmentQuery.enquiryId = { $in: matchingEnquiryIds };
+                assignmentQuery.enquiryId = { $in: matchingEnquiries.map(e => e._id) };
             }
 
             const [assignments, total] = await Promise.all([
                 Logistics.find(assignmentQuery)
+                    .select('-purchaseRate')
                     .sort({ createdAt: -1 })
                     .skip(skip)
                     .limit(Number(limit))
-                    .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName location status')
+                    .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName farmerMobile location status')
                     .populate('companyId', 'companyName')
                     .populate('munshiId', 'firstName lastName mobileNo')
                     .populate('driverId', 'firstName lastName mobileNo')
@@ -160,10 +215,11 @@ const getOmPlots = async (req, res) => {
 
             const [assignments, total] = await Promise.all([
                 Logistics.find(assignmentQuery)
+                    .select('-purchaseRate')
                     .sort({ createdAt: -1 })
                     .skip(skip)
                     .limit(Number(limit))
-                    .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName location')
+                    .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName farmerMobile location')
                     .populate('companyId', 'companyName')
                     .populate('driverId', 'firstName lastName mobileNo')
                     .populate('munshiId', 'firstName lastName mobileNo')
@@ -189,7 +245,7 @@ const getOmPlots = async (req, res) => {
             });
         }
 
-        return res.status(400).json({ message: 'Invalid stage. Must be: Unassigned, Assigned, or Complete' });
+        return res.status(400).json({ message: 'Invalid stage. Must be: All, Unassigned, Assigned, or Complete' });
 
     } catch (error) {
         console.error('Error fetching OM plots pipeline:', error);

@@ -220,6 +220,49 @@
                     }
                 },
                 {
+                    "name": "GET Plots — All (Full Active Workload)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/operational-manager/plots?stage=All&page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "operational-manager",
+                                "plots"
+                            ],
+                            "query": [
+                                {
+                                    "key": "stage",
+                                    "value": "All"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                },
+                                {
+                                    "key": "search",
+                                    "value": "",
+                                    "disabled": true
+                                }
+                            ]
+                        },
+                        "description": "NEW — Returns the OM's full active workload in a single request.\n\nIncludes all enquiries with status RATE_FIXED or ASSIGNED.\nEach record includes a `logistics` key containing the assigned team (munshi, driver, vehicle, schedule), or `null` if not yet assigned.\n\nSecurity: `purchaseRate` is NEVER returned in any logistics object.\nEnquiry object includes `farmerMobile` for direct farmer contact.\n\nThis is the DEFAULT view (no ?stage= param also returns stage=All)."
+                    }
+                },
+                {
                     "name": "GET Plots — Assigned (Teams dispatched)",
                     "request": {
                         "method": "GET",
@@ -254,7 +297,7 @@
                                 }
                             ]
                         },
-                        "description": "Returns Logistics assignments where the Enquiry status = ASSIGNED. The team has been dispatched and is in progress."
+                        "description": "Returns Logistics assignments where the Enquiry status = ASSIGNED. The team has been dispatched and is in progress.\n\nEnquiry object now includes `farmerMobile` for direct farmer contact.\nSecurity: `purchaseRate` is excluded from all logistics objects."
                     }
                 },
                 {
@@ -292,7 +335,7 @@
                                 }
                             ]
                         },
-                        "description": "Returns assignments where the Trip report has been OM-reviewed (APPROVED or REJECTED). Includes tripReview data merged into each record."
+                        "description": "Returns assignments where the Trip report has been OM-reviewed (APPROVED or REJECTED). Includes tripReview data merged into each record.\n\nEnquiry object now includes `farmerMobile` for direct farmer contact.\nSecurity: `purchaseRate` is excluded from all logistics objects."
                     }
                 }
             ]
