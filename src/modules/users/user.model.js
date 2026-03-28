@@ -38,8 +38,8 @@ const userSchema = new mongoose.Schema(
                 'Field Selector',
                 'Operational Manager',
                 'Munshi',
-                'Driver (Eicher)',
-                'Driver (Pickup)',
+                'driver eicher',
+                'driver pickup',
             ],
         },
         isActive: {
@@ -48,6 +48,11 @@ const userSchema = new mongoose.Schema(
         },
         deletedAt: {
             type: Date,
+            default: null,
+        },
+        vehicleId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Vehicle',
             default: null,
         },
     },

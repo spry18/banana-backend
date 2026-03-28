@@ -32,8 +32,8 @@ const getMunshiDashboard = async (req, res) => {
                 .sort({ createdAt: -1 })
                 .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName farmerMobile location subLocation plantCount')
                 .populate('companyId', 'companyName')
-                .populate('driverId', 'firstName lastName mobileNo')
-                .populate('pickupDriverId', 'firstName lastName mobileNo')
+                .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
+                .populate({ path: 'pickupDriverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
                 .populate('vehicleId', 'vehicleNumber vehicleType')
                 .lean(),
         ]);
@@ -75,8 +75,8 @@ const getMunshiAssignments = async (req, res) => {
                 .limit(Number(limit))
                 .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName farmerMobile location subLocation plantCount status')
                 .populate('companyId', 'companyName')
-                .populate('driverId', 'firstName lastName mobileNo')
-                .populate('pickupDriverId', 'firstName lastName mobileNo')
+                .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
+                .populate({ path: 'pickupDriverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
                 .populate('vehicleId', 'vehicleNumber vehicleType')
                 .lean(),
             Logistics.countDocuments(query),

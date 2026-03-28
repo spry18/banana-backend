@@ -14,7 +14,7 @@ const generateToken = (id, role) => {
 // @access  Public (or Admin only later depending on RBAC)
 const registerUser = async (req, res) => {
     try {
-        const { firstName, lastName, mobileNo, password, role } = req.body;
+        const { firstName, lastName, mobileNo, password, role, vehicleId } = req.body;
 
         // Validate required fields
         if (!firstName || !lastName || !mobileNo || !password || !role) {
@@ -34,6 +34,7 @@ const registerUser = async (req, res) => {
             mobileNo,
             passwordHash: password, // The pre-save hook will hash this
             role,
+            vehicleId: vehicleId || null,
         });
 
         if (user) {
@@ -44,6 +45,7 @@ const registerUser = async (req, res) => {
                 mobileNo: user.mobileNo,
                 role: user.role,
                 isActive: user.isActive,
+                vehicleId: user.vehicleId,
             });
         } else {
             res.status(400).json({ message: 'Invalid user data' });
@@ -158,7 +160,8 @@ const getAllUsers = async (req, res) => {
                 .select('-passwordHash')
                 .sort({ createdAt: -1 })
                 .skip(skip)
-                .limit(Number(limit)),
+                .limit(Number(limit))
+                .populate('vehicleId', 'vehicleNumber vehicleType'),
             User.countDocuments(filter),
         ]);
 
@@ -248,6 +251,11 @@ const updateUser = async (req, res) => {
             user.role = req.body.role;
         }
 
+        // Allow setting/clearing a vehicle for driver users
+        if (req.body.vehicleId !== undefined) {
+            user.vehicleId = req.body.vehicleId || null;
+        }
+
         if (req.body.password) {
             user.passwordHash = req.body.password; // pre-save hook will hash it
         }
@@ -274,6 +282,8 @@ const updateUser = async (req, res) => {
             );
         }
 
+        await updatedUser.populate('vehicleId', 'vehicleNumber vehicleType');
+
         res.json({
             _id: updatedUser.id,
             firstName: updatedUser.firstName,
@@ -282,6 +292,7 @@ const updateUser = async (req, res) => {
             email: updatedUser.email,
             role: updatedUser.role,
             isActive: updatedUser.isActive,
+            vehicleId: updatedUser.vehicleId,
         });
     } catch (error) {
         if (error.name === 'CastError') {

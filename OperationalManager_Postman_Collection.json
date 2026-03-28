@@ -364,7 +364,7 @@
                                 "dropdowns"
                             ]
                         },
-                        "description": "Call on form load to populate Munshi, Driver, Vehicle, and Company select boxes. Returns: companies[], agents[], generations[], selectors[].\n\nNote: Use the User list filtered by role for Munshi/Driver — call GET /api/users?role=Munshi and GET /api/users?role=Driver (Eicher) separately if needed."
+                        "description": "Call on form load to populate all select boxes. Returns:\n- companies[], agents[], generations[], selectors[], brands[]\n- eicherDrivers[] — each with { _id, firstName, lastName, mobileNo, vehicleId: { vehicleNumber, vehicleType } }\n- pickupDrivers[] — same shape as eicherDrivers\n\nDrivers now include their linked vehicle so the frontend can display vehicle number alongside driver name without a separate call."
                     }
                 },
                 {
@@ -548,16 +548,17 @@
                                     "description": "MongoDB _id of the Driver user"
                                 },
                                 {
-                                    "key": "vehicleNumber",
-                                    "value": "MH-09-AB-1234",
-                                    "type": "text",
-                                    "description": "Vehicle registration number"
-                                },
-                                {
                                     "key": "amount",
                                     "value": "2500",
                                     "type": "text",
                                     "description": "Advance amount in ₹ INR"
+                                },
+                                {
+                                    "key": "vehicleNumber",
+                                    "value": "",
+                                    "type": "text",
+                                    "description": "OPTIONAL — override vehicle number. If omitted, auto-resolved from driver's linked vehicleId.",
+                                    "disabled": true
                                 },
                                 {
                                     "key": "remark",
@@ -590,7 +591,7 @@
                                 "diesel-advance"
                             ]
                         },
-                        "description": "Issues a fuel advance to the driver.\n\nTriggers WhatsApp receipt to the driver's registered mobile.\nAudit log is created automatically.\n\nreceiptPhoto is optional — submit without it if no physical receipt available yet."
+                        "description": "Issues a fuel advance to the driver.\n\nvehicleNumber is now OPTIONAL — it is auto-resolved from the driver's linked vehicleId.vehicleNumber. Only send vehicleNumber if the driver is using a different vehicle than their default (edge case).\n\nIf the driver has no vehicle linked AND no vehicleNumber in body → returns 400 with a helpful message.\n\nTriggers WhatsApp receipt to the driver's registered mobile. Audit log is created automatically."
                     }
                 },
                 {

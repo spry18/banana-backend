@@ -26,8 +26,8 @@ const getDriverDashboard = async (req, res) => {
             .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName farmerMobile location subLocation plantCount')
             .populate('companyId', 'companyName')
             .populate('munshiId', 'firstName lastName mobileNo')
-            .populate('driverId', 'firstName lastName mobileNo')
-            .populate('pickupDriverId', 'firstName lastName mobileNo')
+            .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
+            .populate({ path: 'pickupDriverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
             .populate('vehicleId', 'vehicleNumber vehicleType')
             .lean();
 

@@ -102,7 +102,7 @@ const getAssignments = async (req, res) => {
             .populate('enquiryId')
             .populate('companyId')
             .populate('munshiId', 'firstName lastName mobileNo')
-            .populate('driverId', 'firstName lastName mobileNo')
+            .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
             .populate('vehicleId', 'vehicleNumber');
 
         res.status(200).json(assignments);
@@ -116,7 +116,8 @@ const getAssignmentById = async (req, res) => {
     try {
         const assignment = await Logistics.findById(req.params.id)
             .populate('enquiryId companyId')
-            .populate('munshiId driverId', 'firstName lastName mobileNo')
+            .populate({ path: 'munshiId', select: 'firstName lastName mobileNo' })
+            .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
             .populate('vehicleId');
 
         if (!assignment) {

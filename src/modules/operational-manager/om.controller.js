@@ -26,7 +26,7 @@ const getOmDashboard = async (req, res) => {
                 .sort({ createdAt: -1 })
                 .limit(5)
                 .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName location')
-                .populate('driverId', 'firstName lastName')
+                .populate({ path: 'driverId', select: 'firstName lastName vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
                 .populate('munshiId', 'firstName lastName')
                 .lean(),
         ]);
@@ -99,7 +99,7 @@ const getOmPlots = async (req, res) => {
             const logisticsRecords = await Logistics.find({ enquiryId: { $in: enquiryObjectIds } })
                 .select('-purchaseRate')
                 .populate('munshiId', 'firstName lastName mobileNo')
-                .populate('driverId', 'firstName lastName mobileNo')
+                .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
                 .populate('vehicleId', 'vehicleNumber')
                 .lean();
 
@@ -188,7 +188,7 @@ const getOmPlots = async (req, res) => {
                     .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName farmerMobile location status')
                     .populate('companyId', 'companyName')
                     .populate('munshiId', 'firstName lastName mobileNo')
-                    .populate('driverId', 'firstName lastName mobileNo')
+                    .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
                     .populate('vehicleId', 'vehicleNumber')
                     .lean(),
                 Logistics.countDocuments(assignmentQuery),
@@ -221,7 +221,7 @@ const getOmPlots = async (req, res) => {
                     .limit(Number(limit))
                     .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName farmerMobile location')
                     .populate('companyId', 'companyName')
-                    .populate('driverId', 'firstName lastName mobileNo')
+                    .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
                     .populate('munshiId', 'firstName lastName mobileNo')
                     .lean(),
                 Logistics.countDocuments(assignmentQuery),

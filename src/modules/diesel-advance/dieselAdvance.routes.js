@@ -10,12 +10,12 @@ router.use(protect);
 router
     .route('/')
     .post(
-        authorize('Admin', 'Operational Manager'),
+        authorize('Admin', 'Operational Manager', 'Field Owner'),
         upload.single('receiptPhoto'),  // optional photo of advance receipt
         createAdvance
     )
     .get(
-        authorize('Admin', 'Operational Manager'),
+        authorize('Admin', 'Operational Manager', 'Field Owner'),
         getAdvanceHistory
     );
 

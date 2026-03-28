@@ -92,7 +92,7 @@ const getAlerts = async (req, res) => {
             ],
         })
             .select('_id driverId assignmentId createdAt')
-            .populate('driverId', 'firstName lastName mobileNo')
+            .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
             .sort({ createdAt: -1 })
             .limit(50);
 

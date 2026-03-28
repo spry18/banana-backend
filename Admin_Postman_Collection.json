@@ -710,7 +710,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firstName\": \"Anil\",\n  \"lastName\": \"Desai\",\n  \"mobileNo\": \"9876500001\",\n  \"email\": \"anil.desai@vaxtrack.in\",\n  \"password\": \"Staff@123\",\n  \"role\": \"Field Selector\"\n}"
+              "raw": "{\n  \"firstName\": \"Ganesh\",\n  \"lastName\": \"Lawand\",\n  \"mobileNo\": \"9876500001\",\n  \"password\": \"Staff@123\",\n  \"role\": \"driver eicher\",\n  \"vehicleId\": \"REPLACE_WITH_VEHICLE_ID\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/users/register",
@@ -723,7 +723,7 @@
                 "register"
               ]
             },
-            "description": "Available roles: Admin | Field Owner | Field Selector | Operational Manager | Munshi | Driver (Eicher) | Driver (Pickup)"
+            "description": "Available roles: Admin | Field Owner | Field Selector | Operational Manager | Munshi | driver eicher | driver pickup\n\nvehicleId is OPTIONAL — only needed for driver roles. Providing it links the driver to their vehicle in a single call, so no separate PUT is required.\nGet vehicle IDs from GET /api/master-data/vehicles."
           }
         },
         {
@@ -767,7 +767,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firstName\": \"Updated Name\",\n  \"email\": \"new.email@vaxtrack.in\",\n  \"role\": \"Field Owner\"\n}"
+              "raw": "{\n  \"firstName\": \"Updated Name\",\n  \"email\": \"new.email@vaxtrack.in\",\n  \"role\": \"field owner\",\n  \"vehicleId\": \"REPLACE_WITH_VEHICLE_ID\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/users/{{userId}}",
@@ -780,7 +780,7 @@
                 "{{userId}}"
               ]
             },
-            "description": "Updates user details. Can update firstName, lastName, mobileNo, email, role, and password. Admin protected."
+            "description": "Updates user details. Can update: firstName, lastName, mobileNo, email, role, password.\n\nvehicleId (optional) — links or clears a driver's vehicle. Pass null to unlink: { \"vehicleId\": null }. Ignored for non-driver roles.\n\nResponse includes populated vehicleId object (vehicleNumber + vehicleType)."
           }
         }
       ]
@@ -789,7 +789,7 @@
       "name": "5. Master Setup",
       "item": [
         {
-          "name": "GET Form Dropdowns (Companies, Agents, Generations, Selectors)",
+          "name": "GET Form Dropdowns (Companies, Agents, Generations, Selectors, Drivers)",
           "request": {
             "method": "GET",
             "header": [
@@ -1549,6 +1549,136 @@
               ]
             },
             "description": "Returns paginated audit log with User (name, role), Action, Module, Before/After Change, DateTime. All query params optional."
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Diesel Advance",
+      "item": [
+        {
+          "name": "POST Issue Diesel Advance to Driver",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res._id) {",
+                  "  console.log('Diesel Advance ID:', res._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "driverId",
+                  "value": "{{driverId}}",
+                  "type": "text",
+                  "description": "MongoDB _id of the Driver user"
+                },
+                {
+                  "key": "amount",
+                  "value": "2500",
+                  "type": "text",
+                  "description": "Advance amount in ₹ INR"
+                },
+                {
+                  "key": "vehicleNumber",
+                  "value": "",
+                  "type": "text",
+                  "description": "OPTIONAL — override vehicle number. If omitted, auto-resolved from driver's linked vehicleId.",
+                  "disabled": true
+                },
+                {
+                  "key": "remark",
+                  "value": "Fuel for Solapur run",
+                  "type": "text",
+                  "description": "Optional reason/notes"
+                },
+                {
+                  "key": "assignmentId",
+                  "value": "{{assignmentId}}",
+                  "type": "text",
+                  "description": "Optional — link to a logistics assignment",
+                  "disabled": true
+                },
+                {
+                  "key": "receiptPhoto",
+                  "src": "",
+                  "type": "file",
+                  "description": "Optional — photo of advance receipt"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/diesel-advance",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "diesel-advance"
+              ]
+            },
+            "description": "Issues a fuel advance to the driver.\n\nvehicleNumber is now OPTIONAL — it is auto-resolved from the driver's linked vehicleId.vehicleNumber. Only send vehicleNumber if the driver is using a different vehicle than their default (edge case).\n\nIf the driver has no vehicle linked AND no vehicleNumber in body → returns 400 with a helpful message.\n\nTriggers WhatsApp receipt to the driver's registered mobile. Audit log is created automatically."
+          }
+        },
+        {
+          "name": "GET Diesel Advance History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/diesel-advance?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "diesel-advance"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "driverId",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by a specific driver"
+                },
+                {
+                  "key": "assignmentId",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by a specific logistics assignment"
+                }
+              ]
+            },
+            "description": "Returns a paginated list of all diesel advances. Populated with driver name/mobile, OM name, and linked assignment details.\n\nUse ?driverId= to filter per driver or ?assignmentId= to see advances for a specific trip."
           }
         }
       ]

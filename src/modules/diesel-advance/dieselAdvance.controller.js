@@ -8,20 +8,28 @@ const { logSystemAction } = require('../../utils/auditLogger');
 // @access  Protected (Admin, Operational Manager)
 const createAdvance = async (req, res) => {
     try {
-        const { driverId, assignmentId, vehicleNumber, amount, remark } = req.body;
+        const { driverId, assignmentId, vehicleNumber: bodyVehicleNumber, amount, remark } = req.body;
 
-        if (!driverId || !vehicleNumber || !amount) {
-            return res.status(400).json({ message: 'driverId, vehicleNumber, and amount are required' });
+        if (!driverId || !amount) {
+            return res.status(400).json({ message: 'driverId and amount are required' });
         }
 
         // Validate the driver exists and is a driver role
-        const driver = await User.findById(driverId);
+        const driver = await User.findById(driverId).populate('vehicleId', 'vehicleNumber vehicleType');
         if (!driver) {
             return res.status(404).json({ message: 'Driver not found with the provided ID' });
         }
         const roleNormalized = (driver.role || '').toLowerCase();
         if (!roleNormalized.includes('driver')) {
             return res.status(400).json({ message: 'The provided user is not a Driver role' });
+        }
+
+        // Auto-resolve vehicleNumber from the driver's linked vehicle; allow body override for edge cases
+        const vehicleNumber = bodyVehicleNumber || driver.vehicleId?.vehicleNumber || null;
+        if (!vehicleNumber) {
+            return res.status(400).json({
+                message: 'No vehicle linked to this driver. Please assign a vehicle first or provide vehicleNumber in the request body.',
+            });
         }
 
         // Handle optional receipt photo upload
@@ -82,7 +90,7 @@ const getAdvanceHistory = async (req, res) => {
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(Number(limit))
-                .populate('driverId', 'firstName lastName mobileNo')
+                .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
                 .populate('omId', 'firstName lastName')
                 .populate('assignmentId', 'enquiryId lightInTime lightOutTime')
                 .lean(),
