@@ -210,6 +210,18 @@ const deleteGeneration = async (req, res) => {
     }
 };
 
+const getDrivers = async (req, res) => {
+    try {
+        const drivers = await User.find({ role: { $regex: /driver/i }, isActive: true })
+            .select('_id firstName lastName mobileNo role vehicleId')
+            .populate('vehicleId', 'vehicleNumber vehicleType')
+            .lean();
+        res.json(drivers);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
 // --- Form Dropdowns (single aggregated endpoint for all UI select boxes) ---
 // @desc    Get all dropdown data needed for Create Enquiry and Fix Rate forms
 // @route   GET /api/master-data/dropdowns
@@ -264,4 +276,5 @@ module.exports = {
     updateGeneration,
     deleteGeneration,
     getFormDropdowns,
+    getDrivers,
 };

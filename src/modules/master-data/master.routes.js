@@ -23,10 +23,14 @@ const {
     updateGeneration,
     deleteGeneration,
     getFormDropdowns,
+    getDrivers,
 } = require('./master.controller');
 
 // Apply protection to all routes
 router.use(protect);
+
+// GET /api/master-data/drivers
+router.get('/drivers', authorize('Admin', 'Operational Manager', 'Munshi'), getDrivers);
 
 // GET /api/master-data/dropdowns
 // Open to any authenticated role that needs to populate UI forms

@@ -527,6 +527,24 @@
                                     "description": "Optional Munshi notes"
                                 },
                                 {
+                                    "key": "lineNo",
+                                    "value": "3",
+                                    "type": "text",
+                                    "description": "NEW — Packing line number"
+                                },
+                                {
+                                    "key": "teamName",
+                                    "value": "Shiva Team",
+                                    "type": "text",
+                                    "description": "NEW — Harvesting team name"
+                                },
+                                {
+                                    "key": "brandId",
+                                    "value": "REPLACE_WITH_BRAND_OBJECT_ID",
+                                    "type": "text",
+                                    "description": "NEW — Reference to Brand master data"
+                                },
+                                {
                                     "key": "photos",
                                     "src": "",
                                     "type": "file",
@@ -586,6 +604,24 @@
                             ]
                         },
                         "description": "Cancels an assignment from the field.\n\nSide effects:\n- Packing status → CANCELLED\n- Logistics assignmentStatus → CANCELLED\n- Enquiry status → CANCELLED\n\nOnly send `cancellationReason` in the body — no box counts needed."
+                    }
+                },
+                {
+                    "name": "GET Packing Detail by Assignment ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/munshi/packing/{{assignmentId}}",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "munshi", "packing", "{{assignmentId}}"]
+                        },
+                        "description": "Used by the mobile History Detail screen. Returns the packing summary, box breakdown, wastage, and photos for a specific assignment ID."
                     }
                 }
             ]
@@ -656,6 +692,24 @@
                             ]
                         },
                         "description": "Use on form load to populate the Pickup Driver dropdown. Returns: companies[], agents[], generations[], selectors[] — filter for Driver roles on the client side."
+                    }
+                },
+                {
+                    "name": "GET Master All Drivers",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/master-data/drivers",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "master-data", "drivers"]
+                        },
+                        "description": "NEW — Returns clean list of all users with 'driver' role (Eicher, Pickup) along with their vehicle assignments."
                     }
                 }
             ]

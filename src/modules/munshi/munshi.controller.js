@@ -200,6 +200,9 @@ const submitPackingReport = async (req, res) => {
             wastageKg = 0,
             wastageReason,
             remarks,
+            lineNo,
+            teamName,
+            brandId,
             cancellationReason,
         } = req.body;
 
@@ -264,6 +267,9 @@ const submitPackingReport = async (req, res) => {
             wastageKg,
             wastageReason,
             remarks: remarks || '',
+            lineNo: lineNo || '',
+            teamName: teamName || '',
+            brandId: brandId || null,
             photos,
             status: 'SUBMITTED',
         });
@@ -290,6 +296,24 @@ const submitPackingReport = async (req, res) => {
             return res.status(400).json({ message: `Invalid ID format for field: ${error.path}` });
         }
         res.status(500).json({ message: error.message || 'Server error while submitting packing report' });
+    }
+};
+
+// @desc    Get packing report for a specific assignment
+// @route   GET /api/munshi/packing/:id
+// @access  Protected
+const getPackingByAssignmentId = async (req, res) => {
+    try {
+        const packing = await Packing.findOne({ assignmentId: req.params.id })
+            .populate('brandId', 'brandName')
+            .lean();
+        if (!packing) {
+            return res.status(404).json({ message: 'Packing report not found' });
+        }
+        res.status(200).json(packing);
+    } catch (error) {
+        console.error('Error fetching packing details:', error);
+        res.status(500).json({ message: 'Server error while fetching packing details' });
     }
 };
 
@@ -441,5 +465,6 @@ module.exports = {
     assignPickupDriver,
     submitPackingReport,
     getMunshiReports,
+    getPackingByAssignmentId,
     rolloverAssignment,
 };

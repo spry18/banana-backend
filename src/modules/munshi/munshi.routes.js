@@ -7,6 +7,7 @@ const {
     submitPackingReport,
     getMunshiReports,
     rolloverAssignment,
+    getPackingByAssignmentId,
 } = require('./munshi.controller');
 const { protect, authorize } = require('../../middlewares/auth.middleware');
 const upload = require('../../middlewares/upload.middleware');
@@ -30,5 +31,6 @@ router.post(
     submitPackingReport
 );
 router.get('/reports', authorize(...roles), getMunshiReports);
+router.get('/packing/:id', authorize(...roles), getPackingByAssignmentId);
 
 module.exports = router;
