@@ -456,7 +456,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"purchaseRate\": 850,\n  \"remarks\": \"Rate finalized after negotiation with farmer. Good quality 4H boxes expected.\"\n}"
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"purchaseRate\": 850,\n  \"packingType\": \"4H\",\n  \"estimatedBoxes\": 1500,\n  \"remarks\": \"Rate finalized after negotiation. Good quality 4H boxes expected.\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/enquiries/fix-rate/{{enquiryId}}",
@@ -470,7 +470,7 @@
                 "{{enquiryId}}"
               ]
             },
-            "description": "Enquiry must be SELECTED. Sets companyId, purchaseRate, remarks, and status -> RATE_FIXED."
+            "description": "Enquiry must be SELECTED. Sets companyId, purchaseRate, remarks, and status → RATE_FIXED.\n\n**New Optional Fields (2026-03-29):**\n- packingType: Enum — '4H', '5H', '6H', '8H', 'CL', '7Kg', 'Other'\n- estimatedBoxes: Number — planned harvest quantity\n\nThese planning fields are stored on the Enquiry and can be further overridden by the OM during team assignment."
           }
         },
         {

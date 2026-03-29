@@ -583,7 +583,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"purchaseRate\": 920,\n  \"remarks\": \"Good quality G9 Cavendish. Recovery ~85%. Rate agreed after inspection review.\"\n}"
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"purchaseRate\": 920,\n  \"packingType\": \"4H\",\n  \"estimatedBoxes\": 1500,\n  \"remarks\": \"Good quality G9 Cavendish. Recovery ~85%. Rate agreed after inspection review.\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/enquiries/fix-rate/{{enquiryId}}",
@@ -597,7 +597,7 @@
                 "{{enquiryId}}"
               ]
             },
-            "description": "PREREQUISITES:\n1. Enquiry status must be 'SELECTED' (inspection must be completed first)\n2. FO can only fix rate for their OWN enquiries (backend checks fieldOwnerId)\n\nSets companyId, purchaseRate, remarks, and status → RATE_FIXED."
+            "description": "PREREQUISITES:\n1. Enquiry status must be 'SELECTED' (inspection must be completed first)\n2. FO can only fix rate for their OWN enquiries (backend checks fieldOwnerId)\n\nSets companyId, purchaseRate, remarks, and status → RATE_FIXED.\n\n**New Optional Fields (2026-03-29):**\n- packingType: Enum — '4H', '5H', '6H', '8H', 'CL', '7Kg', 'Other'\n- estimatedBoxes: Number — planned box count for this harvest\n\nThese planning fields are stored on the Enquiry and can be overridden by the OM during team assignment if needed."
           }
         },
         {

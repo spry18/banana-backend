@@ -68,6 +68,13 @@ const enquirySchema = new mongoose.Schema(
         scheduledTime: {
             type: String,
         },
+        packingType: {
+            type: String,
+            enum: ['4H', '5H', '6H', '8H', 'CL', '7Kg', 'Other'],
+        },
+        estimatedBoxes: {
+            type: Number,
+        },
         companyId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Company',

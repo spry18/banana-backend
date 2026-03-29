@@ -4,7 +4,7 @@ const User = require('../users/user.model');
 const NotificationService = require('../../services/notification.service');
 
 // @desc    Create new logistics assignment
-// @route   POST /api/logistics
+// @route   POST /api/logistics/assign
 // @access  Protected (Admin, Operational Manager)
 const createAssignment = async (req, res) => {
     try {
@@ -12,13 +12,13 @@ const createAssignment = async (req, res) => {
             enquiryId,
             companyId,
             purchaseRate,
+            packingType,
             totalBoxes,
             munshiId,
             driverId,
-            vehicleId,
             priority,
             lightInTime,
-            lightOutTime
+            lightOutTime,
         } = req.body;
 
         // Verify the enquiryId exists
@@ -27,65 +27,90 @@ const createAssignment = async (req, res) => {
             return res.status(404).json({ message: 'Enquiry not found with the provided ID' });
         }
 
-        // === PHASE 5 GUARD: Enquiry MUST be RATE_FIXED before logistics can be assigned ===
+        // === GUARD: Enquiry MUST be RATE_FIXED before logistics can be assigned ===
         if (enquiry.status !== 'RATE_FIXED') {
             return res.status(400).json({
                 message: `Cannot assign logistics. Enquiry status must be 'RATE_FIXED'. Current status: '${enquiry.status}'`,
             });
         }
 
+        // === AUTO-RESOLVE vehicleId from the Driver's user profile ===
+        // We never trust vehicleId/vehicleNumber from the payload directly.
+        // The driver always carries their own vehicle — pull it from the User document.
+        if (!driverId) {
+            return res.status(400).json({ message: 'driverId is required to auto-resolve vehicle.' });
+        }
+        const driver = await User.findById(driverId).populate('vehicleId', 'vehicleNumber vehicleType');
+        if (!driver) {
+            return res.status(404).json({ message: 'Driver not found with the provided driverId.' });
+        }
+        if (!driver.vehicleId) {
+            return res.status(400).json({
+                message: `Driver "${driver.firstName} ${driver.lastName}" has no vehicle linked to their profile. Please link a vehicle first.`,
+            });
+        }
+        const resolvedVehicleId = driver.vehicleId._id;
+
+        // === ENQUIRY OVERRIDE: OM can update planning fields on the Enquiry before finalising ===
+        // This keeps the Enquiry as the single source of truth for planning data.
+        const enquiryUpdates = {};
+        if (companyId)    enquiryUpdates.companyId    = companyId;
+        if (packingType)  enquiryUpdates.packingType  = packingType;
+        if (totalBoxes)   enquiryUpdates.estimatedBoxes = totalBoxes;
+
+        if (Object.keys(enquiryUpdates).length > 0) {
+            Object.assign(enquiry, enquiryUpdates);
+        }
+
         // Set omId to logged-in Operational Manager / Admin
         const omId = req.user._id;
 
-        // Save the logistics assignment document
+        // Create the logistics assignment document
         const assignment = await Logistics.create({
             enquiryId,
             omId,
-            companyId,
+            companyId:   companyId   || enquiry.companyId,   // fall back to enquiry's existing value
             purchaseRate,
             totalBoxes,
             munshiId,
             driverId,
-            vehicleId,
+            vehicleId:   resolvedVehicleId,                  // always from driver profile
             priority,
             lightInTime,
-            lightOutTime
+            lightOutTime,
         });
 
-        // CRITICAL TRIGGER: Update the original Enquiry document status
+        // Update Enquiry status to ASSIGNED (and persist any planning overrides)
         enquiry.status = 'ASSIGNED';
         await enquiry.save();
 
+        // === NOTIFICATIONS ===
         if (munshiId) {
             const munshi = await User.findById(munshiId);
-            if (munshi && munshi.mobileNo) {
-                NotificationService.sendLogisticsAlert(munshi.mobileNo, 'Munshi', `You have been assigned a new packing task. Light-In: ${lightInTime}, Light-Out: ${lightOutTime}.`);
+            if (munshi?.mobileNo) {
+                const timeWindow = lightInTime && lightOutTime ? `${lightInTime} – ${lightOutTime}` : 'TBD';
+                NotificationService.sendLogisticsAlert(munshi.mobileNo, 'Munshi', `You have been assigned a new packing task. Time window: ${timeWindow}.`);
                 NotificationService.sendScheduleConfirmed(
                     enquiry.farmerMobile,
                     enquiry.farmerFirstName,
-                    `${lightInTime} – ${lightOutTime}`,  // actual scheduled window, not runtime date
+                    timeWindow,
                     munshi.firstName,
                     munshi.mobileNo
                 );
             }
         }
 
-        if (driverId) {
-            const driver = await User.findById(driverId);
-            if (driver && driver.mobileNo) {
-                NotificationService.sendLogisticsAlert(driver.mobileNo, 'Driver', 'You have a new route assigned.');
-            }
+        if (driver?.mobileNo) {
+            NotificationService.sendLogisticsAlert(driver.mobileNo, 'Driver', 'You have a new route assigned.');
         }
 
         res.status(201).json(assignment);
     } catch (error) {
         console.error('Error creating assignment:', error);
 
-        // Handle MongoDB duplicate key error for unique enquiryId
         if (error.code === 11000) {
             return res.status(400).json({ message: 'A logistics assignment already exists for this Enquiry.' });
         }
-
         if (error.name === 'CastError') {
             return res.status(400).json({ message: `Invalid ID format for field: ${error.path}` });
         }

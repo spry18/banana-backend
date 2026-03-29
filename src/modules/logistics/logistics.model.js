@@ -19,7 +19,6 @@ const logisticsSchema = new mongoose.Schema(
         },
         purchaseRate: {
             type: Number,
-            required: true,
         },
         totalBoxes: {
             type: Number,
@@ -52,11 +51,11 @@ const logisticsSchema = new mongoose.Schema(
         },
         lightInTime: {
             type: String,
-            required: true,
+            default: null,
         },
         lightOutTime: {
             type: String,
-            required: true,
+            default: null,
         },
         scheduledDate: {
             type: Date,

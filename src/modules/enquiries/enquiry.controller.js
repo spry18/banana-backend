@@ -290,12 +290,12 @@ const rescheduleEnquiry = async (req, res) => {
     }
 };
 
-// @desc    Admin fixes the purchase rate for a selected plot
+// @desc    Admin / Field Owner fixes the purchase rate for a selected plot
 // @route   PATCH /api/enquiries/fix-rate/:id
-// @access  Private (Admin)
+// @access  Private (Admin, Field Owner)
 const fixRate = async (req, res) => {
     try {
-        const { companyId, purchaseRate, remarks } = req.body;
+        const { companyId, purchaseRate, packingType, estimatedBoxes, remarks } = req.body;
 
         if (!companyId || !purchaseRate) {
             return res.status(400).json({ message: 'companyId and purchaseRate are required' });
@@ -321,14 +321,25 @@ const fixRate = async (req, res) => {
             return res.status(404).json({ message: 'Company not found with the provided ID' });
         }
 
-        const before = { companyId: enquiry.companyId, purchaseRate: enquiry.purchaseRate, status: enquiry.status };
+        const before = {
+            companyId: enquiry.companyId,
+            purchaseRate: enquiry.purchaseRate,
+            packingType: enquiry.packingType,
+            estimatedBoxes: enquiry.estimatedBoxes,
+            status: enquiry.status,
+        };
 
-        enquiry.companyId = companyId;
-        enquiry.purchaseRate = purchaseRate;
-        enquiry.remarks = remarks || '';
-        enquiry.status = 'RATE_FIXED';
+        enquiry.companyId      = companyId;
+        enquiry.purchaseRate   = purchaseRate;
+        enquiry.remarks        = remarks || '';
+        enquiry.status         = 'RATE_FIXED';
         // Record which FO actually closed the deal (Global Shared Pool model)
-        enquiry.rateFixedBy = req.user._id;
+        enquiry.rateFixedBy    = req.user._id;
+
+        // Optional planning fields — set if provided, leave existing value if not
+        if (packingType)    enquiry.packingType    = packingType;
+        if (estimatedBoxes) enquiry.estimatedBoxes = estimatedBoxes;
+
         await enquiry.save();
 
         await logSystemAction(
@@ -338,7 +349,7 @@ const fixRate = async (req, res) => {
             enquiry._id,
             `Rate fixed at ₹${purchaseRate} for Enquiry ${enquiry.enquiryId}`,
             before,
-            { companyId, purchaseRate, status: 'RATE_FIXED' }
+            { companyId, purchaseRate, packingType, estimatedBoxes, status: 'RATE_FIXED' }
         );
 
         res.json({ message: 'Rate fixed successfully', enquiry });

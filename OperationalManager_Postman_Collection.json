@@ -398,7 +398,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"enquiryId\":   \"{{enquiryId}}\",\n  \"companyId\":   \"{{companyId}}\",\n  \"purchaseRate\": 920,\n  \"totalBoxes\":  280,\n  \"munshiId\":    \"{{munshiId}}\",\n  \"driverId\":    \"{{driverId}}\",\n  \"vehicleId\":   \"{{vehicleId}}\",\n  \"priority\":    \"HIGH\",\n  \"lightInTime\": \"05:30 AM\",\n  \"lightOutTime\": \"07:00 AM\"\n}"
+                            "raw": "{\n  \"enquiryId\": \"{{enquiryId}}\",\n\n  \"companyId\": \"{{companyId}}\",\n  \"packingType\": \"4H\",\n  \"totalBoxes\": 280,\n\n  \"munshiId\": \"{{munshiId}}\",\n  \"driverId\": \"{{driverId}}\",\n\n  \"priority\": \"HIGH\",\n\n  \"lightInTime\": \"05:30 AM\",\n  \"lightOutTime\": \"07:00 AM\"\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/logistics/assign",
@@ -411,7 +411,7 @@
                                 "assign"
                             ]
                         },
-                        "description": "PREREQUISITES:\n1. Enquiry status must be RATE_FIXED\n2. Enquiry must not have an existing logistics record (use Unassigned list)\n\nTriggers WhatsApp alerts to:\n- Munshi: task assignment + light-in/out schedule\n- Driver: route assignment\n- Farmer: harvest schedule confirmation with Munshi contact\n\nTest script captures _id into {{assignmentId}}."
+                        "description": "Assigns a Munshi + Driver team to a RATE_FIXED enquiry.\n\n## FE Update (2026-03-29)\n\n**vehicleId / vehicleNumber — REMOVED.**\nBackend auto-resolves from driver.vehicleId. If driver has no vehicle linked, returns 400.\n\n**Enquiry Override** — companyId, packingType, totalBoxes are written back to the Enquiry document to keep it as the source of truth.\n\n**packingType** enum: '4H', '5H', '6H', '8H', 'CL', '7Kg', 'Other'\n\n**purchaseRate** — Optional (no longer required).\n**lightInTime / lightOutTime** — Optional. Notification shows 'TBD' if omitted.\n\nTriggers WhatsApp alerts to Munshi, Driver, and Farmer.\nTest script captures _id into {{assignmentId}}."
                     }
                 }
             ]
