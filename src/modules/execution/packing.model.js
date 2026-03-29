@@ -63,6 +63,19 @@ const packingSchema = new mongoose.Schema(
             type: String,
             default: null,
         },
+        lineNo: {
+            type: String,
+            default: '',
+        },
+        teamName: {
+            type: String,
+            default: '',
+        },
+        brandId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Brand',
+            default: null,
+        },
         status: {
             type: String,
             enum: ['PENDING', 'SUBMITTED', 'CANCELLED'],
