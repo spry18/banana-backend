@@ -78,8 +78,12 @@ const packingSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ['PENDING', 'SUBMITTED', 'CANCELLED'],
+            enum: ['PENDING', 'SUBMITTED', 'CANCELLED', 'REJECTED', 'APPROVED'],
             default: 'PENDING',
+        },
+        omRemark: {
+            type: String,
+            default: null,
         },
     },
     { timestamps: true }

@@ -72,7 +72,7 @@ const logisticsSchema = new mongoose.Schema(
         },
         assignmentStatus: {
             type: String,
-            enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
+            enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'REJECTED', 'APPROVED'],
             default: 'PENDING',
         },
     },

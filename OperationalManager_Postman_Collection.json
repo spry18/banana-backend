@@ -2,7 +2,7 @@
     "info": {
         "name": "VaxTrack — Operational Manager Module",
         "_postman_id": "vaxtrack-om-v1-2026",
-        "description": "Complete Operational Manager API collection for VaxTrack. Login first (folder 0) to auto-capture the token into {{omToken}}. Set {{baseUrl}} = http://localhost:5000 in your environment.",
+        "description": "Complete Operational Manager API collection for VaxTrack. Login first (folder 0) to auto-capture the token into {{omToken}}. Set {{baseUrl}} = http://localhost:5000 in your environment.\n\n## Packing Report Lifecycle (4-Step Workflow):\n1. **Munshi Submits** → POST /api/munshi/packing/:id → Packing status = SUBMITTED, Assignment status = COMPLETED\n2. **OM Reviews & Rejects (Optional)** → POST .../assignments/:assignmentId/reject → Packing status = REJECTED, Assignment status = REJECTED + omRemark sent to Munshi\n3. **Munshi Resubmits (If Rejected)** → PUT /api/munshi/assignments/:assignmentId/packing → Packing status = SUBMITTED, Assignment status = COMPLETED (omRemark cleared)\n4. **OM Approves (Final)** → POST .../assignments/:assignmentId/approve → Packing status = APPROVED, Assignment status = APPROVED (Locked - Munshi cannot edit)\n\nOnce approved, the packing report is finalized and ready for Finance/Admin trip clearance processing.",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "variable": [
@@ -297,7 +297,7 @@
                                 }
                             ]
                         },
-                        "description": "Returns Logistics assignments where the Enquiry status = ASSIGNED. The team has been dispatched and is in progress.\n\nEnquiry object now includes `farmerMobile` for direct farmer contact.\nSecurity: `purchaseRate` is excluded from all logistics objects."
+                        "description": "Returns Logistics assignments where assignmentStatus is PENDING or IN_PROGRESS. The team has been assigned and dispatch is either awaiting pickup driver assignment or in progress.\n\nEnquiry object now includes `farmerMobile` for direct farmer contact.\nSecurity: `purchaseRate` is excluded from all logistics objects."
                     }
                 },
                 {
@@ -335,7 +335,7 @@
                                 }
                             ]
                         },
-                        "description": "Returns assignments where the Trip report has been OM-reviewed (APPROVED or REJECTED). Includes tripReview data merged into each record.\n\nEnquiry object now includes `farmerMobile` for direct farmer contact.\nSecurity: `purchaseRate` is excluded from all logistics objects."
+                        "description": "Returns assignments where assignmentStatus is COMPLETED, REJECTED, or APPROVED. These represent all assignments that have completed the OM review phase (either accepted as-is, rejected with notes for resubmission, or finally approved/locked for Finance).\n\nEnquiry object now includes `farmerMobile` for direct farmer contact.\nSecurity: `purchaseRate` is excluded from all logistics objects.\n\nUse this to show OM's full history of reviewed assignments across all review states."
                     }
                 }
             ]
@@ -411,7 +411,7 @@
                                 "assign"
                             ]
                         },
-                        "description": "Assigns a Munshi + Driver team to a RATE_FIXED enquiry.\n\n## FE Update (2026-03-29)\n\n**vehicleId / vehicleNumber — REMOVED.**\nBackend auto-resolves from driver.vehicleId. If driver has no vehicle linked, returns 400.\n\n**Enquiry Override** — companyId, packingType, totalBoxes are written back to the Enquiry document to keep it as the source of truth.\n\n**packingType** enum: '4H', '5H', '6H', '8H', 'CL', '7Kg', 'Other'\n\n**purchaseRate** — Optional (no longer required).\n**lightInTime / lightOutTime** — Optional. Notification shows 'TBD' if omitted.\n\nTriggers WhatsApp alerts to Munshi, Driver, and Farmer.\nTest script captures _id into {{assignmentId}}."
+                        "description": "Assigns a Munshi + Driver team to a RATE_FIXED enquiry.\n\n## FE Update (2026-04-03)\n\n**vehicleId / vehicleNumber — AUTO-RESOLVED.**\nBackend auto-resolves from driver.vehicleId. If driver has no vehicle linked, returns 400.\n\n**Enquiry Override** — companyId, packingType, totalBoxes are written back to the Enquiry document to keep it as the source of truth.\n\n**packingType** enum: '4H', '5H', '6H', '8H', 'CL', '7Kg', 'Other'\n**totalBoxes** — Required. Total number of boxes for this assignment.\n\n**purchaseRate** — Optional (no longer required).\n**lightInTime / lightOutTime** — Optional. Notification shows 'TBD' if omitted.\n\nTriggers WhatsApp alerts to Munshi, Driver, and Farmer.\nTest script captures _id into {{assignmentId}}."
                     }
                 }
             ]
@@ -507,6 +507,79 @@
                             ]
                         },
                         "description": "Rejects the trip report. reviewNote is REQUIRED when rejecting — this note is shown to the driver as the rejection reason."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "4.5. Packing Report Rejection",
+            "item": [
+                {
+                    "name": "POST Reject Packing Report (Request Resubmit)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"remark\": \"Box counts do not match the photos. Please fix and resubmit.\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/operational-manager/assignments/{{assignmentId}}/reject",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "operational-manager",
+                                "assignments",
+                                "{{assignmentId}}",
+                                "reject"
+                            ]
+                        },
+                        "description": "Rejects a submitted packing report and requests Munshi to resubmit.\n\n## Side Effects:\n- Packing status → REJECTED\n- Logistics assignmentStatus → REJECTED\n- Packing.omRemark = the remark text (shown to Munshi)\n\n## Munshi Workflow:\n1. Munshi receives notification that their packing report was rejected\n2. Munshi calls GET /api/munshi/assignments/{{assignmentId}}/packing to fetch the report + see omRemark\n3. Munshi corrects the box counts and calls PUT /api/munshi/assignments/{{assignmentId}}/packing to resubmit\n4. Resubmission clears omRemark and sets assignmentStatus back to COMPLETED\n\n**remark** is REQUIRED — describe what needs to be corrected."
+                    }
+                },
+                {
+                    "name": "POST Approve Packing Report (Final Lock)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"approvalNote\": \"All box counts verified and match photos. Cleared for Finance processing.\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/operational-manager/assignments/{{assignmentId}}/approve",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "operational-manager",
+                                "assignments",
+                                "{{assignmentId}}",
+                                "approve"
+                            ]
+                        },
+                        "description": "Final approval for the packing report. This locks the assignment into APPROVED status.\n\n## Prerequisites:\n- Packing status must be SUBMITTED (Munshi has already resubmitted after rejection, or first submission is good)\n- Assignment must belong to an OM (cannot be re-edited after approval)\n\n## Side Effects:\n- Packing status → APPROVED (locked)\n- Logistics assignmentStatus → APPROVED\n- Signals to Finance/Admin team that dispatch is complete and ready for trip clearance\n- Munshi can no longer edit or resubmit once approved\n\n**approvalNote** is OPTIONAL — additional notes for the Finance team or audit trail.\n\n## 4-Step Packing Lifecycle:\n1. **Munshi Submits** → Packing status = SUBMITTED, Assignment = COMPLETED\n2. **OM Reviews & Rejects** (if needed) → Packing status = REJECTED, Assignment = REJECTED + omRemark\n3. **Munshi Resubmits** (if rejected) → Packing status = SUBMITTED, Assignment = COMPLETED (clears omRemark)\n4. **OM Approves** → Packing status = APPROVED, Assignment = APPROVED (Final Lock)"
                     }
                 }
             ]
@@ -642,7 +715,42 @@
             ]
         },
         {
-            "name": "6. Notifications",
+            "name": "6. Master Data",
+            "item": [
+                {
+                    "name": "GET Munshi Master Dropdown",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users?role=Munshi",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users"
+                            ],
+                            "query": [
+                                {
+                                    "key": "role",
+                                    "value": "Munshi",
+                                    "description": "Filter users by role"
+                                }
+                            ]
+                        },
+                        "description": "NEW — Fetches all users with the role of Munshi.\n\nUse this to populate the 'Assign Munshi' dropdown during the logistics dispatch process (POST /api/logistics/assign).\n\nReturns array of Munshi users with: _id, firstName, lastName, mobileNo, role."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "7. Notifications",
             "item": [
                 {
                     "name": "GET Notification Feed",

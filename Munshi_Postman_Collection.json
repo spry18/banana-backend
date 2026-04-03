@@ -607,6 +607,153 @@
                     }
                 },
                 {
+                    "name": "GET Packing Report (Fetch for Edit/Reject)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/munshi/assignments/{{assignmentId}}/packing",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "munshi",
+                                "assignments",
+                                "{{assignmentId}}",
+                                "packing"
+                            ]
+                        },
+                        "description": "NEW — Fetches an existing packing report (especially after OM rejection).\n\nReturns the full packing document including:\n- All box counts (box4H, box5H, etc.)\n- Photos array (file paths)\n- status ('SUBMITTED', 'REJECTED', etc.)\n- **omRemark** — The OM's rejection comment (if status = REJECTED)\n- Wastage details (wastageKg, wastageReason)\n- Brand, team, line info\n\nUsed by the mobile app to pre-fill the Packing form when resubmitting after rejection."
+                    }
+                },
+                {
+                    "name": "PUT Update Packing Report (Resubmit)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "box4H",
+                                    "value": "60",
+                                    "type": "text",
+                                    "description": "Corrected 4H box count"
+                                },
+                                {
+                                    "key": "box5H",
+                                    "value": "35",
+                                    "type": "text",
+                                    "description": "Corrected 5H box count"
+                                },
+                                {
+                                    "key": "box6H",
+                                    "value": "25",
+                                    "type": "text",
+                                    "description": "Corrected 6H box count"
+                                },
+                                {
+                                    "key": "box8H",
+                                    "value": "12",
+                                    "type": "text",
+                                    "description": "Corrected 8H box count"
+                                },
+                                {
+                                    "key": "boxCL",
+                                    "value": "5",
+                                    "type": "text",
+                                    "description": "Corrected CL box count"
+                                },
+                                {
+                                    "key": "box7Kg",
+                                    "value": "15",
+                                    "type": "text",
+                                    "description": "Corrected 7Kg box count"
+                                },
+                                {
+                                    "key": "boxOther",
+                                    "value": "0",
+                                    "type": "text",
+                                    "description": "Corrected Other box count"
+                                },
+                                {
+                                    "key": "totalBoxes",
+                                    "value": "152",
+                                    "type": "text",
+                                    "description": "Must equal sum of all box types (60+35+25+12+5+15+0 = 152)"
+                                },
+                                {
+                                    "key": "wastageKg",
+                                    "value": "5",
+                                    "type": "text",
+                                    "description": "Corrected wastage in kg"
+                                },
+                                {
+                                    "key": "wastageReason",
+                                    "value": "Minor insect damage",
+                                    "type": "text",
+                                    "description": "Corrected wastage reason (required if wastageKg > 0)"
+                                },
+                                {
+                                    "key": "remarks",
+                                    "value": "Recounted boxes - corrected tally",
+                                    "type": "text",
+                                    "description": "Optional notes"
+                                },
+                                {
+                                    "key": "lineNo",
+                                    "value": "3",
+                                    "type": "text",
+                                    "description": "Packing line number"
+                                },
+                                {
+                                    "key": "teamName",
+                                    "value": "Shiva Team",
+                                    "type": "text",
+                                    "description": "Harvesting team name"
+                                },
+                                {
+                                    "key": "brandId",
+                                    "value": "REPLACE_WITH_BRAND_OBJECT_ID",
+                                    "type": "text",
+                                    "description": "Brand reference"
+                                },
+                                {
+                                    "key": "photos",
+                                    "src": "",
+                                    "type": "file",
+                                    "description": "NEW PACKING PHOTOS (optional - replaces old if provided)"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/munshi/assignments/{{assignmentId}}/packing",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "munshi",
+                                "assignments",
+                                "{{assignmentId}}",
+                                "packing"
+                            ]
+                        },
+                        "description": "NEW — Resubmits a rejected packing report with corrected box counts and optional new photos.\n\n## Prerequisites:\n- Assignment must have Packing status = REJECTED\n- Assignment must belong to the logged-in Munshi\n\n## Side Effects:\n- Packing status → SUBMITTED (back to submittable state)\n- Packing.omRemark → null (clears the OM's rejection comment)\n- Logistics.assignmentStatus → COMPLETED (assignment marked as done)\n\n## Validation:\n- totalBoxes must equal sum of all 7 box types\n- wastageReason required if wastageKg > 0\n- If new photos provided, they replace old ones; otherwise photos remain unchanged\n\nTest to ensure OM can then review the resubmitted report."
+                    }
+                },
+                {
                     "name": "GET Packing Detail by Assignment ID",
                     "request": {
                         "method": "GET",

@@ -300,11 +300,12 @@ const submitPackingReport = async (req, res) => {
 };
 
 // @desc    Get packing report for a specific assignment
-// @route   GET /api/munshi/packing/:id
+// @route   GET /api/munshi/packing/:id OR GET /api/munshi/assignments/:assignmentId/packing
 // @access  Protected
 const getPackingByAssignmentId = async (req, res) => {
     try {
-        const packing = await Packing.findOne({ assignmentId: req.params.id })
+        const assignmentId = req.params.id || req.params.assignmentId;
+        const packing = await Packing.findOne({ assignmentId })
             .populate('brandId', 'brandName')
             .lean();
         if (!packing) {
@@ -313,6 +314,9 @@ const getPackingByAssignmentId = async (req, res) => {
         res.status(200).json(packing);
     } catch (error) {
         console.error('Error fetching packing details:', error);
+        if (error.name === 'CastError') {
+            return res.status(400).json({ message: `Invalid ID format for field: ${error.path}` });
+        }
         res.status(500).json({ message: 'Server error while fetching packing details' });
     }
 };
@@ -459,6 +463,112 @@ const rolloverAssignment = async (req, res) => {
     }
 };
 
+// @desc    Update (resubmit) a rejected packing report
+// @route   PUT /api/munshi/assignments/:assignmentId/packing
+// @access  Protected (Munshi, Admin, Operational Manager)
+const updatePackingReport = async (req, res) => {
+    try {
+        const assignmentId = req.params.assignmentId;
+        const munshiId = req.user._id;
+
+        // Verify assignment exists and belongs to this Munshi
+        const assignment = await Logistics.findById(assignmentId);
+        if (!assignment) {
+            return res.status(404).json({ message: 'Assignment not found' });
+        }
+
+        if (assignment.munshiId.toString() !== munshiId.toString() && req.user.role !== 'Admin') {
+            return res.status(403).json({ message: 'You can only update reports for your own assignments' });
+        }
+
+        if (assignment.assignmentStatus !== 'REJECTED') {
+            return res.status(400).json({ message: `Cannot update a packing report for assignment with status: ${assignment.assignmentStatus}` });
+        }
+
+        // Find existing packing record in REJECTED status
+        const packing = await Packing.findOne({ assignmentId });
+        if (!packing) {
+            return res.status(404).json({ message: 'Packing report not found' });
+        }
+
+        if (packing.status !== 'REJECTED') {
+            return res.status(400).json({ message: `Cannot update packing report with status: ${packing.status}` });
+        }
+
+        const {
+            box4H = 0,
+            box5H = 0,
+            box6H = 0,
+            box8H = 0,
+            boxCL = 0,
+            box7Kg = 0,
+            boxOther = 0,
+            totalBoxes,
+            wastageKg = 0,
+            wastageReason,
+            remarks,
+            lineNo,
+            teamName,
+            brandId,
+        } = req.body;
+
+        // Validate totalBoxes sum
+        const calculatedTotal = Number(box4H) + Number(box5H) + Number(box6H) + Number(box8H)
+            + Number(boxCL) + Number(box7Kg) + Number(boxOther);
+        if (Number(totalBoxes) !== calculatedTotal) {
+            return res.status(400).json({
+                message: `totalBoxes (${totalBoxes}) does not match the sum of individual boxes (${calculatedTotal})`,
+            });
+        }
+
+        // Wastage validation
+        if (Number(wastageKg) > 0 && !wastageReason) {
+            return res.status(400).json({ message: 'wastageReason is required when wastageKg > 0' });
+        }
+
+        // Handle new photos (replace old ones if provided)
+        let photos = packing.photos;
+        if (req.files && req.files.length > 0) {
+            photos = req.files.map(f => `/uploads/${f.filename}`);
+        }
+
+        // Update packing record
+        packing.box4H = box4H;
+        packing.box5H = box5H;
+        packing.box6H = box6H;
+        packing.box8H = box8H;
+        packing.boxCL = boxCL;
+        packing.box7Kg = box7Kg;
+        packing.boxOther = boxOther;
+        packing.totalBoxes = totalBoxes;
+        packing.wastageKg = wastageKg;
+        packing.wastageReason = wastageReason;
+        packing.remarks = remarks || '';
+        packing.lineNo = lineNo || '';
+        packing.teamName = teamName || '';
+        packing.brandId = brandId || null;
+        packing.photos = photos;
+        packing.status = 'SUBMITTED';
+        packing.omRemark = null;  // Clear rejection remark
+        await packing.save();
+
+        // Update parent logistics assignment status back to COMPLETED
+        assignment.assignmentStatus = 'COMPLETED';
+        await assignment.save();
+
+        res.status(200).json({
+            message: 'Packing report updated and resubmitted successfully',
+            packing,
+        });
+    } catch (error) {
+        console.error('Error updating packing report:', error);
+        if (error.name === 'CastError') {
+            return res.status(400).json({ message: `Invalid ID format for field: ${error.path}` });
+        }
+        res.status(500).json({ message: error.message || 'Server error while updating packing report' });
+    }
+};
+
 module.exports = {
     getMunshiDashboard,
     getMunshiAssignments,
@@ -467,4 +577,5 @@ module.exports = {
     getMunshiReports,
     getPackingByAssignmentId,
     rolloverAssignment,
+    updatePackingReport,
 };

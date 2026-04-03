@@ -8,6 +8,7 @@ const {
     getMunshiReports,
     rolloverAssignment,
     getPackingByAssignmentId,
+    updatePackingReport,
 } = require('./munshi.controller');
 const { protect, authorize } = require('../../middlewares/auth.middleware');
 const upload = require('../../middlewares/upload.middleware');
@@ -29,6 +30,17 @@ router.post(
     authorize(...roles),
     upload.array('photos', 10),   // up to 10 packing photos
     submitPackingReport
+);
+router.get(
+    '/assignments/:assignmentId/packing',
+    authorize(...roles),
+    getPackingByAssignmentId
+);
+router.put(
+    '/assignments/:assignmentId/packing',
+    authorize(...roles),
+    upload.array('photos', 10),   // up to 10 packing photos
+    updatePackingReport
 );
 router.get('/reports', authorize(...roles), getMunshiReports);
 router.get('/packing/:id', authorize(...roles), getPackingByAssignmentId);
