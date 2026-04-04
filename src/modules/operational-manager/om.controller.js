@@ -68,7 +68,7 @@ const getOmPlots = async (req, res) => {
         // purchaseRate is strictly excluded from all logistics objects.
         if (!stage || stage === 'All') {
             const query = {
-                status: { $in: ['RATE_FIXED', 'ASSIGNED'] },
+                status: { $in: ['RATE_FIXED', 'ASSIGNED', 'IN_PROGRESS'] },
             };
 
             if (search) {
@@ -342,10 +342,13 @@ const approvePackingReport = async (req, res) => {
         if (assignment) {
             assignment.assignmentStatus = 'APPROVED';
             await assignment.save();
+            if (assignment.enquiryId) {
+                await Enquiry.findByIdAndUpdate(assignment.enquiryId, { status: 'COMPLETED' });
+            }
         }
 
         res.status(200).json({
-            message: 'Packing report approved successfully. Assignment is now locked for Finance processing.',
+            message: 'Packing report approved successfully. Assignment is now locked for Finance processing. Parent enquiry marked COMPLETED.',
             assignment,
             packing,
             approvalNote: approvalNote || null,

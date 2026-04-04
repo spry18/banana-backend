@@ -56,7 +56,7 @@ const getMunshiDashboard = async (req, res) => {
 // @desc    Get paginated assignments for the logged-in Munshi (tabs: Pickups, Completed, Cancelled)
 // @route   GET /api/munshi/assignments
 // @access  Protected (Munshi, Admin, Operational Manager)
-// @query   ?status=PENDING|IN_PROGRESS|COMPLETED|CANCELLED  ?page=1  ?limit=20
+// @query   ?status=PENDING|IN_PROGRESS|COMPLETED|CANCELLED|REJECTED|APPROVED  ?page=1  ?limit=20
 const getMunshiAssignments = async (req, res) => {
     try {
         const munshiId = req.user._id;

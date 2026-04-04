@@ -39,7 +39,7 @@ const getDashboard = async (req, res) => {
             // Visited = inspection was submitted (SELECTED + REJECTED + downstream statuses)
             Enquiry.countDocuments({
                 ...baseFilter,
-                status: { $in: ['SELECTED', 'REJECTED', 'RATE_FIXED', 'ASSIGNED', 'COMPLETED', 'CLOSED'] },
+                status: { $in: ['SELECTED', 'REJECTED', 'RATE_FIXED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CLOSED'] },
             }),
 
             // Last 5 activity items for the feed

@@ -1,11 +1,10 @@
 const Trip = require('./trip.model');
 const Logistics = require('../logistics/logistics.model');
-const Enquiry = require('../enquiries/enquiry.model');
 const PdfService = require('../../services/pdf.service');
 
 // @desc    Create new trip
 // @route   POST /api/execution/trips
-// @access  Protected (Admin, Driver (Eicher), Driver (Pickup))
+// @access  Protected (Admin, driver eicher, driver pickup)
 const createTrip = async (req, res) => {
     try {
         const {
@@ -59,13 +58,6 @@ const createTrip = async (req, res) => {
             isLocked
         });
 
-        // CRITICAL TRIGGER: Update the original Enquiry document using the enquiryId from Logistics assignment
-        const enquiry = await Enquiry.findById(logistics.enquiryId);
-        if (enquiry) {
-            enquiry.status = 'COMPLETED';
-            await enquiry.save();
-        }
-
         const reportUrl = await PdfService.generateTripReport(trip);
         trip.systemReportUrl = reportUrl;
         await trip.save();
@@ -82,7 +74,7 @@ const createTrip = async (req, res) => {
 
 // @desc    Get all trips
 // @route   GET /api/execution/trips
-// @access  Protected (Admin, Operational Manager, Driver (Eicher), Driver (Pickup))
+// @access  Protected (Admin, Operational Manager, driver eicher, driver pickup)
 const getTrips = async (req, res) => {
     try {
         const trips = await Trip.find()

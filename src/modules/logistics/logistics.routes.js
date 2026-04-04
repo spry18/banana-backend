@@ -16,7 +16,7 @@ router
 
 router
     .route('/')
-    .get(authorize('Admin', 'Operational Manager', 'Munshi', 'Driver (Eicher)', 'Driver (Pickup)'), getAssignments);
+    .get(authorize('Admin', 'Operational Manager', 'Munshi', 'driver eicher', 'driver pickup'), getAssignments);
 
 router
     .route('/:id')

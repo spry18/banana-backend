@@ -1,1124 +1,1124 @@
 {
-  "info": {
-    "name": "VaxTrack — Field Owner Module",
-    "_postman_id": "vaxtrack-field-owner-v1-2026",
-    "description": "Complete Field Owner API collection for VaxTrack. Login first (folder 0) to auto-capture the token into {{foToken}}. Set {{baseUrl}} = http://localhost:5000 in your environment.",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:5000",
-      "type": "string"
+    "info": {
+        "name": "VaxTrack — Field Owner Module",
+        "_postman_id": "vaxtrack-field-owner-v1-2026",
+        "description": "Complete Field Owner API collection for VaxTrack. Login first (folder 0) to auto-capture the token into {{foToken}}. Set {{baseUrl}} = http://localhost:5000 in your environment.\n\n## E2E linkage\nPOST Create Enquiry captures {{enquiryId}}. Set {{generationId}}, {{selectorId}}, {{agentId}}, {{companyId}} from GET /api/master-data/dropdowns. Copy {{enquiryId}} into the Operational Manager collection for POST Assign Logistics.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
-    {
-      "key": "foToken",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "enquiryId",
-      "value": "REPLACE_WITH_REAL_ID",
-      "type": "string"
-    },
-    {
-      "key": "companyId",
-      "value": "REPLACE_WITH_REAL_ID",
-      "type": "string"
-    },
-    {
-      "key": "agentId",
-      "value": "REPLACE_WITH_REAL_ID",
-      "type": "string"
-    },
-    {
-      "key": "generationId",
-      "value": "REPLACE_WITH_REAL_ID",
-      "type": "string"
-    },
-    {
-      "key": "selectorId",
-      "value": "REPLACE_WITH_REAL_ID",
-      "type": "string"
-    },
-    {
-      "key": "logId",
-      "value": "REPLACE_WITH_REAL_ID",
-      "type": "string"
-    }
-  ],
-  "item": [
-    {
-      "name": "0. Auth",
-      "item": [
+    "variable": [
         {
-          "name": "Login as Field Owner",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const res = pm.response.json();",
-                  "if (res.token) {",
-                  "  pm.collectionVariables.set('foToken', res.token);",
-                  "  console.log('FO Token captured:', res.token);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"mobileNo\": \"0000000001\",\n  \"password\": \"password123\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/users/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "users",
-                "login"
-              ]
-            }
-          }
+            "key": "baseUrl",
+            "value": "http://localhost:5000",
+            "type": "string"
         },
         {
-          "name": "GET My Profile",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/users/me",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "users",
-                "me"
-              ]
-            },
-            "description": "Returns the logged-in FO's profile (name, role, mobile). Use to display \"Welcome, [Name]\" in the app header."
-          }
+            "key": "foToken",
+            "value": "",
+            "type": "string"
         },
         {
-          "name": "POST Logout",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/users/logout",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "users",
-                "logout"
-              ]
-            },
-            "description": "Writes a LOGOUT audit log entry. After 200, the client must delete the stored token to complete logout (JWT is stateless)."
-          }
+            "key": "enquiryId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        },
+        {
+            "key": "companyId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        },
+        {
+            "key": "agentId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        },
+        {
+            "key": "generationId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        },
+        {
+            "key": "selectorId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
+        },
+        {
+            "key": "logId",
+            "value": "REPLACE_WITH_REAL_ID",
+            "type": "string"
         }
-      ]
-    },
-    {
-      "name": "1. Dashboard & Summary (Page 1)",
-      "item": [
+    ],
+    "item": [
         {
-          "name": "GET Field Owner Dashboard",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/field-owner/dashboard",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "field-owner",
-                "dashboard"
-              ]
-            },
-            "description": "Returns 6 KPIs (total, selected, rejected, missed, futureSelection, fixedRate) scoped to the logged-in FO + last 5 recent actionable plots (Selected, Rate Fixed, Assigned, Completed) with rich populated fields (generation, companyName, packing, volume, recovery)."
-          }
+            "name": "0. Auth",
+            "item": [
+                {
+                    "name": "Login as Field Owner",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.token) {",
+                                    "  pm.collectionVariables.set('foToken', res.token);",
+                                    "  console.log('FO Token captured:', res.token);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"mobileNo\": \"0000000001\",\n  \"password\": \"password123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "login"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET My Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "me"
+                            ]
+                        },
+                        "description": "Returns the logged-in FO's profile (name, role, mobile). Use to display \"Welcome, [Name]\" in the app header."
+                    }
+                },
+                {
+                    "name": "POST Logout",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/logout",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "logout"
+                            ]
+                        },
+                        "description": "Writes a LOGOUT audit log entry. After 200, the client must delete the stored token to complete logout (JWT is stateless)."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "1. Dashboard & Summary (Page 1)",
+            "item": [
+                {
+                    "name": "GET Field Owner Dashboard",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/dashboard",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "dashboard"
+                            ]
+                        },
+                        "description": "Returns 6 KPIs (total, selected, rejected, missed, futureSelection, fixedRate) scoped to the logged-in FO + last 5 recent actionable plots (Selected, Rate Fixed, Assigned, Completed) with rich populated fields (generation, companyName, packing, volume, recovery)."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "2. Enquiry Creation (Page 2)",
+            "item": [
+                {
+                    "name": "GET Form Dropdowns (Agents, Generations, Selectors, Companies)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/master-data/dropdowns",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "master-data",
+                                "dropdowns"
+                            ]
+                        },
+                        "description": "Call on form load to populate all select boxes. Returns: companies[], agents[], generations[], selectors[]."
+                    }
+                },
+                {
+                    "name": "POST Create Enquiry (Field Owner)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res._id) {",
+                                    "  pm.collectionVariables.set('enquiryId', res._id);",
+                                    "  console.log('Enquiry ID captured:', res._id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"farmerFirstName\": \"Vikram\",\n  \"farmerLastName\": \"Patil\",\n  \"farmerMobile\": \"8845010998\",\n  \"location\": \"Nashik\",\n  \"subLocation\": \"Dindori Taluka Block\",\n  \"plantCount\": 4200,\n  \"generation\": \"{{generationId}}\",\n  \"agentAttached\": true,\n  \"agentId\": \"{{agentId}}\",\n  \"visitPriority\": \"High\",\n  \"assignedSelectorId\": \"{{selectorId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries"
+                            ]
+                        },
+                        "description": "FO is authorized on this route. The backend auto-sets fieldOwnerId = req.user._id. Test script captures _id into {{enquiryId}}."
+                    }
+                },
+                {
+                    "name": "GET All Selectors (Field Owner)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/selectors",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "selectors"
+                            ]
+                        },
+                        "description": "Fetches a list of all Field Selectors (id, firstName, lastName, mobileNo). Used right before assigning or re-assigning an enquiry to pick a selector."
+                    }
+                },
+                {
+                    "name": "PUT Update/Assign Enquiry (Field Owner)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"assignedSelectorId\": \"{{selectorId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries/{{enquiryId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries",
+                                "{{enquiryId}}"
+                            ]
+                        },
+                        "description": "Updates an enquiry. If a new assignedSelectorId is provided, the status automatically shifts to ASSIGNED."
+                    }
+                },
+                {
+                    "name": "POST Run SLA Timeout Check (Admin/FO)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries/run-sla-check",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries",
+                                "run-sla-check"
+                            ]
+                        },
+                        "description": "Manually triggers the SLA timeout check. Finds all ASSIGNED enquiries not visited in 24h, logs the missed selector into missedAssignments, and resets them to PENDING."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET Missed Plots SLA Report",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries/reports/missed",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries",
+                                "reports",
+                                "missed"
+                            ]
+                        },
+                        "description": "Returns all enquiries where missedAssignments is not empty. Each entry includes the selector(s) who failed to visit within 24h (firstName, lastName, mobileNo), sorted by updatedAt descending."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "3. All Plots Management (Page 3)",
+            "item": [
+                {
+                    "name": "GET All Plots (No Filter)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/plots?page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "plots"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        },
+                        "description": "Returns all enquiries owned by this FO, paginated."
+                    }
+                },
+                {
+                    "name": "GET Plots — Filter: Selected",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/plots?status=SELECTED",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "plots"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "SELECTED"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET Plots — Filter: Rejected",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/plots?status=REJECTED",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "plots"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "REJECTED"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "GET Plots — Filter: Missed",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/plots?status=Missed",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "plots"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "Missed"
+                                }
+                            ]
+                        },
+                        "description": "'Missed' is a derived filter (PENDING + scheduledDate < now). The backend translates this automatically."
+                    }
+                },
+                {
+                    "name": "GET Plots — Filter: Rescheduled",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/plots?status=Rescheduled",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "plots"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "Rescheduled"
+                                }
+                            ]
+                        },
+                        "description": "'Rescheduled' = PENDING + scheduledDate in the future. The backend translates this automatically."
+                    }
+                },
+                {
+                    "name": "GET Plots — Search by Farmer Name",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/plots?search=Vikram",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "plots"
+                            ],
+                            "query": [
+                                {
+                                    "key": "search",
+                                    "value": "Vikram"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "4. Commercials — Fix Rate (Page 4)",
+            "item": [
+                {
+                    "name": "GET Single Plot Details (with Inspection & Photos)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries/{{enquiryId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries",
+                                "{{enquiryId}}"
+                            ]
+                        },
+                        "description": "Fetches the full plot record plus its joined Inspection (photos + composition). Returns 403 if this plot doesn't belong to the logged-in FO."
+                    }
+                },
+                {
+                    "name": "PATCH Fix Rate (Field Owner)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"purchaseRate\": 920,\n  \"packingType\": \"4H\",\n  \"estimatedBoxes\": 1500,\n  \"remarks\": \"Good quality G9 Cavendish. Recovery ~85%. OM notes E2E: commercial OK for cold-chain handoff Apr 2026.\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries/fix-rate/{{enquiryId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries",
+                                "fix-rate",
+                                "{{enquiryId}}"
+                            ]
+                        },
+                        "description": "PREREQUISITES:\n1. Enquiry status must be 'SELECTED' (inspection must be completed first)\n2. FO can only fix rate for their OWN enquiries (backend checks fieldOwnerId)\n\nSets companyId, purchaseRate, remarks, and status → RATE_FIXED.\n\n**New Optional Fields (2026-03-29):**\n- packingType: Enum — '4H', '5H', '6H', '8H', 'CL', '7Kg', 'Other'\n- estimatedBoxes: Number — planned box count for this harvest\n\nThese planning fields are stored on the Enquiry and can be overridden by the OM during team assignment if needed."
+                    }
+                },
+                {
+                    "name": "PUT Reschedule Enquiry (Field Owner)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"rescheduleDate\": \"2026-04-15\",\n  \"reason\": \"Farmer requested delay due to sudden rain and harvesting issues.\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries/{{enquiryId}}/reschedule",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries",
+                                "{{enquiryId}}",
+                                "reschedule"
+                            ]
+                        },
+                        "description": "When FO reviews a SELECTED plot, they can either Fix Rate OR Reschedule. This API sets status to 'RESCHEDULED', updates rescheduleDate, clears assignedSelectorId, and logs the reason in rescheduleHistory."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "5. Field Selector Tracking (Pages 5 & 6)",
+            "item": [
+                {
+                    "name": "GET Selectors Performance (All Time)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/selectors-performance",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "selectors-performance"
+                            ]
+                        },
+                        "description": "Returns all selectors assigned to this FO's enquiries with: totalKm, totalDays, visitedPlots, approvedPlots, rejectedPlots."
+                    }
+                },
+                {
+                    "name": "GET Selectors Performance (Date Filtered)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/selectors-performance?startDate=2026-03-01&endDate=2026-03-31",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "selectors-performance"
+                            ],
+                            "query": [
+                                {
+                                    "key": "startDate",
+                                    "value": "2026-03-01"
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2026-03-31"
+                                }
+                            ]
+                        },
+                        "description": "Filter performance stats by date range (month-wise or custom)."
+                    }
+                },
+                {
+                    "name": "GET Selectors List (for assignment dropdowns)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/selectors",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "selectors"
+                            ]
+                        },
+                        "description": "Returns all active users with role 'Field Selector' (firstName, lastName, mobileNo, role), sorted A-Z. Use this to populate the 'Assign Selector' dropdown when creating or editing an enquiry."
+                    }
+                },
+                {
+                    "name": "GET Selector Mileage Detail (by LogId)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/selector-mileage/{{logId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "selector-mileage",
+                                "{{logId}}"
+                            ]
+                        },
+                        "description": "Returns full mileage detail for a single DailyLog record: startKm, closeKm, totalDistance (endKm - startKm), vehicleNumber, startTime, endTime, status, odometer photo URLs, and populated selector info (name, mobile, role).\n\nPREREQUISITE: Get a valid {{logId}} from 'GET /api/daily-logs?userId=<selectorId>' (folder 6 below).\n\nGlobal Shared Pool: any Field Owner can view any selector's mileage log — no ownership restriction."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "6. Daily Logs — Selector & Driver Mileage",
+            "item": [
+                {
+                    "name": "GET All Daily Logs (No Filter)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/daily-logs?page=1&limit=10",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "daily-logs"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        },
+                        "description": "Returns all DailyLog records across all roles, paginated. Each record includes: date, startKm, endKm, vehicleNumber, startTime, endTime, status (STARTED | COMPLETED), startMeterPhotoUrl, endMeterPhotoUrl, petrolAdvance, and a populated userId (firstName, lastName, role).\n\nAccess: Admin, Operational Manager, Field Owner."
+                    }
+                },
+                {
+                    "name": "GET Daily Logs — Filter by UserId (copy selectorId from performance API)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data && res.data.length > 0) {",
+                                    "  pm.collectionVariables.set('logId', res.data[0]._id);",
+                                    "  console.log('logId captured:', res.data[0]._id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/daily-logs?userId={{selectorId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "daily-logs"
+                            ],
+                            "query": [
+                                {
+                                    "key": "userId",
+                                    "value": "{{selectorId}}"
+                                }
+                            ]
+                        },
+                        "description": "Filter logs by a specific user's MongoDB _id. Copy the selectorId from 'GET /api/field-owner/selectors-performance' (folder 5) and paste it into {{selectorId}}.\n\nTest script: automatically captures the first result's _id into {{logId}} — ready to use in 'GET Selector Mileage Detail'."
+                    }
+                },
+                {
+                    "name": "GET Daily Logs — Filter by Role: Field Selector",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/daily-logs?role=Field Selector",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "daily-logs"
+                            ],
+                            "query": [
+                                {
+                                    "key": "role",
+                                    "value": "Field Selector"
+                                }
+                            ]
+                        },
+                        "description": "Returns DailyLogs only for users with role 'Field Selector'. The backend does a $lookup on the users collection so role filtering is accurate.\n\nOther valid role values: 'driver eicher', 'driver pickup'."
+                    }
+                },
+                {
+                    "name": "GET Daily Logs — Filter by Role: driver eicher",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/daily-logs?role=driver eicher",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "daily-logs"
+                            ],
+                            "query": [
+                                {
+                                    "key": "role",
+                                    "value": "driver eicher"
+                                }
+                            ]
+                        },
+                        "description": "Returns DailyLogs only for Eicher drivers. Use this on any FE screen that shows a 'Driver Logs' tab."
+                    }
+                },
+                {
+                    "name": "GET Daily Logs — Filter by Date Range",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/daily-logs?startDate=2026-03-01&endDate=2026-03-16",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "daily-logs"
+                            ],
+                            "query": [
+                                {
+                                    "key": "startDate",
+                                    "value": "2026-03-01"
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2026-03-16"
+                                }
+                            ]
+                        },
+                        "description": "Filter logs within a date range (matches the log's 'date' field). Useful for month-wise reports. Combinable with userId and role filters."
+                    }
+                },
+                {
+                    "name": "GET Daily Logs — Filter: Completed Only",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/daily-logs?status=COMPLETED",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "daily-logs"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "COMPLETED"
+                                }
+                            ]
+                        },
+                        "description": "Filter by status. Values: STARTED (day begun, endKm not submitted yet) or COMPLETED (endKm submitted, totalDistance calculable)."
+                    }
+                },
+                {
+                    "name": "GET Daily Logs — Combined: Role + Date + Status",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/daily-logs?role=Field Selector&startDate=2026-03-01&endDate=2026-03-31&status=COMPLETED",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "daily-logs"
+                            ],
+                            "query": [
+                                {
+                                    "key": "role",
+                                    "value": "Field Selector"
+                                },
+                                {
+                                    "key": "startDate",
+                                    "value": "2026-03-01"
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2026-03-31"
+                                },
+                                {
+                                    "key": "status",
+                                    "value": "COMPLETED"
+                                }
+                            ]
+                        },
+                        "description": "All filters can be combined freely. This example: all completed Field Selector logs for March 2026. Ideal for a monthly mileage report screen."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "7. Diesel Advance",
+            "item": [
+                {
+                    "name": "POST Issue Diesel Advance to Driver",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res._id) {",
+                                    "  console.log('Diesel Advance ID:', res._id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "driverId",
+                                    "value": "{{driverId}}",
+                                    "type": "text",
+                                    "description": "MongoDB _id of the Driver user"
+                                },
+                                {
+                                    "key": "amount",
+                                    "value": "2500",
+                                    "type": "text",
+                                    "description": "Advance amount in ₹ INR"
+                                },
+                                {
+                                    "key": "vehicleNumber",
+                                    "value": "",
+                                    "type": "text",
+                                    "description": "OPTIONAL — override vehicle number. If omitted, auto-resolved from driver's linked vehicleId.",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "remark",
+                                    "value": "Fuel for Solapur run",
+                                    "type": "text",
+                                    "description": "Optional reason/notes"
+                                },
+                                {
+                                    "key": "assignmentId",
+                                    "value": "{{assignmentId}}",
+                                    "type": "text",
+                                    "description": "Optional — link to a logistics assignment",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "receiptPhoto",
+                                    "src": "",
+                                    "type": "file",
+                                    "description": "Optional — photo of advance receipt"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/diesel-advance",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "diesel-advance"
+                            ]
+                        },
+                        "description": "Issues a fuel advance to the driver.\n\nvehicleNumber is now OPTIONAL — it is auto-resolved from the driver's linked vehicleId.vehicleNumber. Only send vehicleNumber if the driver is using a different vehicle than their default (edge case).\n\nIf the driver has no vehicle linked AND no vehicleNumber in body → returns 400 with a helpful message.\n\nTriggers WhatsApp receipt to the driver's registered mobile. Audit log is created automatically."
+                    }
+                },
+                {
+                    "name": "GET Diesel Advance History",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/diesel-advance?page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "diesel-advance"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                },
+                                {
+                                    "key": "driverId",
+                                    "value": "",
+                                    "disabled": true,
+                                    "description": "Filter by a specific driver"
+                                },
+                                {
+                                    "key": "assignmentId",
+                                    "value": "",
+                                    "disabled": true,
+                                    "description": "Filter by a specific logistics assignment"
+                                }
+                            ]
+                        },
+                        "description": "Returns a paginated list of all diesel advances. Populated with driver name/mobile, OM name, and linked assignment details.\n\nUse ?driverId= to filter per driver or ?assignmentId= to see advances for a specific trip."
+                    }
+                }
+            ]
         }
-      ]
-    },
-    {
-      "name": "2. Enquiry Creation (Page 2)",
-      "item": [
-        {
-          "name": "GET Form Dropdowns (Agents, Generations, Selectors, Companies)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/master-data/dropdowns",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "master-data",
-                "dropdowns"
-              ]
-            },
-            "description": "Call on form load to populate all select boxes. Returns: companies[], agents[], generations[], selectors[]."
-          }
-        },
-        {
-          "name": "POST Create Enquiry (Field Owner)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const res = pm.response.json();",
-                  "if (res._id) {",
-                  "  pm.collectionVariables.set('enquiryId', res._id);",
-                  "  console.log('Enquiry ID captured:', res._id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"farmerFirstName\": \"Ramesh\",\n  \"farmerLastName\": \"Jadhav\",\n  \"farmerMobile\": \"9812345678\",\n  \"location\": \"Kolhapur\",\n  \"subLocation\": \"Shirol Cluster\",\n  \"plantCount\": 4200,\n  \"generation\": \"{{generationId}}\",\n  \"agentAttached\": true,\n  \"agentId\": \"{{agentId}}\",\n  \"visitPriority\": \"High\",\n  \"assignedSelectorId\": \"{{selectorId}}\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/enquiries",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "enquiries"
-              ]
-            },
-            "description": "FO is authorized on this route. The backend auto-sets fieldOwnerId = req.user._id. Test script captures _id into {{enquiryId}}."
-          }
-        },
-        {
-          "name": "GET All Selectors (Field Owner)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/field-owner/selectors",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "field-owner",
-                "selectors"
-              ]
-            },
-            "description": "Fetches a list of all Field Selectors (id, firstName, lastName, mobileNo). Used right before assigning or re-assigning an enquiry to pick a selector."
-          }
-        },
-        {
-          "name": "PUT Update/Assign Enquiry (Field Owner)",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"assignedSelectorId\": \"{{selectorId}}\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/enquiries/{{enquiryId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "enquiries",
-                "{{enquiryId}}"
-              ]
-            },
-            "description": "Updates an enquiry. If a new assignedSelectorId is provided, the status automatically shifts to ASSIGNED."
-          }
-        },
-        {
-          "name": "POST Run SLA Timeout Check (Admin/FO)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/enquiries/run-sla-check",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "enquiries",
-                "run-sla-check"
-              ]
-            },
-            "description": "Manually triggers the SLA timeout check. Finds all ASSIGNED enquiries not visited in 24h, logs the missed selector into missedAssignments, and resets them to PENDING."
-          },
-          "response": []
-        },
-        {
-          "name": "GET Missed Plots SLA Report",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/enquiries/reports/missed",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "enquiries",
-                "reports",
-                "missed"
-              ]
-            },
-            "description": "Returns all enquiries where missedAssignments is not empty. Each entry includes the selector(s) who failed to visit within 24h (firstName, lastName, mobileNo), sorted by updatedAt descending."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "3. All Plots Management (Page 3)",
-      "item": [
-        {
-          "name": "GET All Plots (No Filter)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/field-owner/plots?page=1&limit=20",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "field-owner",
-                "plots"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "limit",
-                  "value": "20"
-                }
-              ]
-            },
-            "description": "Returns all enquiries owned by this FO, paginated."
-          }
-        },
-        {
-          "name": "GET Plots — Filter: Selected",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/field-owner/plots?status=SELECTED",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "field-owner",
-                "plots"
-              ],
-              "query": [
-                {
-                  "key": "status",
-                  "value": "SELECTED"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "GET Plots — Filter: Rejected",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/field-owner/plots?status=REJECTED",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "field-owner",
-                "plots"
-              ],
-              "query": [
-                {
-                  "key": "status",
-                  "value": "REJECTED"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "GET Plots — Filter: Missed",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/field-owner/plots?status=Missed",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "field-owner",
-                "plots"
-              ],
-              "query": [
-                {
-                  "key": "status",
-                  "value": "Missed"
-                }
-              ]
-            },
-            "description": "'Missed' is a derived filter (PENDING + scheduledDate < now). The backend translates this automatically."
-          }
-        },
-        {
-          "name": "GET Plots — Filter: Rescheduled",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/field-owner/plots?status=Rescheduled",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "field-owner",
-                "plots"
-              ],
-              "query": [
-                {
-                  "key": "status",
-                  "value": "Rescheduled"
-                }
-              ]
-            },
-            "description": "'Rescheduled' = PENDING + scheduledDate in the future. The backend translates this automatically."
-          }
-        },
-        {
-          "name": "GET Plots — Search by Farmer Name",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/field-owner/plots?search=Ramesh",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "field-owner",
-                "plots"
-              ],
-              "query": [
-                {
-                  "key": "search",
-                  "value": "Ramesh"
-                }
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "4. Commercials — Fix Rate (Page 4)",
-      "item": [
-        {
-          "name": "GET Single Plot Details (with Inspection & Photos)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/enquiries/{{enquiryId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "enquiries",
-                "{{enquiryId}}"
-              ]
-            },
-            "description": "Fetches the full plot record plus its joined Inspection (photos + composition). Returns 403 if this plot doesn't belong to the logged-in FO."
-          }
-        },
-        {
-          "name": "PATCH Fix Rate (Field Owner)",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"purchaseRate\": 920,\n  \"packingType\": \"4H\",\n  \"estimatedBoxes\": 1500,\n  \"remarks\": \"Good quality G9 Cavendish. Recovery ~85%. Rate agreed after inspection review.\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/enquiries/fix-rate/{{enquiryId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "enquiries",
-                "fix-rate",
-                "{{enquiryId}}"
-              ]
-            },
-            "description": "PREREQUISITES:\n1. Enquiry status must be 'SELECTED' (inspection must be completed first)\n2. FO can only fix rate for their OWN enquiries (backend checks fieldOwnerId)\n\nSets companyId, purchaseRate, remarks, and status → RATE_FIXED.\n\n**New Optional Fields (2026-03-29):**\n- packingType: Enum — '4H', '5H', '6H', '8H', 'CL', '7Kg', 'Other'\n- estimatedBoxes: Number — planned box count for this harvest\n\nThese planning fields are stored on the Enquiry and can be overridden by the OM during team assignment if needed."
-          }
-        },
-        {
-          "name": "PUT Reschedule Enquiry (Field Owner)",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"rescheduleDate\": \"2026-04-15\",\n  \"reason\": \"Farmer requested delay due to sudden rain and harvesting issues.\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/enquiries/{{enquiryId}}/reschedule",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "enquiries",
-                "{{enquiryId}}",
-                "reschedule"
-              ]
-            },
-            "description": "When FO reviews a SELECTED plot, they can either Fix Rate OR Reschedule. This API sets status to 'RESCHEDULED', updates rescheduleDate, clears assignedSelectorId, and logs the reason in rescheduleHistory."
-          }
-        }
-      ]
-    },
-    {
-      "name": "5. Field Selector Tracking (Pages 5 & 6)",
-      "item": [
-        {
-          "name": "GET Selectors Performance (All Time)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/field-owner/selectors-performance",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "field-owner",
-                "selectors-performance"
-              ]
-            },
-            "description": "Returns all selectors assigned to this FO's enquiries with: totalKm, totalDays, visitedPlots, approvedPlots, rejectedPlots."
-          }
-        },
-        {
-          "name": "GET Selectors Performance (Date Filtered)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/field-owner/selectors-performance?startDate=2026-03-01&endDate=2026-03-31",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "field-owner",
-                "selectors-performance"
-              ],
-              "query": [
-                {
-                  "key": "startDate",
-                  "value": "2026-03-01"
-                },
-                {
-                  "key": "endDate",
-                  "value": "2026-03-31"
-                }
-              ]
-            },
-            "description": "Filter performance stats by date range (month-wise or custom)."
-          }
-        },
-        {
-          "name": "GET Selectors List (for assignment dropdowns)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/field-owner/selectors",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "field-owner",
-                "selectors"
-              ]
-            },
-            "description": "Returns all active users with role 'Field Selector' (firstName, lastName, mobileNo, role), sorted A-Z. Use this to populate the 'Assign Selector' dropdown when creating or editing an enquiry."
-          }
-        },
-        {
-          "name": "GET Selector Mileage Detail (by LogId)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/field-owner/selector-mileage/{{logId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "field-owner",
-                "selector-mileage",
-                "{{logId}}"
-              ]
-            },
-            "description": "Returns full mileage detail for a single DailyLog record: startKm, closeKm, totalDistance (endKm - startKm), vehicleNumber, startTime, endTime, status, odometer photo URLs, and populated selector info (name, mobile, role).\n\nPREREQUISITE: Get a valid {{logId}} from 'GET /api/daily-logs?userId=<selectorId>' (folder 6 below).\n\nGlobal Shared Pool: any Field Owner can view any selector's mileage log — no ownership restriction."
-          }
-        }
-      ]
-    },
-    {
-      "name": "6. Daily Logs — Selector & Driver Mileage",
-      "item": [
-        {
-          "name": "GET All Daily Logs (No Filter)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/daily-logs?page=1&limit=10",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "daily-logs"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "limit",
-                  "value": "10"
-                }
-              ]
-            },
-            "description": "Returns all DailyLog records across all roles, paginated. Each record includes: date, startKm, endKm, vehicleNumber, startTime, endTime, status (STARTED | COMPLETED), startMeterPhotoUrl, endMeterPhotoUrl, petrolAdvance, and a populated userId (firstName, lastName, role).\n\nAccess: Admin, Operational Manager, Field Owner."
-          }
-        },
-        {
-          "name": "GET Daily Logs — Filter by UserId (copy selectorId from performance API)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const res = pm.response.json();",
-                  "if (res.data && res.data.length > 0) {",
-                  "  pm.collectionVariables.set('logId', res.data[0]._id);",
-                  "  console.log('logId captured:', res.data[0]._id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/daily-logs?userId={{selectorId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "daily-logs"
-              ],
-              "query": [
-                {
-                  "key": "userId",
-                  "value": "{{selectorId}}"
-                }
-              ]
-            },
-            "description": "Filter logs by a specific user's MongoDB _id. Copy the selectorId from 'GET /api/field-owner/selectors-performance' (folder 5) and paste it into {{selectorId}}.\n\nTest script: automatically captures the first result's _id into {{logId}} — ready to use in 'GET Selector Mileage Detail'."
-          }
-        },
-        {
-          "name": "GET Daily Logs — Filter by Role: Field Selector",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/daily-logs?role=Field Selector",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "daily-logs"
-              ],
-              "query": [
-                {
-                  "key": "role",
-                  "value": "Field Selector"
-                }
-              ]
-            },
-            "description": "Returns DailyLogs only for users with role 'Field Selector'. The backend does a $lookup on the users collection so role filtering is accurate.\n\nOther valid role values: 'Driver (Eicher)', 'Driver (Pickup)'."
-          }
-        },
-        {
-          "name": "GET Daily Logs — Filter by Role: Driver (Eicher)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/daily-logs?role=Driver (Eicher)",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "daily-logs"
-              ],
-              "query": [
-                {
-                  "key": "role",
-                  "value": "Driver (Eicher)"
-                }
-              ]
-            },
-            "description": "Returns DailyLogs only for Eicher drivers. Use this on any FE screen that shows a 'Driver Logs' tab."
-          }
-        },
-        {
-          "name": "GET Daily Logs — Filter by Date Range",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/daily-logs?startDate=2026-03-01&endDate=2026-03-16",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "daily-logs"
-              ],
-              "query": [
-                {
-                  "key": "startDate",
-                  "value": "2026-03-01"
-                },
-                {
-                  "key": "endDate",
-                  "value": "2026-03-16"
-                }
-              ]
-            },
-            "description": "Filter logs within a date range (matches the log's 'date' field). Useful for month-wise reports. Combinable with userId and role filters."
-          }
-        },
-        {
-          "name": "GET Daily Logs — Filter: Completed Only",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/daily-logs?status=COMPLETED",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "daily-logs"
-              ],
-              "query": [
-                {
-                  "key": "status",
-                  "value": "COMPLETED"
-                }
-              ]
-            },
-            "description": "Filter by status. Values: STARTED (day begun, endKm not submitted yet) or COMPLETED (endKm submitted, totalDistance calculable)."
-          }
-        },
-        {
-          "name": "GET Daily Logs — Combined: Role + Date + Status",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/daily-logs?role=Field Selector&startDate=2026-03-01&endDate=2026-03-31&status=COMPLETED",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "daily-logs"
-              ],
-              "query": [
-                {
-                  "key": "role",
-                  "value": "Field Selector"
-                },
-                {
-                  "key": "startDate",
-                  "value": "2026-03-01"
-                },
-                {
-                  "key": "endDate",
-                  "value": "2026-03-31"
-                },
-                {
-                  "key": "status",
-                  "value": "COMPLETED"
-                }
-              ]
-            },
-            "description": "All filters can be combined freely. This example: all completed Field Selector logs for March 2026. Ideal for a monthly mileage report screen."
-          }
-        }
-      ]
-    },
-    {
-      "name": "7. Diesel Advance",
-      "item": [
-        {
-          "name": "POST Issue Diesel Advance to Driver",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const res = pm.response.json();",
-                  "if (res._id) {",
-                  "  console.log('Diesel Advance ID:', res._id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "driverId",
-                  "value": "{{driverId}}",
-                  "type": "text",
-                  "description": "MongoDB _id of the Driver user"
-                },
-                {
-                  "key": "amount",
-                  "value": "2500",
-                  "type": "text",
-                  "description": "Advance amount in ₹ INR"
-                },
-                {
-                  "key": "vehicleNumber",
-                  "value": "",
-                  "type": "text",
-                  "description": "OPTIONAL — override vehicle number. If omitted, auto-resolved from driver's linked vehicleId.",
-                  "disabled": true
-                },
-                {
-                  "key": "remark",
-                  "value": "Fuel for Solapur run",
-                  "type": "text",
-                  "description": "Optional reason/notes"
-                },
-                {
-                  "key": "assignmentId",
-                  "value": "{{assignmentId}}",
-                  "type": "text",
-                  "description": "Optional — link to a logistics assignment",
-                  "disabled": true
-                },
-                {
-                  "key": "receiptPhoto",
-                  "src": "",
-                  "type": "file",
-                  "description": "Optional — photo of advance receipt"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/diesel-advance",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "diesel-advance"
-              ]
-            },
-            "description": "Issues a fuel advance to the driver.\n\nvehicleNumber is now OPTIONAL — it is auto-resolved from the driver's linked vehicleId.vehicleNumber. Only send vehicleNumber if the driver is using a different vehicle than their default (edge case).\n\nIf the driver has no vehicle linked AND no vehicleNumber in body → returns 400 with a helpful message.\n\nTriggers WhatsApp receipt to the driver's registered mobile. Audit log is created automatically."
-          }
-        },
-        {
-          "name": "GET Diesel Advance History",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{foToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/diesel-advance?page=1&limit=20",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "diesel-advance"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "limit",
-                  "value": "20"
-                },
-                {
-                  "key": "driverId",
-                  "value": "",
-                  "disabled": true,
-                  "description": "Filter by a specific driver"
-                },
-                {
-                  "key": "assignmentId",
-                  "value": "",
-                  "disabled": true,
-                  "description": "Filter by a specific logistics assignment"
-                }
-              ]
-            },
-            "description": "Returns a paginated list of all diesel advances. Populated with driver name/mobile, OM name, and linked assignment details.\n\nUse ?driverId= to filter per driver or ?assignmentId= to see advances for a specific trip."
-          }
-        }
-      ]
-    }
-  ]
+    ]
 }

@@ -2,7 +2,7 @@
     "info": {
         "name": "VaxTrack — Operational Manager Module",
         "_postman_id": "vaxtrack-om-v1-2026",
-        "description": "Complete Operational Manager API collection for VaxTrack. Login first (folder 0) to auto-capture the token into {{omToken}}. Set {{baseUrl}} = http://localhost:5000 in your environment.\n\n## Packing Report Lifecycle (4-Step Workflow):\n1. **Munshi Submits** → POST /api/munshi/packing/:id → Packing status = SUBMITTED, Assignment status = COMPLETED\n2. **OM Reviews & Rejects (Optional)** → POST .../assignments/:assignmentId/reject → Packing status = REJECTED, Assignment status = REJECTED + omRemark sent to Munshi\n3. **Munshi Resubmits (If Rejected)** → PUT /api/munshi/assignments/:assignmentId/packing → Packing status = SUBMITTED, Assignment status = COMPLETED (omRemark cleared)\n4. **OM Approves (Final)** → POST .../assignments/:assignmentId/approve → Packing status = APPROVED, Assignment status = APPROVED (Locked - Munshi cannot edit)\n\nOnce approved, the packing report is finalized and ready for Finance/Admin trip clearance processing.",
+        "description": "Complete Operational Manager API collection for VaxTrack. Login first (folder 0) to auto-capture {{omToken}}. Set {{baseUrl}} = http://localhost:5000.\n\n## End-to-end state flow (2026 refactor)\n1. OM Dispatch — POST /api/logistics/assign on a RATE_FIXED enquiry → Logistics.assignmentStatus = IN_PROGRESS; Enquiry.status = IN_PROGRESS (SLA cron only resets legacy ASSIGNED selector slots).\n2. Driver trip — Submitting a trip does NOT set Enquiry to COMPLETED; only Trip records (and optional PATCH /api/execution/:id/review for the trip) apply.\n3. Munshi packing — POST /api/munshi/packing/:assignmentId → Packing SUBMITTED, Logistics assignmentStatus COMPLETED until OM packing decision.\n4. OM Approve packing (terminal) — POST .../assignments/:assignmentId/approve → Packing APPROVED, Logistics APPROVED, Enquiry.status = COMPLETED.\n\n## Packing lifecycle\n1. Munshi submits → SUBMITTED + assignment COMPLETED\n2. OM reject (optional) → REJECTED + omRemark\n3. Munshi resubmit → SUBMITTED + assignment COMPLETED\n4. OM approve → APPROVED + Enquiry COMPLETED\n\n## Variables (cross-collection)\nPaste into this collection before dispatch: {{enquiryId}} (Mongo _id from Field Owner create response), {{companyId}}, {{munshiId}}, {{driverId}} from master-data dropdowns. POST Assign Logistics saves {{assignmentId}} automatically.",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "variable": [
@@ -18,32 +18,32 @@
         },
         {
             "key": "assignmentId",
-            "value": "REPLACE_WITH_REAL_ID",
+            "value": "",
             "type": "string"
         },
         {
             "key": "enquiryId",
-            "value": "REPLACE_WITH_REAL_ID",
+            "value": "",
             "type": "string"
         },
         {
             "key": "driverId",
-            "value": "REPLACE_WITH_REAL_ID",
+            "value": "",
             "type": "string"
         },
         {
             "key": "munshiId",
-            "value": "REPLACE_WITH_REAL_ID",
+            "value": "",
             "type": "string"
         },
         {
             "key": "vehicleId",
-            "value": "REPLACE_WITH_REAL_ID",
+            "value": "",
             "type": "string"
         },
         {
             "key": "companyId",
-            "value": "REPLACE_WITH_REAL_ID",
+            "value": "",
             "type": "string"
         }
     ],
@@ -259,7 +259,7 @@
                                 }
                             ]
                         },
-                        "description": "NEW — Returns the OM's full active workload in a single request.\n\nIncludes all enquiries with status RATE_FIXED or ASSIGNED.\nEach record includes a `logistics` key containing the assigned team (munshi, driver, vehicle, schedule), or `null` if not yet assigned.\n\nSecurity: `purchaseRate` is NEVER returned in any logistics object.\nEnquiry object includes `farmerMobile` for direct farmer contact.\n\nThis is the DEFAULT view (no ?stage= param also returns stage=All)."
+                        "description": "NEW — Returns the OM's full active workload in a single request.\n\nIncludes enquiries with status RATE_FIXED, ASSIGNED (legacy selector), or IN_PROGRESS (dispatched).\nEach record includes a `logistics` key containing the assigned team (munshi, driver, vehicle, schedule), or `null` if not yet assigned.\n\nSecurity: `purchaseRate` is NEVER returned in any logistics object.\nEnquiry object includes `farmerMobile` for direct farmer contact.\n\nThis is the DEFAULT view (no ?stage= param also returns stage=All)."
                     }
                 },
                 {
@@ -398,7 +398,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"enquiryId\": \"{{enquiryId}}\",\n\n  \"companyId\": \"{{companyId}}\",\n  \"packingType\": \"4H\",\n  \"totalBoxes\": 280,\n  \"teamName\": \"Team Alpha\",\n\n  \"munshiId\": \"{{munshiId}}\",\n  \"driverId\": \"{{driverId}}\",\n\n  \"priority\": \"HIGH\",\n\n  \"lightInTime\": \"05:30 AM\",\n  \"lightOutTime\": \"07:00 AM\"\n}"
+                            "raw": "{\n  \"enquiryId\": \"{{enquiryId}}\",\n  \"companyId\": \"{{companyId}}\",\n  \"purchaseRate\": 918,\n  \"packingType\": \"5H\",\n  \"totalBoxes\": 312,\n  \"teamName\": \"E2E Crew North-04\",\n  \"munshiId\": \"{{munshiId}}\",\n  \"driverId\": \"{{driverId}}\",\n  \"priority\": \"HIGH\",\n  \"lightInTime\": \"04:45 AM\",\n  \"lightOutTime\": \"06:30 AM\"\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/logistics/assign",
@@ -588,7 +588,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"approvalNote\": \"All box counts verified and match photos. Cleared for Finance processing.\"\n}"
+                            "raw": "{\n  \"approvalNote\": \"E2E Apr 2026: packing vs photos OK — release to finance.\"\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/operational-manager/assignments/{{assignmentId}}/approve",
@@ -603,7 +603,7 @@
                                 "approve"
                             ]
                         },
-                        "description": "Final approval for the packing report. This locks the assignment into APPROVED status.\n\n## Prerequisites:\n- Packing status must be SUBMITTED (Munshi has already resubmitted after rejection, or first submission is good)\n- Assignment must belong to an OM (cannot be re-edited after approval)\n\n## Side Effects:\n- Packing status → APPROVED (locked)\n- Logistics assignmentStatus → APPROVED\n- Signals to Finance/Admin team that dispatch is complete and ready for trip clearance\n- Munshi can no longer edit or resubmit once approved\n\n**approvalNote** is OPTIONAL — additional notes for the Finance team or audit trail.\n\n## 4-Step Packing Lifecycle:\n1. **Munshi Submits** → Packing status = SUBMITTED, Assignment = COMPLETED\n2. **OM Reviews & Rejects** (if needed) → Packing status = REJECTED, Assignment = REJECTED + omRemark\n3. **Munshi Resubmits** (if rejected) → Packing status = SUBMITTED, Assignment = COMPLETED (clears omRemark)\n4. **OM Approves** → Packing status = APPROVED, Assignment = APPROVED (Final Lock)"
+                        "description": "Final approval for the packing report. This locks the assignment into APPROVED status.\n\n## Prerequisites:\n- Packing status must be SUBMITTED (Munshi has already resubmitted after rejection, or first submission is good)\n- Assignment must belong to an OM (cannot be re-edited after approval)\n\n## Side Effects:\n- Packing status → APPROVED (locked)\n- Logistics assignmentStatus → APPROVED\n- **Parent Enquiry.status → COMPLETED** (terminal closure for this plot)\n- Munshi can no longer edit or resubmit once approved\n\n**approvalNote** is OPTIONAL — Finance / audit notes.\n\n## 4-Step Packing Lifecycle:\n1. **Munshi Submits** → Packing = SUBMITTED, Assignment = COMPLETED\n2. **OM Rejects** (optional) → Packing = REJECTED, Assignment = REJECTED + omRemark\n3. **Munshi Resubmits** → Packing = SUBMITTED, Assignment = COMPLETED\n4. **OM Approves** → Packing = APPROVED, Assignment = APPROVED, **Enquiry COMPLETED**\n\nDriver trip submit does **not** set Enquiry COMPLETED."
                     }
                 }
             ]

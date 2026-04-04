@@ -2,7 +2,7 @@
     "info": {
         "name": "VaxTrack — Driver (Eicher & Pickup) Module",
         "_postman_id": "vaxtrack-driver-v1-2026",
-        "description": "Complete API collection for both Eicher and Pickup drivers in VaxTrack. Login first (folder 0) to auto-capture the token. The backend auto-detects driverType from the user role.",
+        "description": "VaxTrack — Driver module. JWT role must be exactly driver eicher or driver pickup (User model enum). Login captures {{driverToken}}.\n\nE2E: set {{assignmentId}} from OM collection after logistics assign. Trip submit does not complete the enquiry; OM packing approval does.",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "variable": [
@@ -18,7 +18,7 @@
         },
         {
             "key": "assignmentId",
-            "value": "REPLACE_WITH_REAL_ID",
+            "value": "",
             "type": "string"
         }
     ],
@@ -53,7 +53,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"mobileNo\": \"0000000006\",\n  \"password\": \"password123\"\n}"
+                            "raw": "{\n  \"mobileNo\": \"1000000000\",\n  \"password\": \"password123\"\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/users/login",
@@ -132,10 +132,16 @@
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/daily-logs/check-today",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "daily-logs", "check-today"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "daily-logs",
+                                "check-today"
+                            ]
                         },
-                        "description": "🚦 CALL THIS FIRST ON APP OPEN.\n\nChecks if the logged-in Driver has already submitted a Start Day log for today.\n\n- `isStarted: true`  → skip the meter photo screen, jump to dashboard. Use the returned `logId` for any log-specific operations.\n- `isStarted: false` → show the Start Day / Meter Photo screen.\n\nResponse:\n```json\n// Day already started:\n{ \"isStarted\": true, \"logId\": \"<ObjectId>\", \"role\": \"Driver (Eicher)\" }\n\n// Day not started:\n{ \"isStarted\": false }\n```"
+                        "description": "🚦 CALL THIS FIRST ON APP OPEN.\n\nChecks if the logged-in Driver has already submitted a Start Day log for today.\n\n- `isStarted: true`  → skip the meter photo screen, jump to dashboard. Use the returned `logId` for any log-specific operations.\n- `isStarted: false` → show the Start Day / Meter Photo screen.\n\nResponse:\n```json\n// Day already started:\n{ \"isStarted\": true, \"logId\": \"<ObjectId>\", \"role\": \"driver eicher\" }\n\n// Day not started:\n{ \"isStarted\": false }\n```"
                     }
                 },
                 {
@@ -153,12 +159,12 @@
                             "formdata": [
                                 {
                                     "key": "startKm",
-                                    "value": "45200",
+                                    "value": "46820",
                                     "type": "text"
                                 },
                                 {
                                     "key": "vehicleNumber",
-                                    "value": "MH-12-AB-1234",
+                                    "value": "MH-15-E2E-4404",
                                     "type": "text"
                                 },
                                 {
@@ -208,7 +214,7 @@
                             "formdata": [
                                 {
                                     "key": "endKm",
-                                    "value": "45350",
+                                    "value": "46990",
                                     "type": "text"
                                 },
                                 {
@@ -343,7 +349,7 @@
                                 "{{assignmentId}}"
                             ]
                         },
-                        "description": "Submits a standard Eicher trip report with flat route fields and 3 specific file uploads."
+                        "description": "Submits a standard Eicher trip report with flat route fields and 3 specific file uploads.\n\n**State:** Creates Trip only. Does **not** set parent Enquiry to COMPLETED (OM packing approval closes the enquiry)."
                     }
                 },
                 {
@@ -399,7 +405,7 @@
                                 "{{assignmentId}}"
                             ]
                         },
-                        "description": "Submits a Pickup driver report using the multi-route array (sent as a JSON string in form-data) and 2 specific file uploads."
+                        "description": "Submits a Pickup driver report using the multi-route array (sent as a JSON string in form-data) and 2 specific file uploads.\n\n**State:** Creates Trip only; does **not** complete the parent Enquiry."
                     }
                 }
             ]

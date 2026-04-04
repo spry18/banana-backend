@@ -1,6 +1,5 @@
 const Trip = require('../execution/trip.model');
 const Logistics = require('../logistics/logistics.model');
-const Enquiry = require('../enquiries/enquiry.model');
 const DieselAdvance = require('../diesel-advance/dieselAdvance.model');
 const PdfService = require('../../services/pdf.service');
 
@@ -197,12 +196,6 @@ const submitTripReport = async (req, res) => {
             isLocked: isLocked !== 'false' && isLocked !== false,
         });
 
-        // Update Enquiry status to COMPLETED
-        if (assignment.enquiryId) {
-            const enquiryDoc = assignment.enquiryId._id || assignment.enquiryId;
-            await Enquiry.findByIdAndUpdate(enquiryDoc, { status: 'COMPLETED' });
-        }
-
         // Generate system report PDF
         try {
             const reportUrl = await PdfService.generateTripReport(trip);
@@ -219,6 +212,139 @@ const submitTripReport = async (req, res) => {
             return res.status(400).json({ message: `Invalid ID format for field: ${error.path}` });
         }
         res.status(500).json({ message: error.message || 'Server error while submitting trip report' });
+    }
+};
+
+// @desc    Update an existing trip report (e.g. after OM rejection — new slips, toll, routes)
+// @route   PATCH /api/driver/trips/:id
+// @access  Protected (Driver, Admin, OM)
+// @body    Same fields as POST submit (multipart); only provided fields are updated
+const updateTripReport = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user._id;
+
+        const trip = await Trip.findById(id);
+        if (!trip) {
+            return res.status(404).json({ message: 'Trip not found' });
+        }
+
+        const isOwner = trip.driverId.toString() === userId.toString();
+        if (!isOwner && req.user.role !== 'Admin') {
+            return res.status(403).json({ message: 'You can only update your own trip reports' });
+        }
+
+        const {
+            isBackupTrip,
+            parentTripId,
+            teamMembers,
+            startRoute,
+            midRoute,
+            destination,
+            routes,
+            totalKm,
+            tollExpense,
+            isHault,
+            isLineCancel,
+            farmerBoxBreakdown,
+            isLocked,
+        } = req.body;
+
+        if (teamMembers !== undefined) trip.teamMembers = teamMembers;
+        if (startRoute !== undefined) trip.startRoute = startRoute;
+        if (midRoute !== undefined) trip.midRoute = midRoute;
+        if (destination !== undefined) trip.destination = destination;
+        if (parentTripId !== undefined) trip.parentTripId = parentTripId || null;
+
+        if (isBackupTrip !== undefined) {
+            trip.isBackupTrip = isBackupTrip === 'true' || isBackupTrip === true;
+        }
+        if (isHault !== undefined) {
+            trip.isHault = isHault === 'true' || isHault === true;
+        }
+        if (isLineCancel !== undefined) {
+            trip.isLineCancel = isLineCancel === 'true' || isLineCancel === true;
+        }
+        if (isLocked !== undefined) {
+            trip.isLocked = isLocked !== 'false' && isLocked !== false;
+        }
+
+        if (totalKm !== undefined && totalKm !== '') {
+            const n = Number(totalKm);
+            if (Number.isNaN(n)) {
+                return res.status(400).json({ message: 'totalKm must be a number' });
+            }
+            trip.totalKm = n;
+        }
+
+        if (tollExpense !== undefined && tollExpense !== '') {
+            const t = Number(tollExpense);
+            trip.tollExpense = Number.isNaN(t) ? 0 : t;
+        }
+
+        if (routes !== undefined) {
+            trip.routes = typeof routes === 'string' ? JSON.parse(routes) : routes;
+        }
+        if (farmerBoxBreakdown !== undefined) {
+            trip.farmerBoxBreakdown =
+                typeof farmerBoxBreakdown === 'string' ? JSON.parse(farmerBoxBreakdown) : farmerBoxBreakdown;
+        }
+
+        const files = req.files || {};
+        if (files.weightSlipPhoto?.[0]) {
+            trip.weightSlipUrl = `/uploads/${files.weightSlipPhoto[0].filename}`;
+        }
+        if (files.dieselSlipPhoto?.[0]) {
+            trip.dieselSlipUrl = `/uploads/${files.dieselSlipPhoto[0].filename}`;
+        }
+        if (files.unloadSlipPhoto?.[0]) {
+            trip.unloadSlipUrl = `/uploads/${files.unloadSlipPhoto[0].filename}`;
+        }
+        if (files.endKmPhoto?.[0]) {
+            trip.endKmPhotoUrl = `/uploads/${files.endKmPhoto[0].filename}`;
+        }
+        if (files.uploadSlipPhoto?.[0]) {
+            trip.uploadSlipUrl = `/uploads/${files.uploadSlipPhoto[0].filename}`;
+        }
+        if (files.meterPhoto?.[0]) {
+            trip.meterPhotoUrl = `/uploads/${files.meterPhoto[0].filename}`;
+        }
+
+        if (trip.reviewStatus === 'REJECTED') {
+            trip.reviewStatus = 'PENDING';
+        }
+
+        await trip.save();
+
+        try {
+            const reportUrl = await PdfService.generateTripReport(trip);
+            trip.systemReportUrl = reportUrl;
+            await trip.save();
+        } catch (pdfErr) {
+            console.error('PDF generation failed (non-blocking):', pdfErr.message);
+        }
+
+        const updated = await Trip.findById(trip._id)
+            .populate({
+                path: 'assignmentId',
+                populate: [
+                    { path: 'enquiryId', select: 'enquiryId farmerFirstName farmerLastName location' },
+                    { path: 'companyId', select: 'companyName' },
+                    { path: 'munshiId', select: 'firstName lastName' },
+                ],
+            })
+            .populate('reviewedBy', 'firstName lastName');
+
+        res.status(200).json(updated);
+    } catch (error) {
+        console.error('Error updating trip report:', error);
+        if (error.name === 'CastError') {
+            return res.status(400).json({ message: `Invalid ID format for field: ${error.path}` });
+        }
+        if (error instanceof SyntaxError) {
+            return res.status(400).json({ message: 'Invalid JSON in routes or farmerBoxBreakdown' });
+        }
+        res.status(500).json({ message: error.message || 'Server error while updating trip report' });
     }
 };
 
@@ -315,5 +441,6 @@ module.exports = {
     getDriverDashboard,
     getDriverHistory,
     submitTripReport,
+    updateTripReport,
     getDriverReports,
 };

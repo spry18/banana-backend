@@ -6,7 +6,7 @@ const upload = require('../../middlewares/upload.middleware');
 
 router.use(protect);
 
-const fieldRoles = ['Field Selector', 'Driver (Eicher)', 'Driver (Pickup)', 'Munshi'];
+const fieldRoles = ['Field Selector', 'driver eicher', 'driver pickup', 'Munshi'];
 
 // Check if the user has already started their day (no file upload needed)
 router.get('/check-today', authorize(...fieldRoles), checkTodayLogStatus);

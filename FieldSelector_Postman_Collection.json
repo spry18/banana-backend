@@ -2,7 +2,7 @@
     "info": {
         "name": "Field Selector — Mobile App (Complete)",
         "_postman_id": "fs-mobile-banana-v1",
-        "description": "Complete MVP suite for the Field Selector Mobile App.\n\nSetup:\n1. Set `baseUrl` → e.g. http://localhost:5000\n2. Hit Login → copy the returned token\n3. Paste it into the `selectorToken` collection variable\n4. All other requests are pre-wired to use that token.",
+        "description": "Field Selector — mobile flows. Use {{selectorToken}} (paste after login or add a test script). E2E mobile 8845010103 if you register that selector. Flow: inspection → FO fix-rate → OM dispatch.",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "variable": [
@@ -13,7 +13,7 @@
         },
         {
             "key": "selectorToken",
-            "value": "PASTE_JWT_TOKEN_HERE",
+            "value": "",
             "type": "string"
         }
     ],
@@ -33,7 +33,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"mobileNo\": \"0000000002\",\n    \"password\": \"password123\"\n}",
+                            "raw": "{\n    \"mobileNo\": \"3000000000\",\n    \"password\": \"password123\"\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -51,9 +51,21 @@
                                 "login"
                             ]
                         },
-                        "description": "Public endpoint — no token needed.\n\nAfter a successful login, copy the `token` from the response and paste it into the collection variable `selectorToken`."
+                        "description": "Public endpoint — no token needed.\n\nTest script auto-saves `token` into collection variable `selectorToken` (or paste manually if the script is disabled)."
                     },
-                    "response": []
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.token) { pm.collectionVariables.set('selectorToken', res.token); }"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
                 },
                 {
                     "name": "Get My Profile",
@@ -107,8 +119,14 @@
                         "header": [],
                         "url": {
                             "raw": "{{baseUrl}}/api/daily-logs/check-today",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "daily-logs", "check-today"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "daily-logs",
+                                "check-today"
+                            ]
                         },
                         "description": "🚦 CALL THIS FIRST ON APP OPEN.\n\nChecks if the logged-in Field Selector has already submitted a Start Day log for today.\n\n- `isStarted: true`  → skip the meter photo screen, jump to the dashboard. Use the returned `logId` for any log-specific operations.\n- `isStarted: false` → show the Start Day / Meter Photo screen.\n\nResponse:\n```json\n// Day already started:\n{ \"isStarted\": true, \"logId\": \"<ObjectId>\", \"role\": \"Field Selector\" }\n\n// Day not started:\n{ \"isStarted\": false }\n```"
                     },
@@ -134,13 +152,13 @@
                             "formdata": [
                                 {
                                     "key": "startKm",
-                                    "value": "15200",
+                                    "value": "16310",
                                     "description": "Odometer reading at start of day — REQUIRED",
                                     "type": "text"
                                 },
                                 {
                                     "key": "vehicleNumber",
-                                    "value": "MH12AB1234",
+                                    "value": "MH15E2E4404",
                                     "description": "Vehicle reg number — optional",
                                     "type": "text"
                                 },
@@ -199,7 +217,7 @@
                             "formdata": [
                                 {
                                     "key": "endKm",
-                                    "value": "15450",
+                                    "value": "16560",
                                     "description": "Odometer reading at end of day — REQUIRED. Must be greater than startKm.",
                                     "type": "text"
                                 },
@@ -361,8 +379,14 @@
                         "header": [],
                         "url": {
                             "raw": "{{baseUrl}}/api/master-data/companies",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "master-data", "companies"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "master-data",
+                                "companies"
+                            ]
                         },
                         "description": "Fetches active companies list."
                     },
@@ -385,8 +409,14 @@
                         "header": [],
                         "url": {
                             "raw": "{{baseUrl}}/api/master-data/agents",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "master-data", "agents"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "master-data",
+                                "agents"
+                            ]
                         },
                         "description": "Fetches active agents list."
                     },

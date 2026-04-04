@@ -2,7 +2,7 @@
     "info": {
         "name": "VaxTrack — Munshi (Packing Supervisor) Module",
         "_postman_id": "vaxtrack-munshi-v1-2026",
-        "description": "Complete Munshi API collection for VaxTrack. Login first (folder 0) to auto-capture the token into {{munshiToken}}. Set {{baseUrl}} = http://localhost:5000 in your environment.",
+        "description": "Complete Munshi API collection for VaxTrack. Login first (folder 0) to auto-capture the token into {{munshiToken}}. Set {{baseUrl}} = http://localhost:5000 in your environment.\n\n## E2E\nUse {{assignmentId}} = Logistics _id from OM dispatch. POST /api/munshi/packing/{{assignmentId}}.",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "variable": [
@@ -18,12 +18,17 @@
         },
         {
             "key": "assignmentId",
-            "value": "REPLACE_WITH_REAL_ID",
+            "value": "",
             "type": "string"
         },
         {
             "key": "pickupDriverId",
-            "value": "REPLACE_WITH_REAL_ID",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "brandId",
+            "value": "",
             "type": "string"
         }
     ],
@@ -139,8 +144,14 @@
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/daily-logs/check-today",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "daily-logs", "check-today"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "daily-logs",
+                                "check-today"
+                            ]
                         },
                         "description": "🚦 CALL THIS FIRST ON APP OPEN.\n\nChecks if the logged-in Munshi has already submitted a Start Day log for today.\n\n- `isStarted: true`  → skip the meter photo screen, jump to dashboard.\n- `isStarted: false` → show the Start Day / Meter Photo screen.\n\nResponse:\n```json\n// Day already started:\n{ \"isStarted\": true, \"logId\": \"<ObjectId>\", \"role\": \"Munshi\" }\n\n// Day not started:\n{ \"isStarted\": false }\n```"
                     },
@@ -161,13 +172,13 @@
                             "formdata": [
                                 {
                                     "key": "startKm",
-                                    "value": "12000",
+                                    "value": "13140",
                                     "type": "text",
                                     "description": "Odometer reading at start of day — REQUIRED"
                                 },
                                 {
                                     "key": "vehicleNumber",
-                                    "value": "MH-12-CD-5678",
+                                    "value": "MH-15-E2E-5505",
                                     "type": "text",
                                     "description": "Vehicle registration number — optional"
                                 },
@@ -181,8 +192,14 @@
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/daily-logs/start",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "daily-logs", "start"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "daily-logs",
+                                "start"
+                            ]
                         },
                         "description": "Submits the morning odometer reading to start the day's log.\n\n- Returns 400 if the Munshi already has an active log for today (use check-today first).\n- `vehicleNumber` is optional."
                     },
@@ -203,7 +220,7 @@
                             "formdata": [
                                 {
                                     "key": "endKm",
-                                    "value": "12150",
+                                    "value": "13290",
                                     "type": "text",
                                     "description": "Odometer reading at end of day — REQUIRED. Must be greater than startKm."
                                 },
@@ -217,8 +234,14 @@
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/daily-logs/end",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "daily-logs", "end"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "daily-logs",
+                                "end"
+                            ]
                         },
                         "description": "Closes the active daily log for today.\n\n- Returns 404 if no active (STARTED) log exists for today.\n- Returns 400 if endKm ≤ startKm.\n\n⚠️ This is a PATCH request, not PUT."
                     },
@@ -376,6 +399,68 @@
             ]
         },
         {
+            "name": "OM Rejection / Resubmit Flow",
+            "item": [
+                {
+                    "name": "Get Rejected Assignments",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/munshi/assignments?status=REJECTED",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "munshi",
+                                "assignments"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "REJECTED",
+                                    "description": "Logistics assignments the OM has rejected — Munshi fixes packing and resubmits."
+                                }
+                            ]
+                        },
+                        "description": "Fetches the list of logistics assignments that the OM has rejected. Munshi uses this to see what needs fixing."
+                    }
+                },
+                {
+                    "name": "Get Packing Report Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/munshi/assignments/{{assignmentId}}/packing",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "munshi",
+                                "assignments",
+                                "{{assignmentId}}",
+                                "packing"
+                            ]
+                        },
+                        "description": "Fetches the existing packing report for a specific assignment. Crucial for reading the `omRemark` left by the Operational Manager so the Munshi knows exactly what to fix."
+                    }
+                }
+            ]
+        },
+        {
             "name": "3. Assign Pickup Driver",
             "item": [
                 {
@@ -428,15 +513,25 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"nextDate\": \"2026-03-25\"\n}",
+                            "raw": "{\n  \"nextDate\": \"2026-04-18\"\n}",
                             "options": {
-                                "raw": { "language": "json" }
+                                "raw": {
+                                    "language": "json"
+                                }
                             }
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/munshi/assignments/{{assignmentId}}/rollover",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "munshi", "assignments", "{{assignmentId}}", "rollover"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "munshi",
+                                "assignments",
+                                "{{assignmentId}}",
+                                "rollover"
+                            ]
                         },
                         "description": "Clones the current dispatch to the next harvest day with the exact same Munshi, Driver, Pickup Driver, and Vehicle. Fresh assignmentStatus = PENDING. isRollover = true. parentAssignmentId links back to today's assignment.\n\nGUARDS:\n- nextDate is required (YYYY-MM-DD)\n- Cannot roll over a CANCELLED assignment\n- Only works for your own assignments (or Admin)\n\nAfter rolling over, submit a new packing report against the returned assignment _id."
                     },
@@ -462,87 +557,87 @@
                             "formdata": [
                                 {
                                     "key": "box4H",
-                                    "value": "50",
+                                    "value": "0",
                                     "type": "text",
                                     "description": "4H box count"
                                 },
                                 {
                                     "key": "box5H",
-                                    "value": "30",
+                                    "value": "200",
                                     "type": "text",
-                                    "description": "5H box count"
+                                    "description": "5H box count (matches OM dispatch packingType 5H)"
                                 },
                                 {
                                     "key": "box6H",
-                                    "value": "20",
+                                    "value": "0",
                                     "type": "text",
                                     "description": "6H box count"
                                 },
                                 {
                                     "key": "box8H",
-                                    "value": "10",
+                                    "value": "0",
                                     "type": "text",
                                     "description": "8H box count"
                                 },
                                 {
                                     "key": "boxCL",
-                                    "value": "5",
+                                    "value": "0",
                                     "type": "text",
                                     "description": "CL box count"
                                 },
                                 {
                                     "key": "box7Kg",
-                                    "value": "15",
+                                    "value": "0",
                                     "type": "text",
                                     "description": "7Kg box count"
                                 },
                                 {
                                     "key": "boxOther",
-                                    "value": "0",
+                                    "value": "112",
                                     "type": "text",
-                                    "description": "Other box count"
+                                    "description": "Other box count (312 totalBoxes OM − 200 fiveH)"
                                 },
                                 {
                                     "key": "totalBoxes",
-                                    "value": "130",
+                                    "value": "312",
                                     "type": "text",
-                                    "description": "Must equal sum of all box types (50+30+20+10+5+15+0 = 130)"
+                                    "description": "Must equal sum of all box types; align with OM totalBoxes (312)"
                                 },
                                 {
                                     "key": "wastageKg",
-                                    "value": "12",
+                                    "value": "8",
                                     "type": "text",
                                     "description": "Wastage in kg"
                                 },
                                 {
                                     "key": "wastageReason",
-                                    "value": "Overripe bunches",
+                                    "value": "Wind scarring on lower hands — discarded at line",
                                     "type": "text",
                                     "description": "Required when wastageKg > 0"
                                 },
                                 {
                                     "key": "remarks",
-                                    "value": "Good quality harvest. Minor insect damage on outer rows.",
+                                    "value": "E2E Apr 2026 run — line stable, humidity normal.",
                                     "type": "text",
                                     "description": "Optional Munshi notes"
                                 },
                                 {
                                     "key": "lineNo",
-                                    "value": "3",
+                                    "value": "7",
                                     "type": "text",
                                     "description": "NEW — Packing line number"
                                 },
                                 {
                                     "key": "teamName",
-                                    "value": "Shiva Team",
+                                    "value": "E2E Crew North-04",
                                     "type": "text",
                                     "description": "NEW — Harvesting team name"
                                 },
                                 {
                                     "key": "brandId",
-                                    "value": "REPLACE_WITH_BRAND_OBJECT_ID",
+                                    "value": "",
                                     "type": "text",
-                                    "description": "NEW — Reference to Brand master data"
+                                    "description": "Optional: set collection variable brandId from master-data, or leave empty"
                                 },
                                 {
                                     "key": "photos",
@@ -570,7 +665,7 @@
                                 "{{assignmentId}}"
                             ]
                         },
-                        "description": "Submits a completed packing report for an assignment.\n\nSide effects:\n- Packing status → SUBMITTED\n- Logistics assignmentStatus → COMPLETED\n- WhatsApp packing summary sent to farmer\n\nVALIDATION:\n- Assignment must belong to logged-in Munshi\n- totalBoxes must equal the sum of all 7 box types\n- wastageReason required if wastageKg > 0\n- Prevents duplicate submissions"
+                        "description": "Submits a completed packing report for an assignment.\n\nSide effects:\n- Packing status → SUBMITTED\n- Logistics assignmentStatus → COMPLETED (awaiting OM packing approve/reject)\n- Enquiry stays IN_PROGRESS until OM **Approve Packing** (then Enquiry → COMPLETED)\n- WhatsApp packing summary sent to farmer\n\nVALIDATION:\n- totalBoxes must equal the sum of all 7 box types (here 312 to match OM dispatch)\n- wastageReason required if wastageKg > 0\n- Prevents duplicate submissions"
                     }
                 },
                 {
@@ -647,87 +742,87 @@
                             "formdata": [
                                 {
                                     "key": "box4H",
-                                    "value": "60",
+                                    "value": "0",
                                     "type": "text",
                                     "description": "Corrected 4H box count"
                                 },
                                 {
                                     "key": "box5H",
-                                    "value": "35",
+                                    "value": "200",
                                     "type": "text",
                                     "description": "Corrected 5H box count"
                                 },
                                 {
                                     "key": "box6H",
-                                    "value": "25",
+                                    "value": "0",
                                     "type": "text",
                                     "description": "Corrected 6H box count"
                                 },
                                 {
                                     "key": "box8H",
-                                    "value": "12",
+                                    "value": "0",
                                     "type": "text",
                                     "description": "Corrected 8H box count"
                                 },
                                 {
                                     "key": "boxCL",
-                                    "value": "5",
+                                    "value": "0",
                                     "type": "text",
                                     "description": "Corrected CL box count"
                                 },
                                 {
                                     "key": "box7Kg",
-                                    "value": "15",
+                                    "value": "0",
                                     "type": "text",
                                     "description": "Corrected 7Kg box count"
                                 },
                                 {
                                     "key": "boxOther",
-                                    "value": "0",
+                                    "value": "112",
                                     "type": "text",
                                     "description": "Corrected Other box count"
                                 },
                                 {
                                     "key": "totalBoxes",
-                                    "value": "152",
+                                    "value": "312",
                                     "type": "text",
-                                    "description": "Must equal sum of all box types (60+35+25+12+5+15+0 = 152)"
+                                    "description": "Must equal sum (312, same as first submit / OM totalBoxes)"
                                 },
                                 {
                                     "key": "wastageKg",
-                                    "value": "5",
+                                    "value": "6",
                                     "type": "text",
                                     "description": "Corrected wastage in kg"
                                 },
                                 {
                                     "key": "wastageReason",
-                                    "value": "Minor insect damage",
+                                    "value": "Recount discard — bruised hands removed",
                                     "type": "text",
                                     "description": "Corrected wastage reason (required if wastageKg > 0)"
                                 },
                                 {
                                     "key": "remarks",
-                                    "value": "Recounted boxes - corrected tally",
+                                    "value": "E2E resubmit after OM reject — tallies reconciled.",
                                     "type": "text",
                                     "description": "Optional notes"
                                 },
                                 {
                                     "key": "lineNo",
-                                    "value": "3",
+                                    "value": "7",
                                     "type": "text",
                                     "description": "Packing line number"
                                 },
                                 {
                                     "key": "teamName",
-                                    "value": "Shiva Team",
+                                    "value": "E2E Crew North-04",
                                     "type": "text",
                                     "description": "Harvesting team name"
                                 },
                                 {
                                     "key": "brandId",
-                                    "value": "REPLACE_WITH_BRAND_OBJECT_ID",
+                                    "value": "",
                                     "type": "text",
-                                    "description": "Brand reference"
+                                    "description": "Optional brand ObjectId"
                                 },
                                 {
                                     "key": "photos",
@@ -765,8 +860,15 @@
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/munshi/packing/{{assignmentId}}",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "munshi", "packing", "{{assignmentId}}"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "munshi",
+                                "packing",
+                                "{{assignmentId}}"
+                            ]
                         },
                         "description": "Used by the mobile History Detail screen. Returns the packing summary, box breakdown, wastage, and photos for a specific assignment ID."
                     }
@@ -853,8 +955,14 @@
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/master-data/drivers",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "master-data", "drivers"]
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "master-data",
+                                "drivers"
+                            ]
                         },
                         "description": "NEW — Returns clean list of all users with 'driver' role (Eicher, Pickup) along with their vehicle assignments."
                     }

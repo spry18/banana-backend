@@ -99,6 +99,7 @@ const enquirySchema = new mongoose.Schema(
                 'RATE_FIXED',
                 'RESCHEDULED',
                 'ASSIGNED',
+                'IN_PROGRESS',
                 'COMPLETED',
                 'CLOSED',
                 'CANCELLED',

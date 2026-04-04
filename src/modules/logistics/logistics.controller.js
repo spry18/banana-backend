@@ -80,10 +80,11 @@ const createAssignment = async (req, res) => {
             lightInTime,
             lightOutTime,
             teamName:    teamName    || null,
+            assignmentStatus: 'IN_PROGRESS',
         });
 
-        // Update Enquiry status to ASSIGNED (and persist any planning overrides)
-        enquiry.status = 'ASSIGNED';
+        // Dispatch in progress — not ASSIGNED (SLA cron resets ASSIGNED selector slots only)
+        enquiry.status = 'IN_PROGRESS';
         await enquiry.save();
 
         // === NOTIFICATIONS ===

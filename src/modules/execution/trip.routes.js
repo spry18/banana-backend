@@ -12,11 +12,11 @@ router.use(protect);
 
 router
     .route('/')
-    .post(authorize('Admin', 'Driver (Eicher)', 'Driver (Pickup)'), upload.fields([
+    .post(authorize('Admin', 'driver eicher', 'driver pickup'), upload.fields([
         { name: 'weightSlipUrl', maxCount: 1 },
         { name: 'dieselSlipUrl', maxCount: 1 },
         { name: 'unloadSlipUrl', maxCount: 1 }
     ]), createTrip)
-    .get(authorize('Admin', 'Operational Manager', 'Driver (Eicher)', 'Driver (Pickup)'), getTrips);
+    .get(authorize('Admin', 'Operational Manager', 'driver eicher', 'driver pickup'), getTrips);
 
 module.exports = router;

@@ -26,7 +26,7 @@ const getAdminStats = async (req, res) => {
             Enquiry.countDocuments({ status: 'SELECTED' }),
             Enquiry.countDocuments({ status: 'REJECTED' }),
             Enquiry.countDocuments({ status: 'RATE_FIXED' }),
-            Enquiry.countDocuments({ status: 'ASSIGNED' }),
+            Enquiry.countDocuments({ status: { $in: ['ASSIGNED', 'IN_PROGRESS'] } }),
             Enquiry.countDocuments({ status: 'COMPLETED' }),
             // Trips: locked trips = completed (Trip model has no status field)
             Trip.countDocuments({ isLocked: true }),

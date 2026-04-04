@@ -28,7 +28,7 @@ const getFODashboard = async (req, res) => {
             Enquiry.countDocuments(base),
             Enquiry.countDocuments({ ...base, status: 'SELECTED' }),
             Enquiry.countDocuments({ ...base, status: 'REJECTED' }),
-            Enquiry.countDocuments({ ...base, status: { $in: ['RATE_FIXED', 'ASSIGNED', 'COMPLETED'] } }),
+            Enquiry.countDocuments({ ...base, status: { $in: ['RATE_FIXED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED'] } }),
             // Missed: PENDING and either past scheduledDate OR completely missing a scheduledDate
             Enquiry.countDocuments({
                 ...base,

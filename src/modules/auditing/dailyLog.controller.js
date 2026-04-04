@@ -161,7 +161,7 @@ const getLogs = async (req, res) => {
 
 // @desc    Check if the logged-in user has already started their day today
 // @route   GET /api/daily-logs/check-today
-// @access  Protected (Field Selector, Driver (Eicher), Driver (Pickup), Munshi)
+// @access  Protected (Field Selector, driver eicher, driver pickup, Munshi)
 const checkTodayLogStatus = async (req, res) => {
     try {
         const startOfToday = new Date();
