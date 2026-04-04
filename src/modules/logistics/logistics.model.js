@@ -70,6 +70,10 @@ const logisticsSchema = new mongoose.Schema(
             ref: 'Logistics',
             default: null,
         },
+        teamName: {
+            type: String,
+            default: null,
+        },
         assignmentStatus: {
             type: String,
             enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'REJECTED', 'APPROVED'],

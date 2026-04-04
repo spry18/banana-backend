@@ -217,7 +217,7 @@ const getEnquiryById = async (req, res) => {
             .populate('agentId', 'agentName mobileNo location')
             .populate('fieldOwnerId', 'firstName lastName mobileNo')
             .populate('assignedSelectorId', 'firstName lastName mobileNo')
-            .populate('companyId', 'companyName legalName headquarters');
+            .populate('companyId', 'companyName');
 
         if (!enquiry) {
             return res.status(404).json({ message: 'Enquiry not found' });

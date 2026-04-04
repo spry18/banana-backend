@@ -269,6 +269,65 @@
             },
             "description": "Returns total KM + visited plots per Field Selector, and total assigned plots per Field Owner"
           }
+        },
+        {
+          "name": "GET Field Visit Monitoring Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/field-selection/monitoring?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "field-selection",
+                "monitoring"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter: PENDING | SELECTED | REJECTED | RATE_FIXED | ASSIGNED | COMPLETED | Missed"
+                },
+                {
+                  "key": "location",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Partial match on location string"
+                },
+                {
+                  "key": "fieldOwner",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by Field Owner user _id"
+                },
+                {
+                  "key": "assignedSelector",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by Assigned Selector user _id"
+                }
+              ]
+            },
+            "description": "Combined monitoring dashboard for the Field Visit page.\n\n## Response Shape:\n```json\n{\n  \"counts\": {\n    \"totalPlots\": 120,\n    \"selected\": 45,\n    \"rejected\": 10,\n    \"missed\": 5,\n    \"futureSelection\": 20\n  },\n  \"tableData\": [...],\n  \"page\": 1,\n  \"pages\": 6\n}\n```\n\n## Counts (Top Cards):\n- **totalPlots** — all enquiries\n- **selected** — status = SELECTED\n- **rejected** — status = REJECTED\n- **missed** — scheduledDate < now AND status = PENDING\n- **futureSelection** — scheduledDate > now (any status)\n\n## Table Filters (query params):\n- `status` — any valid enquiry status, or 'Missed' (maps to past scheduledDate + PENDING)\n- `location` — partial case-insensitive match\n- `fieldOwner` — exact User ObjectId\n- `assignedSelector` — exact User ObjectId\n\n## Populated Fields in tableData:\n- `fieldOwnerId` → { firstName, lastName, mobileNo }\n- `assignedSelectorId` → { firstName, lastName, mobileNo }"
+          }
         }
       ]
     },
@@ -545,7 +604,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"enquiryId\": \"{{enquiryId}}\",\n  \"companyId\": \"{{companyId}}\",\n  \"purchaseRate\": 850,\n  \"totalBoxes\": 280,\n  \"munshiId\": \"REPLACE_WITH_MUNSHI_ID\",\n  \"driverId\": \"REPLACE_WITH_DRIVER_ID\",\n  \"vehicleId\": \"REPLACE_WITH_VEHICLE_ID\",\n  \"priority\": \"HIGH\",\n  \"lightInTime\": \"06:00 AM\",\n  \"lightOutTime\": \"08:00 AM\"\n}"
+              "raw": "{\n  \"enquiryId\": \"{{enquiryId}}\",\n  \"companyId\": \"{{companyId}}\",\n  \"purchaseRate\": 850,\n  \"totalBoxes\": 280,\n  \"munshiId\": \"REPLACE_WITH_MUNSHI_ID\",\n  \"driverId\": \"REPLACE_WITH_DRIVER_ID\",\n  \"teamName\": \"Team Alpha\",\n  \"priority\": \"HIGH\",\n  \"lightInTime\": \"06:00 AM\",\n  \"lightOutTime\": \"08:00 AM\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/logistics/assign",
@@ -1679,6 +1738,109 @@
               ]
             },
             "description": "Returns a paginated list of all diesel advances. Populated with driver name/mobile, OM name, and linked assignment details.\n\nUse ?driverId= to filter per driver or ?assignmentId= to see advances for a specific trip."
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Analytics",
+      "item": [
+        {
+          "name": "GET Analytics Dashboard (Combined)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/dashboard?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "dashboard"],
+              "query": [
+                { "key": "startDate",  "value": "", "disabled": true, "description": "e.g. 2026-01-01" },
+                { "key": "endDate",    "value": "", "disabled": true, "description": "e.g. 2026-03-31" },
+                { "key": "location",   "value": "", "disabled": true, "description": "Filter all data by location" },
+                { "key": "companyId",  "value": "", "disabled": true, "description": "Filter all data by company ObjectId" }
+              ]
+            },
+            "description": "Single combined dashboard API. Returns everything the Analytics page needs in one call.\n\n## Response shape:\n```json\n{\n  \"topStats\": {\n    \"totalRevenue\": 2560000,\n    \"totalBoxes\": 2800,\n    \"avgPurchaseRate\": 914,\n    \"assignmentsCount\": 12\n  },\n  \"monthlyTrend\": [ { \"label\": \"2026-03\", \"total\": 18, \"selected\": 10, \"ratFixed\": 6, \"completed\": 4 } ],\n  \"locationPerformance\": [ { \"location\": \"Jalgaon\", \"totalBoxes\": 1200, \"totalRevenue\": 1104000, \"avgRate\": 920, \"plotCount\": 5 } ],\n  \"companyPerformance\": [ { \"companyName\": \"Reliance Fresh\", \"totalBoxes\": 280, \"totalRevenue\": 257600, \"avgRate\": 920, \"assignmentsCount\": 1 } ],\n  \"recentTransactions\": [ { ... last 5 logistics assignments ... } ]\n}\n```\n\n## Filters (all optional):\n- `startDate` / `endDate` — ISO date strings, applied to Logistics.createdAt and Enquiry.createdAt\n- `location` — case-insensitive partial match on enquiry location\n- `companyId` — exact company ObjectId"
+          }
+        },
+        {
+          "name": "GET Generated Report (Location-Grouped, Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/generated-report?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "generated-report"],
+              "query": [
+                { "key": "page",       "value": "1" },
+                { "key": "limit",      "value": "20" },
+                { "key": "startDate",  "value": "", "disabled": true },
+                { "key": "endDate",    "value": "", "disabled": true },
+                { "key": "location",   "value": "", "disabled": true },
+                { "key": "companyId",  "value": "", "disabled": true },
+                { "key": "status",     "value": "", "disabled": true, "description": "PENDING | SELECTED | RATE_FIXED | ASSIGNED | COMPLETED | REJECTED" }
+              ]
+            },
+            "description": "Location-grouped performance report. Each row represents one location.\n\n## Response shape:\n```json\n{\n  \"summary\": {\n    \"totalLocations\": 8,\n    \"totalEnquiries\": 120,\n    \"totalSelected\": 55,\n    \"totalBoxes\": 12400,\n    \"totalRevenue\": 11408000,\n    \"overallSelectionPercentage\": 45.83\n  },\n  \"tableData\": [\n    {\n      \"location\": \"Jalgaon\",\n      \"totalEnquiries\": 40,\n      \"selectedCount\": 20,\n      \"selectionPercentage\": 50.00,\n      \"totalBoxes\": 4200,\n      \"totalRevenue\": 3864000\n    }\n  ],\n  \"page\": 1,\n  \"pages\": 1\n}\n```\n\n`selectionPercentage` = (selectedCount / totalEnquiries) × 100, rounded to 2 decimal places.\n`totalRevenue` = purchaseRate × totalBoxes from the linked Logistics record (via $lookup)."
+          }
+        },
+        {
+          "name": "GET Master Report (Existing)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/master-report",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "master-report"],
+              "query": [
+                { "key": "location",  "value": "", "disabled": true },
+                { "key": "companyId", "value": "", "disabled": true },
+                { "key": "startDate", "value": "", "disabled": true },
+                { "key": "endDate",   "value": "", "disabled": true }
+              ]
+            },
+            "description": "Existing master report (COMPLETED enquiries). Returns: summary totals, byLocation, byCompany, wastage stats."
+          }
+        },
+        {
+          "name": "GET Export Analytics (Excel Download)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/export",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "export"],
+              "query": [
+                { "key": "location",  "value": "", "disabled": true },
+                { "key": "startDate", "value": "", "disabled": true },
+                { "key": "endDate",   "value": "", "disabled": true }
+              ]
+            },
+            "description": "Downloads a formatted Excel file (.xlsx) of all enquiries matching the optional filters. Use 'Send and Download' in Postman."
           }
         }
       ]

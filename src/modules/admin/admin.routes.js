@@ -6,6 +6,7 @@ const {
     getAlerts,
     getFieldSelectionOverview,
     getStaffPerformance,
+    getMonitoringDashboard,
 } = require('./admin.controller');
 
 router.use(protect);
@@ -17,6 +18,7 @@ router.get('/alerts', getAlerts);
 
 // Phase 7 — Aggregation
 router.get('/field-selection/overview', getFieldSelectionOverview);
+router.get('/field-selection/monitoring', getMonitoringDashboard);
 router.get('/performance/staff', getStaffPerformance);
 
 module.exports = router;

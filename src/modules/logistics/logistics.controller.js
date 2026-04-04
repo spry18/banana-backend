@@ -19,6 +19,7 @@ const createAssignment = async (req, res) => {
             priority,
             lightInTime,
             lightOutTime,
+            teamName,
         } = req.body;
 
         // Verify the enquiryId exists
@@ -69,15 +70,16 @@ const createAssignment = async (req, res) => {
         const assignment = await Logistics.create({
             enquiryId,
             omId,
-            companyId:   companyId   || enquiry.companyId,   // fall back to enquiry's existing value
+            companyId:   companyId   || enquiry.companyId,
             purchaseRate,
             totalBoxes,
             munshiId,
             driverId,
-            vehicleId:   resolvedVehicleId,                  // always from driver profile
+            vehicleId:   resolvedVehicleId,
             priority,
             lightInTime,
             lightOutTime,
+            teamName:    teamName    || null,
         });
 
         // Update Enquiry status to ASSIGNED (and persist any planning overrides)

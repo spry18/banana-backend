@@ -304,9 +304,88 @@ const getStaffPerformance = async (req, res) => {
     }
 };
 
+// @desc    Field Visit Monitoring Dashboard — counts + filterable table
+// @route   GET /api/admin/field-selection/monitoring
+// @access  Private (Admin, Operational Manager)
+const getMonitoringDashboard = async (req, res) => {
+    try {
+        const {
+            page = 1,
+            limit = 20,
+            status,
+            location,
+            fieldOwner,
+            assignedSelector,
+        } = req.query;
+
+        const skip = (Number(page) - 1) * Number(limit);
+        const now = new Date();
+
+        // ── Top card counts ──────────────────────────────────────────────
+        const [
+            totalPlots,
+            selected,
+            rejected,
+            missed,
+            futureSelection,
+        ] = await Promise.all([
+            Enquiry.countDocuments(),
+            Enquiry.countDocuments({ status: 'SELECTED' }),
+            Enquiry.countDocuments({ status: 'REJECTED' }),
+            Enquiry.countDocuments({ scheduledDate: { $lt: now }, status: 'PENDING' }),
+            Enquiry.countDocuments({ scheduledDate: { $gt: now } }),
+        ]);
+
+        // ── Table filter query ───────────────────────────────────────────
+        const query = {};
+
+        if (status) {
+            if (status === 'Missed') {
+                query.scheduledDate = { $lt: now };
+                query.status = 'PENDING';
+            } else {
+                query.status = status;
+            }
+        }
+
+        if (location) {
+            query.location = { $regex: location, $options: 'i' };
+        }
+
+        if (fieldOwner) {
+            query.fieldOwnerId = fieldOwner;
+        }
+
+        if (assignedSelector) {
+            query.assignedSelectorId = assignedSelector;
+        }
+
+        const total = await Enquiry.countDocuments(query);
+
+        const tableData = await Enquiry.find(query)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(Number(limit))
+            .populate('fieldOwnerId', 'firstName lastName mobileNo')
+            .populate('assignedSelectorId', 'firstName lastName mobileNo')
+            .lean();
+
+        res.json({
+            counts: { totalPlots, selected, rejected, missed, futureSelection },
+            tableData,
+            page: Number(page),
+            pages: Math.ceil(total / Number(limit)),
+        });
+    } catch (error) {
+        console.error('Monitoring dashboard error:', error);
+        res.status(500).json({ message: 'Server error while fetching monitoring dashboard' });
+    }
+};
+
 module.exports = {
     getAdminStats,
     getAlerts,
     getFieldSelectionOverview,
     getStaffPerformance,
+    getMonitoringDashboard,
 };
