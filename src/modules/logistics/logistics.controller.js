@@ -124,11 +124,17 @@ const createAssignment = async (req, res) => {
 const getAssignments = async (req, res) => {
     try {
         const assignments = await Logistics.find()
-            .populate('enquiryId')
+            .populate({
+                path: 'enquiryId',
+                populate: [
+                    { path: 'fieldOwnerId', select: 'firstName lastName mobileNo role' },
+                    { path: 'assignedSelectorId', select: 'firstName lastName mobileNo role' },
+                ],
+            })
             .populate('companyId')
             .populate('munshiId', 'firstName lastName mobileNo')
             .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
-            .populate('vehicleId', 'vehicleNumber');
+            .populate('vehicleId', 'vehicleNumber vehicleType');
 
         res.status(200).json(assignments);
     } catch (error) {
@@ -140,7 +146,14 @@ const getAssignments = async (req, res) => {
 const getAssignmentById = async (req, res) => {
     try {
         const assignment = await Logistics.findById(req.params.id)
-            .populate('enquiryId companyId')
+            .populate({
+                path: 'enquiryId',
+                populate: [
+                    { path: 'fieldOwnerId', select: 'firstName lastName mobileNo role' },
+                    { path: 'assignedSelectorId', select: 'firstName lastName mobileNo role' },
+                ],
+            })
+            .populate('companyId')
             .populate({ path: 'munshiId', select: 'firstName lastName mobileNo' })
             .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
             .populate('vehicleId');

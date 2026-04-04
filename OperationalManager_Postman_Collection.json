@@ -413,6 +413,30 @@
                         },
                         "description": "Assigns a Munshi + Driver team to a RATE_FIXED enquiry.\n\n## FE Update (2026-04-03)\n\n**vehicleId / vehicleNumber — AUTO-RESOLVED.**\nBackend auto-resolves from driver.vehicleId. If driver has no vehicle linked, returns 400.\n\n**Enquiry Override** — companyId, packingType, totalBoxes are written back to the Enquiry document to keep it as the source of truth.\n\n**packingType** enum: '4H', '5H', '6H', '8H', 'CL', '7Kg', 'Other'\n**totalBoxes** — Required. Total number of boxes for this assignment.\n\n**purchaseRate** — Optional (no longer required).\n**lightInTime / lightOutTime** — Optional. Notification shows 'TBD' if omitted.\n\nTriggers WhatsApp alerts to Munshi, Driver, and Farmer.\nTest script captures _id into {{assignmentId}}."
                     }
+                },
+                {
+                    "name": "GET Assignment by ID (Full Detail)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/logistics/{{assignmentId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "logistics",
+                                "{{assignmentId}}"
+                            ]
+                        },
+                        "description": "Returns a single logistics assignment with all references fully populated.\n\n## Populated Fields:\n- **enquiryId** — Full enquiry record including:\n  - **fieldOwnerId** → { firstName, lastName, mobileNo, role }\n  - **assignedSelectorId** → { firstName, lastName, mobileNo, role }\n- **companyId** — Full company record (companyName, legalName, taxId, headquarters)\n- **munshiId** → { firstName, lastName, mobileNo }\n- **driverId** → { firstName, lastName, mobileNo, vehicleId: { vehicleNumber, vehicleType } }\n- **vehicleId** — Full vehicle record (vehicleNumber, vehicleType, isActive)\n\n## Access:\nRestricted to Admin and Operational Manager roles only."
+                    }
                 }
             ]
         },

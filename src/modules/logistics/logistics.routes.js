@@ -18,6 +18,8 @@ router
     .route('/')
     .get(authorize('Admin', 'Operational Manager', 'Munshi', 'Driver (Eicher)', 'Driver (Pickup)'), getAssignments);
 
-router.route('/:id').get(getAssignmentById);
+router
+    .route('/:id')
+    .get(authorize('Admin', 'Operational Manager'), getAssignmentById);
 
 module.exports = router;
