@@ -196,6 +196,11 @@ const submitPackingReport = async (req, res) => {
             boxCL = 0,
             box7Kg = 0,
             boxOther = 0,
+            box5Kg = 0,
+            box13Kg = 0,
+            box13_5Kg = 0,
+            box14Kg = 0,
+            box16Kg = 0,
             totalBoxes,
             wastageKg = 0,
             wastageReason,
@@ -238,7 +243,8 @@ const submitPackingReport = async (req, res) => {
 
         // Validate totalBoxes sum
         const calculatedTotal = Number(box4H) + Number(box5H) + Number(box6H) + Number(box8H)
-            + Number(boxCL) + Number(box7Kg) + Number(boxOther);
+            + Number(boxCL) + Number(box7Kg) + Number(boxOther)
+            + Number(box5Kg) + Number(box13Kg) + Number(box13_5Kg) + Number(box14Kg) + Number(box16Kg);
         if (Number(totalBoxes) !== calculatedTotal) {
             return res.status(400).json({
                 message: `totalBoxes (${totalBoxes}) does not match the sum of individual boxes (${calculatedTotal})`,
@@ -263,6 +269,11 @@ const submitPackingReport = async (req, res) => {
             boxCL,
             box7Kg,
             boxOther,
+            box5Kg,
+            box13Kg,
+            box13_5Kg,
+            box14Kg,
+            box16Kg,
             totalBoxes,
             wastageKg,
             wastageReason,
@@ -349,14 +360,14 @@ const getMunshiReports = async (req, res) => {
         // Aggregate totals
         let totalBoxes = 0;
         let totalWaste = 0;
-        const boxBreakdown = { box4H: 0, box5H: 0, box6H: 0, box8H: 0, boxCL: 0, box7Kg: 0, boxOther: 0 };
+        const boxBreakdown = { box4H: 0, box5H: 0, box6H: 0, box8H: 0, boxCL: 0, box7Kg: 0, boxOther: 0, box5Kg: 0, box13Kg: 0, box13_5Kg: 0, box14Kg: 0, box16Kg: 0 };
         const dailyLog = {};  // grouped by date string
 
         packings.forEach(p => {
             totalBoxes += p.totalBoxes || 0;
             totalWaste += p.wastageKg || 0;
 
-            ['box4H', 'box5H', 'box6H', 'box8H', 'boxCL', 'box7Kg', 'boxOther'].forEach(key => {
+            ['box4H', 'box5H', 'box6H', 'box8H', 'boxCL', 'box7Kg', 'boxOther', 'box5Kg', 'box13Kg', 'box13_5Kg', 'box14Kg', 'box16Kg'].forEach(key => {
                 boxBreakdown[key] += p[key] || 0;
             });
 
@@ -503,6 +514,11 @@ const updatePackingReport = async (req, res) => {
             boxCL = 0,
             box7Kg = 0,
             boxOther = 0,
+            box5Kg = 0,
+            box13Kg = 0,
+            box13_5Kg = 0,
+            box14Kg = 0,
+            box16Kg = 0,
             totalBoxes,
             wastageKg = 0,
             wastageReason,
@@ -514,7 +530,8 @@ const updatePackingReport = async (req, res) => {
 
         // Validate totalBoxes sum
         const calculatedTotal = Number(box4H) + Number(box5H) + Number(box6H) + Number(box8H)
-            + Number(boxCL) + Number(box7Kg) + Number(boxOther);
+            + Number(boxCL) + Number(box7Kg) + Number(boxOther)
+            + Number(box5Kg) + Number(box13Kg) + Number(box13_5Kg) + Number(box14Kg) + Number(box16Kg);
         if (Number(totalBoxes) !== calculatedTotal) {
             return res.status(400).json({
                 message: `totalBoxes (${totalBoxes}) does not match the sum of individual boxes (${calculatedTotal})`,
@@ -540,6 +557,11 @@ const updatePackingReport = async (req, res) => {
         packing.boxCL = boxCL;
         packing.box7Kg = box7Kg;
         packing.boxOther = boxOther;
+        packing.box5Kg = box5Kg;
+        packing.box13Kg = box13Kg;
+        packing.box13_5Kg = box13_5Kg;
+        packing.box14Kg = box14Kg;
+        packing.box16Kg = box16Kg;
         packing.totalBoxes = totalBoxes;
         packing.wastageKg = wastageKg;
         packing.wastageReason = wastageReason;

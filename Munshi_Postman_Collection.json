@@ -556,52 +556,22 @@
                             "mode": "formdata",
                             "formdata": [
                                 {
-                                    "key": "box4H",
-                                    "value": "0",
+                                    "key": "box13_5Kg",
+                                    "value": "400",
                                     "type": "text",
-                                    "description": "4H box count"
+                                    "description": "13.5Kg box count"
                                 },
                                 {
-                                    "key": "box5H",
-                                    "value": "200",
+                                    "key": "box5Kg",
+                                    "value": "50",
                                     "type": "text",
-                                    "description": "5H box count (matches OM dispatch packingType 5H)"
-                                },
-                                {
-                                    "key": "box6H",
-                                    "value": "0",
-                                    "type": "text",
-                                    "description": "6H box count"
-                                },
-                                {
-                                    "key": "box8H",
-                                    "value": "0",
-                                    "type": "text",
-                                    "description": "8H box count"
-                                },
-                                {
-                                    "key": "boxCL",
-                                    "value": "0",
-                                    "type": "text",
-                                    "description": "CL box count"
-                                },
-                                {
-                                    "key": "box7Kg",
-                                    "value": "0",
-                                    "type": "text",
-                                    "description": "7Kg box count"
-                                },
-                                {
-                                    "key": "boxOther",
-                                    "value": "112",
-                                    "type": "text",
-                                    "description": "Other box count (312 totalBoxes OM − 200 fiveH)"
+                                    "description": "5Kg box count"
                                 },
                                 {
                                     "key": "totalBoxes",
-                                    "value": "312",
+                                    "value": "450",
                                     "type": "text",
-                                    "description": "Must equal sum of all box types; align with OM totalBoxes (312)"
+                                    "description": "Must equal sum of all box types"
                                 },
                                 {
                                     "key": "wastageKg",
@@ -741,52 +711,22 @@
                             "mode": "formdata",
                             "formdata": [
                                 {
-                                    "key": "box4H",
-                                    "value": "0",
+                                    "key": "box13_5Kg",
+                                    "value": "400",
                                     "type": "text",
-                                    "description": "Corrected 4H box count"
+                                    "description": "Corrected 13.5Kg box count"
                                 },
                                 {
-                                    "key": "box5H",
-                                    "value": "200",
+                                    "key": "box5Kg",
+                                    "value": "50",
                                     "type": "text",
-                                    "description": "Corrected 5H box count"
-                                },
-                                {
-                                    "key": "box6H",
-                                    "value": "0",
-                                    "type": "text",
-                                    "description": "Corrected 6H box count"
-                                },
-                                {
-                                    "key": "box8H",
-                                    "value": "0",
-                                    "type": "text",
-                                    "description": "Corrected 8H box count"
-                                },
-                                {
-                                    "key": "boxCL",
-                                    "value": "0",
-                                    "type": "text",
-                                    "description": "Corrected CL box count"
-                                },
-                                {
-                                    "key": "box7Kg",
-                                    "value": "0",
-                                    "type": "text",
-                                    "description": "Corrected 7Kg box count"
-                                },
-                                {
-                                    "key": "boxOther",
-                                    "value": "112",
-                                    "type": "text",
-                                    "description": "Corrected Other box count"
+                                    "description": "Corrected 5Kg box count"
                                 },
                                 {
                                     "key": "totalBoxes",
-                                    "value": "312",
+                                    "value": "450",
                                     "type": "text",
-                                    "description": "Must equal sum (312, same as first submit / OM totalBoxes)"
+                                    "description": "Must equal sum (450)"
                                 },
                                 {
                                     "key": "wastageKg",

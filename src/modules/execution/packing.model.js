@@ -40,6 +40,26 @@ const packingSchema = new mongoose.Schema(
             type: Number,
             default: 0,
         },
+        box5Kg: {
+            type: Number,
+            default: 0,
+        },
+        box13Kg: {
+            type: Number,
+            default: 0,
+        },
+        box13_5Kg: {
+            type: Number,
+            default: 0,
+        },
+        box14Kg: {
+            type: Number,
+            default: 0,
+        },
+        box16Kg: {
+            type: Number,
+            default: 0,
+        },
         totalBoxes: {
             type: Number,
             required: true,

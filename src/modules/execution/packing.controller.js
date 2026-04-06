@@ -17,6 +17,11 @@ const createPacking = async (req, res) => {
             box6H = 0,
             box8H = 0,
             boxCL = 0,
+            box5Kg = 0,
+            box13Kg = 0,
+            box13_5Kg = 0,
+            box14Kg = 0,
+            box16Kg = 0,
             totalBoxes,
             wastageKg,
             wastageReason
@@ -29,7 +34,7 @@ const createPacking = async (req, res) => {
         }
 
         // Validate totalBoxes equals the sum of individual box counts
-        const calculatedTotalBoxes = Number(box4H) + Number(box5H) + Number(box6H) + Number(box8H) + Number(boxCL);
+        const calculatedTotalBoxes = Number(box4H) + Number(box5H) + Number(box6H) + Number(box8H) + Number(boxCL) + Number(box5Kg) + Number(box13Kg) + Number(box13_5Kg) + Number(box14Kg) + Number(box16Kg);
         if (Number(totalBoxes) !== calculatedTotalBoxes) {
             return res.status(400).json({
                 message: `totalBoxes (${totalBoxes}) does not match the sum of individual boxes (${calculatedTotalBoxes})`
@@ -56,6 +61,11 @@ const createPacking = async (req, res) => {
             box6H,
             box8H,
             boxCL,
+            box5Kg,
+            box13Kg,
+            box13_5Kg,
+            box14Kg,
+            box16Kg,
             totalBoxes,
             wastageKg,
             wastageReason

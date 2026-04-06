@@ -70,7 +70,7 @@ const enquirySchema = new mongoose.Schema(
         },
         packingType: {
             type: String,
-            enum: ['4H', '5H', '6H', '8H', 'CL', '7Kg', 'Other'],
+            enum: ['4H', '5H', '6H', '8H', 'CL', 'Other', '5Kg', '7Kg', '13Kg', '13.5Kg', '14Kg', '16Kg'],
         },
         estimatedBoxes: {
             type: Number,

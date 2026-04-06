@@ -398,7 +398,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"enquiryId\": \"{{enquiryId}}\",\n  \"companyId\": \"{{companyId}}\",\n  \"purchaseRate\": 918,\n  \"packingType\": \"5H\",\n  \"totalBoxes\": 312,\n  \"teamName\": \"E2E Crew North-04\",\n  \"munshiId\": \"{{munshiId}}\",\n  \"driverId\": \"{{driverId}}\",\n  \"priority\": \"HIGH\",\n  \"lightInTime\": \"04:45 AM\",\n  \"lightOutTime\": \"06:30 AM\"\n}"
+                            "raw": "{\n  \"enquiryId\": \"{{enquiryId}}\",\n  \"companyId\": \"{{companyId}}\",\n  \"purchaseRate\": 918,\n  \"packingType\": \"13.5Kg\",\n  \"totalBoxes\": 450,\n  \"teamName\": \"E2E Crew North-04\",\n  \"munshiId\": \"{{munshiId}}\",\n  \"driverId\": \"{{driverId}}\",\n  \"priority\": \"HIGH\",\n  \"lightInTime\": \"04:45 AM\",\n  \"lightOutTime\": \"06:30 AM\"\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/logistics/assign",
