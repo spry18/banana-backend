@@ -49,6 +49,9 @@ const getAnalyticsDashboard = async (req, res) => {
             locationPerformance,
             companyPerformance,
             recentTransactions,
+            fieldSelectors,
+            munshis,
+            drivers,
         ] = await Promise.all([
 
             // ── Top Stats: Revenue + Boxes + Avg Rate from Logistics + Packing ──
@@ -219,6 +222,180 @@ const getAnalyticsDashboard = async (req, res) => {
                 .populate('munshiId', 'firstName lastName')
                 .select('enquiryId companyId munshiId purchaseRate totalBoxes assignmentStatus createdAt teamName')
                 .lean(),
+
+            // ── Field Selectors: visits + selection percentage ───────────────
+            Enquiry.aggregate([
+                {
+                    $match: {
+                        ...enquiryMatch,
+                        assignedSelectorId: { $exists: true, $ne: null },
+                    },
+                },
+                {
+                    $group: {
+                        _id: '$assignedSelectorId',
+                        visits: { $sum: 1 },
+                        selectedCount: {
+                            $sum: { $cond: [{ $eq: ['$status', 'SELECTED'] }, 1, 0] },
+                        },
+                    },
+                },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: '_id',
+                        foreignField: '_id',
+                        as: 'selector',
+                    },
+                },
+                { $unwind: { path: '$selector', preserveNullAndEmptyArrays: true } },
+                {
+                    $project: {
+                        _id: 0,
+                        name: {
+                            $trim: {
+                                input: {
+                                    $concat: [
+                                        { $ifNull: ['$selector.firstName', ''] },
+                                        ' ',
+                                        { $ifNull: ['$selector.lastName', ''] },
+                                    ],
+                                },
+                            },
+                        },
+                        visits: 1,
+                        selectPercentage: {
+                            $round: [
+                                {
+                                    $cond: [
+                                        { $eq: ['$visits', 0] },
+                                        0,
+                                        {
+                                            $multiply: [
+                                                { $divide: ['$selectedCount', '$visits'] },
+                                                100,
+                                            ],
+                                        },
+                                    ],
+                                },
+                                1,
+                            ],
+                        },
+                    },
+                },
+                { $match: { name: { $ne: '' } } },
+                { $sort: { visits: -1 } },
+            ]),
+
+            // ── Munshis: assignment loads ────────────────────────────────────
+            Logistics.aggregate([
+                {
+                    $match: {
+                        ...logisticsMatch,
+                        munshiId: { $exists: true, $ne: null },
+                    },
+                },
+                {
+                    $lookup: {
+                        from: 'enquiries',
+                        localField: 'enquiryId',
+                        foreignField: '_id',
+                        as: 'enquiry',
+                    },
+                },
+                { $unwind: { path: '$enquiry', preserveNullAndEmptyArrays: true } },
+                ...(location ? [{ $match: { 'enquiry.location': { $regex: location, $options: 'i' } } }] : []),
+                {
+                    $group: {
+                        _id: '$munshiId',
+                        loads: { $sum: 1 },
+                    },
+                },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: '_id',
+                        foreignField: '_id',
+                        as: 'munshi',
+                    },
+                },
+                { $unwind: { path: '$munshi', preserveNullAndEmptyArrays: true } },
+                {
+                    $project: {
+                        _id: 0,
+                        name: {
+                            $trim: {
+                                input: {
+                                    $concat: [
+                                        { $ifNull: ['$munshi.firstName', ''] },
+                                        ' ',
+                                        { $ifNull: ['$munshi.lastName', ''] },
+                                    ],
+                                },
+                            },
+                        },
+                        loads: 1,
+                        wastage: { $literal: '-' },
+                    },
+                },
+                { $match: { name: { $ne: '' } } },
+                { $sort: { loads: -1 } },
+            ]),
+
+            // ── Drivers: total trips ──────────────────────────────────────────
+            Logistics.aggregate([
+                {
+                    $match: {
+                        ...logisticsMatch,
+                        driverId: { $exists: true, $ne: null },
+                    },
+                },
+                {
+                    $lookup: {
+                        from: 'enquiries',
+                        localField: 'enquiryId',
+                        foreignField: '_id',
+                        as: 'enquiry',
+                    },
+                },
+                { $unwind: { path: '$enquiry', preserveNullAndEmptyArrays: true } },
+                ...(location ? [{ $match: { 'enquiry.location': { $regex: location, $options: 'i' } } }] : []),
+                {
+                    $group: {
+                        _id: '$driverId',
+                        trips: { $sum: 1 },
+                    },
+                },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: '_id',
+                        foreignField: '_id',
+                        as: 'driver',
+                    },
+                },
+                { $unwind: { path: '$driver', preserveNullAndEmptyArrays: true } },
+                {
+                    $project: {
+                        _id: 0,
+                        name: {
+                            $trim: {
+                                input: {
+                                    $concat: [
+                                        { $ifNull: ['$driver.firstName', ''] },
+                                        ' ',
+                                        { $ifNull: ['$driver.lastName', ''] },
+                                    ],
+                                },
+                            },
+                        },
+                        trips: 1,
+                        onTime: { $literal: '-' },
+                    },
+                },
+                { $match: { name: { $ne: '' } } },
+                { $sort: { trips: -1 } },
+            ]),
         ]);
 
         res.json({
@@ -227,6 +404,9 @@ const getAnalyticsDashboard = async (req, res) => {
             locationPerformance,
             companyPerformance,
             recentTransactions,
+            fieldSelectors,
+            munshis,
+            drivers,
         });
     } catch (error) {
         console.error('Analytics dashboard error:', error);

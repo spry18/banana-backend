@@ -229,12 +229,13 @@ const getDrivers = async (req, res) => {
 const getFormDropdowns = async (req, res) => {
     try {
         // Run all queries in parallel for best performance
-        const [companies, agents, generations, selectors, brands, eicherDrivers, pickupDrivers] = await Promise.all([
+        const [companies, agents, generations, selectors, brands, munshis, eicherDrivers, pickupDrivers] = await Promise.all([
             Company.find({ isActive: true }).select('_id companyName legalName headquarters').lean(),
             Agent.find({ isActive: true }).select('_id agentName mobileNo location').lean(),
             Generation.find({ isActive: true }).select('_id name description').lean(),
             User.find({ role: 'Field Selector', isActive: true }).select('_id firstName lastName mobileNo').lean(),
             Brand.find({ isActive: true }).select('_id brandName companyId').populate('companyId', 'companyName').lean(),
+            User.find({ role: { $regex: /munshi/i }, isActive: true }).select('_id firstName lastName mobileNo').lean(),
             User.find({ role: 'driver eicher', isActive: true }).select('_id firstName lastName mobileNo vehicleId').populate('vehicleId', 'vehicleNumber vehicleType').lean(),
             User.find({ role: 'driver pickup', isActive: true }).select('_id firstName lastName mobileNo vehicleId').populate('vehicleId', 'vehicleNumber vehicleType').lean(),
         ]);
@@ -245,6 +246,7 @@ const getFormDropdowns = async (req, res) => {
             generations,
             selectors,
             brands,
+            munshis,
             eicherDrivers,
             pickupDrivers,
         });
