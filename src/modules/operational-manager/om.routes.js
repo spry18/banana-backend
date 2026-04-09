@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getOmDashboard, getOmPlots, rejectPackingReport, approvePackingReport } = require('./om.controller');
+const { getOmDashboard, getOmPlots, rejectPackingReport, approvePackingReport, getApprovedPlots } = require('./om.controller');
 const { protect, authorize } = require('../../middlewares/auth.middleware');
 
 // Apply protect to all routes
@@ -8,6 +8,9 @@ router.use(protect);
 
 // GET /api/operational-manager/dashboard
 router.get('/dashboard', authorize('Admin', 'Operational Manager'), getOmDashboard);
+
+// GET /api/operational-manager/plots/approved
+router.get('/plots/approved', authorize('Admin', 'Operational Manager'), getApprovedPlots);
 
 // GET /api/operational-manager/plots?stage=Unassigned|Assigned|Complete
 router.get('/plots', authorize('Admin', 'Operational Manager'), getOmPlots);

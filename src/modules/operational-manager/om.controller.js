@@ -216,10 +216,10 @@ const getOmPlots = async (req, res) => {
             });
         }
 
-        // ---- Stage: Complete = Assignments with assignmentStatus COMPLETED, REJECTED, or APPROVED ----
-        if (stage === 'Complete') {
+        // ---- Stage: Rejected = Assignments with assignmentStatus REJECTED ----
+        if (stage === 'Rejected') {
             const assignmentQuery = {
-                assignmentStatus: { $in: ['COMPLETED', 'REJECTED', 'APPROVED'] },
+                assignmentStatus: 'REJECTED',
             };
 
             // Build a search filter on enquiry fields via two queries
@@ -250,12 +250,84 @@ const getOmPlots = async (req, res) => {
                 Logistics.countDocuments(assignmentQuery),
             ]);
 
+            // --- Enhancement: Attach Packing Details ---
+            const assignmentIds = assignments.map(a => a._id);
+            const packingRecords = await Packing.find({ assignmentId: { $in: assignmentIds } }).lean();
+            const packingMap = packingRecords.reduce((map, packing) => {
+                map[packing.assignmentId.toString()] = packing;
+                return map;
+            }, {});
+
+            const data = assignments.map(a => ({
+                ...a,
+                packingDetails: packingMap[a._id.toString()] || null,
+            }));
+            // --- End Enhancement ---
+
+            return res.status(200).json({
+                stage: 'Rejected',
+                total,
+                page: Number(page),
+                pages: Math.ceil(total / Number(limit)),
+                data,
+            });
+        }
+
+        // ---- Stage: Complete = Assignments with assignmentStatus COMPLETED, REJECTED, or APPROVED ----
+        if (stage === 'Complete') {
+            const assignmentQuery = {
+                // assignmentStatus: { $in: ['COMPLETED', 'REJECTED', 'APPROVED'] },
+                assignmentStatus: { $in: ['COMPLETED'] },
+            };
+
+            // Build a search filter on enquiry fields via two queries
+            if (search) {
+                const matchingEnquiries = await Enquiry.find({
+                    $or: [
+                        { farmerFirstName: { $regex: search, $options: 'i' } },
+                        { farmerLastName: { $regex: search, $options: 'i' } },
+                        { enquiryId: { $regex: search, $options: 'i' } },
+                        { location: { $regex: search, $options: 'i' } },
+                    ],
+                }).select('_id');
+                assignmentQuery.enquiryId = { $in: matchingEnquiries.map(e => e._id) };
+            }
+
+            const [assignments, total] = await Promise.all([
+                Logistics.find(assignmentQuery)
+                    .select('-purchaseRate')
+                    .sort({ createdAt: -1 })
+                    .skip(skip)
+                    .limit(Number(limit))
+                    .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName farmerMobile location')
+                    .populate('companyId', 'companyName')
+                    .populate('munshiId', 'firstName lastName mobileNo')
+                    .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
+                    .populate('vehicleId', 'vehicleNumber')
+                    .lean(),
+                Logistics.countDocuments(assignmentQuery),
+            ]);
+
+            // --- Enhancement: Attach Packing Details ---
+            const assignmentIds = assignments.map(a => a._id);
+            const packingRecords = await Packing.find({ assignmentId: { $in: assignmentIds } }).lean();
+            const packingMap = packingRecords.reduce((map, packing) => {
+                map[packing.assignmentId.toString()] = packing;
+                return map;
+            }, {});
+
+            const data = assignments.map(a => ({
+                ...a,
+                packingDetails: packingMap[a._id.toString()] || null,
+            }));
+            // --- End Enhancement ---
+
             return res.status(200).json({
                 stage: 'Complete',
                 total,
                 page: Number(page),
                 pages: Math.ceil(total / Number(limit)),
-                data: assignments,
+                data,
             });
         }
 
@@ -362,9 +434,78 @@ const approvePackingReport = async (req, res) => {
     }
 };
 
+// @desc    Get all approved plots for OM
+// @route   GET /api/operational-manager/plots/approved
+// @access  Protected (Admin, Operational Manager)
+// @query   ?page=1  ?limit=20  ?search=...
+const getApprovedPlots = async (req, res) => {
+    try {
+        const { search, page = 1, limit = 20 } = req.query;
+        const skip = (Number(page) - 1) * Number(limit);
+
+        const assignmentQuery = {
+            assignmentStatus: 'APPROVED',
+        };
+
+        // Build a search filter on enquiry fields via two queries
+        if (search) {
+            const matchingEnquiries = await Enquiry.find({
+                $or: [
+                    { farmerFirstName: { $regex: search, $options: 'i' } },
+                    { farmerLastName: { $regex: search, $options: 'i' } },
+                    { enquiryId: { $regex: search, $options: 'i' } },
+                    { location: { $regex: search, $options: 'i' } },
+                ],
+            }).select('_id');
+            assignmentQuery.enquiryId = { $in: matchingEnquiries.map(e => e._id) };
+        }
+
+        const [assignments, total] = await Promise.all([
+            Logistics.find(assignmentQuery)
+                .select('-purchaseRate')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(Number(limit))
+                .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName farmerMobile location')
+                .populate('companyId', 'companyName')
+                .populate('munshiId', 'firstName lastName mobileNo')
+                .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
+                .populate('vehicleId', 'vehicleNumber')
+                .lean(),
+            Logistics.countDocuments(assignmentQuery),
+        ]);
+
+        // Attach Packing Details
+        const assignmentIds = assignments.map(a => a._id);
+        const packingRecords = await Packing.find({ assignmentId: { $in: assignmentIds } }).lean();
+        const packingMap = packingRecords.reduce((map, packing) => {
+            map[packing.assignmentId.toString()] = packing;
+            return map;
+        }, {});
+
+        const data = assignments.map(a => ({
+            ...a,
+            packingDetails: packingMap[a._id.toString()] || null,
+        }));
+
+        return res.status(200).json({
+            stage: 'Approved',
+            total,
+            page: Number(page),
+            pages: Math.ceil(total / Number(limit)),
+            data,
+        });
+
+    } catch (error) {
+        console.error('Error fetching approved plots:', error);
+        res.status(500).json({ message: 'Server error while fetching approved plots' });
+    }
+};
+
 module.exports = {
     getOmDashboard,
     getOmPlots,
     rejectPackingReport,
     approvePackingReport,
+    getApprovedPlots,
 };

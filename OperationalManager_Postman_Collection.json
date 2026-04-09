@@ -337,6 +337,69 @@
                         },
                         "description": "Returns assignments where assignmentStatus is COMPLETED, REJECTED, or APPROVED. These represent all assignments that have completed the OM review phase (either accepted as-is, rejected with notes for resubmission, or finally approved/locked for Finance).\n\nEnquiry object now includes `farmerMobile` for direct farmer contact.\nSecurity: `purchaseRate` is excluded from all logistics objects.\n\nUse this to show OM's full history of reviewed assignments across all review states."
                     }
+                },
+                {
+                    "name": "GET Plots — Rejected (OM Reviewed)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/operational-manager/plots?stage=Rejected&page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "operational-manager",
+                                "plots"
+                            ],
+                            "query": [
+                                {
+                                    "key": "stage",
+                                    "value": "Rejected"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        },
+                        "description": "Returns assignments where assignmentStatus is REJECTED. These represent all assignments that have been rejected by the OM and are awaiting resubmission from the Munshi."
+                    }
+                },
+                {
+                    "name": "GET Plots — Approved (OM Reviewed)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/operational-manager/plots/approved",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "operational-manager",
+                                "plots",
+                                "approved"
+                            ]
+                        },
+                        "description": "Returns assignments where assignmentStatus is APPROVED. These represent all assignments that have been finally approved by the OM and are ready for Finance."
+                    }
                 }
             ]
         },
