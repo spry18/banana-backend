@@ -20,7 +20,7 @@ const getOmDashboard = async (req, res) => {
             Enquiry.countDocuments({ status: 'RATE_FIXED' }),
             Logistics.countDocuments(),
             Packing.countDocuments({ status: 'SUBMITTED' }),   // Munshi done, OM pending
-            Packing.countDocuments({ status: 'APPROVED' }),    // OM approved
+            Logistics.countDocuments({ assignmentStatus: 'APPROVED' }),    // OM approved logistics assignments
             Logistics.find()
                 .sort({ createdAt: -1 })
                 .limit(5)
@@ -176,7 +176,7 @@ const getOmPlots = async (req, res) => {
         // ---- Stage: Assigned = logistics records with assignmentStatus in PENDING or IN_PROGRESS ----
         if (stage === 'Assigned') {
             const assignmentQuery = {
-                assignmentStatus: { $in: ['PENDING', 'IN_PROGRESS'] },
+                assignmentStatus: { $in: ['PENDING'] },
             };
 
             // Build a search filter on enquiry fields via two queries
