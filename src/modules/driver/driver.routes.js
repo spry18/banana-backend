@@ -6,6 +6,9 @@ const {
     submitTripReport,
     updateTripReport,
     getDriverReports,
+    getDriverAssignments,
+    updateTransitStatus,
+    getDriverProfile,
 } = require('./driver.controller');
 const { protect, authorize } = require('../../middlewares/auth.middleware');
 const upload = require('../../middlewares/upload.middleware');
@@ -49,5 +52,13 @@ router.patch(
     updateTripReport
 );
 router.get('/reports', authorize(...roles), getDriverReports);
+
+
+// Profile
+router.get('/profile', authorize(...roles), getDriverProfile);
+
+// Assignments
+router.get('/assignments', authorize(...roles), getDriverAssignments);
+router.patch('/assignments/:id/status', authorize(...roles), updateTransitStatus);
 
 module.exports = router;

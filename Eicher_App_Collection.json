@@ -1,0 +1,368 @@
+﻿{
+"info": {
+"_postman_id": "eicher-app-complete-guid",
+"name": "Eicher App Collection (Complete)",
+"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+},
+"item": [
+{
+"name": "1. Login",
+"event": [
+{
+"listen": "test",
+"script": {
+"exec": [
+"if (pm.response.code === 200) {",
+"    var responseData = pm.response.json();",
+"    if (responseData && responseData.token) {",
+"        pm.collectionVariables.set(\"token\", responseData.token);",
+"        console.log(\"Authentication token saved.\");",
+"    }",
+"}"
+],
+"type": "text/javascript"
+}
+}
+],
+"request": {
+"auth": {
+"type": "noauth"
+},
+"method": "POST",
+"header": [],
+"body": {
+"mode": "raw",
+"raw": "{\n    \"mobileNo\": \"9876543210\",\n    \"password\": \"password123\"\n}",
+"options": {
+"raw": {
+"language": "json"
+}
+}
+},
+"url": {
+"raw": "{{baseUrl}}/api/users/login",
+"host": [
+"{{baseUrl}}"
+],
+"path": [
+"api",
+"users",
+"login"
+]
+},
+"description": "Authenticate to get a JWT token."
+},
+"response": []
+},
+{
+"name": "2. Start Shift",
+"request": {
+"method": "POST",
+"header": [],
+"body": {
+"mode": "formdata",
+"formdata": [
+{
+"key": "startKm",
+"value": "10000",
+"type": "text"
+},
+{
+"key": "vehicleNumber",
+"value": "TN-01-AB-1234",
+"type": "text"
+},
+{
+"key": "petrolAdvance",
+"value": "500",
+"type": "text"
+},
+{
+"key": "startKmPhoto",
+"type": "file",
+"src": []
+},
+{
+"key": "petrolReceiptPhoto",
+"type": "file",
+"src": []
+}
+]
+},
+"url": {
+"raw": "{{baseUrl}}/api/daily-logs/start",
+"host": [
+"{{baseUrl}}"
+],
+"path": [
+"api",
+"daily-logs",
+"start"
+]
+},
+"description": "Driver starts their daily shift."
+},
+"response": []
+},
+{
+"name": "3. Dashboard",
+"request": {
+"method": "GET",
+"header": [],
+"url": {
+"raw": "{{baseUrl}}/api/driver/dashboard",
+"host": [
+"{{baseUrl}}"
+],
+"path": [
+"api",
+"driver",
+"dashboard"
+]
+}
+},
+"response": []
+},
+{
+"name": "4. Start Trip",
+"request": {
+"method": "PATCH",
+"header": [],
+"body": {
+"mode": "raw",
+"raw": "{\n    \"transitStatus\": \"EN_ROUTE_TO_FARM\"\n}",
+"options": {
+"raw": {
+"language": "json"
+}
+}
+},
+"url": {
+"raw": "{{baseUrl}}/api/driver/assignments/{{assignmentId}}/status",
+"host": [
+"{{baseUrl}}"
+],
+"path": [
+"api",
+"driver",
+"assignments",
+"{{assignmentId}}",
+"status"
+]
+}
+},
+"response": []
+},
+{
+"name": "5. Submit Trip",
+"request": {
+"method": "POST",
+"header": [],
+"body": {
+"mode": "formdata",
+"formdata": [
+{
+"key": "startRoute",
+"value": "Coimbatore",
+"type": "text"
+},
+{
+"key": "midRoute",
+"value": "Salem",
+"type": "text"
+},
+{
+"key": "destination",
+"value": "Chennai",
+"type": "text"
+},
+{
+"key": "totalKm",
+"value": "500",
+"type": "text"
+},
+{
+"key": "tollExpense",
+"value": "750",
+"type": "text"
+},
+{
+"key": "isHault",
+"value": "false",
+"type": "text"
+},
+{
+"key": "isLineCancel",
+"value": "false",
+"type": "text"
+},
+{
+"key": "weightSlipPhoto",
+"type": "file",
+"src": []
+},
+{
+"key": "dieselSlipPhoto",
+"type": "file",
+"src": []
+},
+{
+"key": "unloadSlipPhoto",
+"type": "file",
+"src": []
+},
+{
+"key": "endKmPhoto",
+"type": "file",
+"src": []
+}
+]
+},
+"url": {
+"raw": "{{baseUrl}}/api/driver/trips/{{assignmentId}}",
+"host": [
+"{{baseUrl}}"
+],
+"path": [
+"api",
+"driver",
+"trips",
+"{{assignmentId}}"
+]
+}
+},
+"response": []
+},
+{
+"name": "6. History",
+"request": {
+"method": "GET",
+"header": [],
+"url": {
+"raw": "{{baseUrl}}/api/driver/history?page=1",
+"host": [
+"{{baseUrl}}"
+],
+"path": [
+"api",
+"driver",
+"history"
+],
+"query": [
+{
+"key": "page",
+"value": "1"
+}
+]
+}
+},
+"response": []
+},
+{
+"name": "7. Monthly Report",
+"request": {
+"method": "GET",
+"header": [],
+"url": {
+"raw": "{{baseUrl}}/api/driver/reports?month=03&year=2026",
+"host": [
+"{{baseUrl}}"
+],
+"path": [
+"api",
+"driver",
+"reports"
+],
+"query": [
+{
+"key": "month",
+"value": "03"
+},
+{
+"key": "year",
+"value": "2026"
+}
+]
+}
+},
+"response": []
+},
+{
+"name": "8. End Shift",
+"request": {
+"method": "PATCH",
+"header": [],
+"body": {
+"mode": "formdata",
+"formdata": [
+{
+"key": "endKm",
+"value": "10500",
+"type": "text"
+},
+{
+"key": "endKmPhoto",
+"type": "file",
+"src": []
+}
+]
+},
+"url": {
+"raw": "{{baseUrl}}/api/daily-logs/end",
+"host": [
+"{{baseUrl}}"
+],
+"path": [
+"api",
+"daily-logs",
+"end"
+]
+}
+},
+"response": []
+},
+{
+"name": "9. Profile",
+"request": {
+"method": "GET",
+"header": [],
+"url": {
+"raw": "{{baseUrl}}/api/driver/profile",
+"host": [
+"{{baseUrl}}"
+],
+"path": [
+"api",
+"driver",
+"profile"
+]
+}
+},
+"response": []
+}
+],
+"auth": {
+"type": "bearer",
+"bearer": [
+{
+"key": "token",
+"value": "{{token}}",
+"type": "string"
+}
+]
+},
+"variable": [
+{
+"key": "baseUrl",
+"value": "http://localhost:5000"
+},
+{
+"key": "token",
+"value": ""
+},
+{
+"key": "assignmentId",
+"value": ""
+}
+]
+}

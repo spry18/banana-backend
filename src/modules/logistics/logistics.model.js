@@ -79,6 +79,18 @@ const logisticsSchema = new mongoose.Schema(
             enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'REJECTED', 'APPROVED'],
             default: 'PENDING',
         },
+        transitStatus: {
+            type: String,
+            enum: [
+                'DISPATCHED',
+                'EN_ROUTE_TO_FARM',
+                'ARRIVED_AT_FARM',
+                'LOADING',
+                'IN_TRANSIT_TO_DESTINATION',
+                'ARRIVED_AT_DESTINATION',
+            ],
+            default: 'DISPATCHED',
+        },
     },
     { timestamps: true }
 );

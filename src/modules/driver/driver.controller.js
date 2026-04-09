@@ -437,10 +437,101 @@ const getDriverReports = async (req, res) => {
     }
 };
 
+// @desc    Get Driver Profile (including vehicle info)
+// @route   GET /api/driver/profile
+// @access  Protected (Driver roles)
+const getDriverProfile = async (req, res) => {
+    try {
+        const User = require('../users/user.model');
+        const driver = await User.findById(req.user._id)
+            .select('-password -__v')
+            .populate('vehicleId');
+
+        if (!driver) {
+            return res.status(404).json({ message: 'Driver profile not found.' });
+        }
+
+        res.status(200).json(driver);
+    } catch (error) {
+        console.error('Error fetching driver profile:', error);
+        res.status(500).json({ message: 'Server error while fetching profile.' });
+    }
+};
+
+// @desc    Get driver's active assignments
+// @route   GET /api/driver/assignments
+// @access  Protected (Driver roles)
+const getDriverAssignments = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const assignments = await Logistics.find({
+            $or: [{ driverId: userId }, { pickupDriverId: userId }],
+            assignmentStatus: { $in: ['PENDING', 'IN_PROGRESS'] },
+        })
+            .populate('enquiryId')
+            .populate('companyId')
+            .sort({ createdAt: -1 });
+
+        res.status(200).json(assignments);
+    } catch (error) {
+        console.error('Error fetching assignments:', error);
+        res.status(500).json({ message: 'Server error while fetching assignments' });
+    }
+};
+
+// @desc    Update transit status for a driver's assignment
+// @route   PATCH /api/driver/assignments/:id/status
+// @access  Protected (Driver roles)
+const updateTransitStatus = async (req, res) => {
+    try {
+        const { transitStatus } = req.body;
+        const assignmentId = req.params.id;
+        const driverId = req.user._id;
+
+        const allowedStatuses = [
+            'DISPATCHED',
+            'EN_ROUTE_TO_FARM',
+            'ARRIVED_AT_FARM',
+            'LOADING',
+            'IN_TRANSIT_TO_DESTINATION',
+            'ARRIVED_AT_DESTINATION',
+        ];
+
+        if (!transitStatus || !allowedStatuses.includes(transitStatus)) {
+            return res.status(400).json({ message: 'Invalid transit status provided.' });
+        }
+
+        const assignment = await Logistics.findById(assignmentId);
+
+        if (!assignment) {
+            return res.status(404).json({ message: 'Assignment not found.' });
+        }
+
+        // Security Check: Ensure the logged-in user is the assigned driver or pickup driver
+        if (
+            assignment.driverId.toString() !== driverId.toString() &&
+            (!assignment.pickupDriverId || assignment.pickupDriverId.toString() !== driverId.toString())
+        ) {
+            return res.status(403).json({ message: 'You are not authorized to update this assignment.' });
+        }
+
+        assignment.transitStatus = transitStatus;
+        await assignment.save();
+
+        res.status(200).json(assignment);
+    } catch (error) {
+        console.error('Error updating transit status:', error);
+        res.status(500).json({ message: 'Server error while updating transit status.' });
+    }
+};
+
 module.exports = {
     getDriverDashboard,
     getDriverHistory,
     submitTripReport,
     updateTripReport,
     getDriverReports,
+    getDriverProfile,
+    getDriverAssignments,
+    updateTransitStatus
 };
