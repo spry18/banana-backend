@@ -243,6 +243,35 @@
                         "description": "Closes the active daily log. Calculates total KM driven from startKm to endKm.\n\n- Returns 404 if no active (STARTED) log exists for today.\n- Returns 400 if `endKm` is not greater than `startKm`.\n\n⚠️ This is a PATCH request, not PUT."
                     },
                     "response": []
+                },
+                {
+                    "name": "Get Diesel Advance History",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{selectorToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/diesel-advance",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "diesel-advance"
+                            ]
+                        },
+                        "description": "Fetches diesel advance history for the logged-in field selector."
+                    },
+                    "response": []
                 }
             ]
         },

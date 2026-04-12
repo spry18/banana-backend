@@ -75,14 +75,21 @@ const createAdvance = async (req, res) => {
 
 // @desc    Get diesel advance history (paginated, filterable by driverId)
 // @route   GET /api/diesel-advance
-// @access  Protected (Admin, Operational Manager)
+// @access  Protected (Admin, Operational Manager, Field Owner, Field Selector, driver)
 const getAdvanceHistory = async (req, res) => {
     try {
         const { page = 1, limit = 20, driverId, assignmentId } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
 
         const query = {};
-        if (driverId) query.driverId = driverId;
+        
+        // If the user requesting is a driver or field selector, restrict to their own ID
+        if (['driver eicher', 'driver pickup', 'Field Selector'].includes(req.user.role)) {
+            query.driverId = req.user._id;
+        } else if (driverId) {
+            query.driverId = driverId;
+        }
+
         if (assignmentId) query.assignmentId = assignmentId;
 
         const [advances, total] = await Promise.all([

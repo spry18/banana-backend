@@ -32,7 +32,7 @@
 "header": [],
 "body": {
 "mode": "raw",
-"raw": "{\n    \"mobileNo\": \"9876543210\",\n    \"password\": \"password123\"\n}",
+"raw": "{\n    \"mobileNo\": \"1000000000\",\n    \"password\": \"password123\"\n}",
 "options": {
 "raw": {
 "language": "json"
@@ -335,6 +335,34 @@
 "api",
 "driver",
 "profile"
+]
+}
+},
+"response": []
+},
+{
+"name": "10. Get Diesel Advances",
+"request": {
+"method": "GET",
+"header": [],
+"url": {
+"raw": "{{baseUrl}}/api/diesel-advance?page=1&limit=10",
+"host": [
+"{{baseUrl}}"
+],
+"path": [
+"api",
+"diesel-advance"
+],
+"query": [
+{
+"key": "page",
+"value": "1"
+},
+{
+"key": "limit",
+"value": "10"
+}
 ]
 }
 },

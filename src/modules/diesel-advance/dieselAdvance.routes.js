@@ -15,7 +15,7 @@ router
         createAdvance
     )
     .get(
-        authorize('Admin', 'Operational Manager', 'Field Owner'),
+        authorize('Admin', 'Operational Manager', 'Field Owner', 'Field Selector', 'driver eicher', 'driver pickup'),
         getAdvanceHistory
     );
 

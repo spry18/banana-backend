@@ -1,0 +1,98 @@
+Ran terminal command: cat src/modules/enquiries/enquiry.model.js | grep -A 5 -B 1 "status:"
+
+Ran terminal command: cat src/modules/logistics/logistics.model.js | grep -A 15 "transitStatus:"
+
+Ran terminal command: Select-String -Pattern "enum:" src/modules/enquiries/enquiry.model.js -Context 1,12
+
+Ran terminal command: Select-String -Pattern "enum:" src/modules/logistics/logistics.model.js -Context 1,12
+
+Ran terminal command: Select-String -Pattern "status =" src/modules/field-selector/field-selector.controller.js src/modules/operational-manager/*.controller.js src/modules/munshi/*.controller.js
+Completed with input: Select-String -Pattern "status =" src/modules/field-selector/field-selector.controller.js src/modules/operational-manager/*.controller.js src/modules/munshi/*.controller.js
+
+Ran terminal command: ls "src/modules/operational-manager"
+
+Ran terminal command: cat src/modules/operational-manager/om.controller.js | Select-String "status: "
+
+This is a fantastic question. To make sense of everything, let’s look at the lifecycle of an Enquiry from the moment a Field Owner creates it, all the way to the point where the Driver drops off the load. 
+
+Based on the schemas and controllers we have running in your codebase, here is the **End-to-End Enquiry & Logistics Flow**, broken down by role and the corresponding `status`.
+
+---
+
+### Step 1: The Field Owner (Creation)
+**Actor:** Field Owner (Farmer)
+**Action:** The Field Owner submits a new Enquiry indicating they have crops ready to sell.
+* **Enquiry Status:** `PENDING`
+* **Behind the scenes:** A new record is created in the `Enquiry` collection.
+
+---
+
+### Step 2: The Field Selector / Visitor (Inspection & Selection)
+**Actor:** Field Visitor/Selector
+**Action:** The OM assigns a Selector, or the Selector picks up a `PENDING` Enquiry, visits the farm, logs the crop quality (4H, 5H, etc.), and reports the estimated boxes.
+* **Enquiry Status:** Changes from `PENDING` ➔ `SELECTED` (or `REJECTED` if the crop isn't good, or `RESCHEDULED`).
+* **Behind the scenes:** The Enquiry is now waiting on the Operational Manager to fix the final rate based on the Selector's report.
+
+---
+
+### Step 3: The Operational Manager (Negotiation & Allocation)
+**Actor:** Operational Manager (OM)
+**Action 1 (Rate Fixing):** The OM reviews the `SELECTED` enquiry, negotiates the `purchaseRate` with the farmer, and locks it in.
+* **Enquiry Status:** Changes from `SELECTED` ➔ `RATE_FIXED`
+
+**Action 2 (Logistics Assignment):** Once the rate is fixed, the OM creates a Logistics record. They assign a vehicle, an Eicher Driver (Main `driverId`), and optionally a Pickup Driver (`pickupDriverId`) to the Enquiry.
+* **Enquiry Status:** Changes from `RATE_FIXED` ➔ `ASSIGNED`
+* **Logistics `assignmentStatus`:** Created as `PENDING`
+* **Logistics `transitStatus`:** Created as `DISPATCHED`
+
+---
+
+### Step 4: The Driver (Transportation)
+**Actor:** Eicher Driver / Pickup Driver
+**Action:** The Driver logs into the mobile app, clocks their start reading via the `DailyLog` (`/start`). They see their `PENDING` dashboard assignment and begin updating their journey in real-time.
+* **Logistics `assignmentStatus`:** `IN_PROGRESS` (When they actively start working the route).
+* **Logistics `transitStatus` flow:** 
+  1. `DISPATCHED` (Default)
+  2. `EN_ROUTE_TO_FARM`
+  3. `ARRIVED_AT_FARM`
+  4. `LOADING` (Hand-off to Munshi)
+  5. `IN_TRANSIT_TO_DESTINATION`
+  6. `ARRIVED_AT_DESTINATION`
+
+---
+
+### Step 5: The Munshi (Loading & Packing)
+**Actor:** Munshi (Field Supervisor)
+**Action:** While the `transitStatus` is `LOADING`, the Munshi oversees the packing of the boxes at the farm. They generate a `Packing` report and submit it.
+* **Packing Status:** Created as `SUBMITTED`
+* **Behind the scenes:** The Munshi’s data is sent back to the OM. The OM reviews the weight/box count and approves it.
+
+---
+
+### Step 6: The Driver (Drop-off & Trip Submission)
+**Actor:** Eicher Driver / Pickup Driver
+**Action:** After arriving at the destination, the Driver unloads. They submit the final `Trip` report (with their ending route, tolls, diesel slip photos, unload slip photos).
+* **Logistics `assignmentStatus`:** Changes from `IN_PROGRESS` ➔ `COMPLETED`
+* **Enquiry Status:** Remains `ASSIGNED` (Pending OM final approval)
+
+Then they clock out via the `DailyLog` (`/end` shift API).
+
+---
+
+### Step 7: The Operational Manager (Final Approval & Closure)
+**Actor:** Operational Manager (OM)
+**Action:** The OM reviews the submitted `Trip` and `Packing` reports. If everything matches (Driver's dropped off load vs. Munshi's packed load), the OM officially approves the logistics closure.
+* **Logistics `assignmentStatus`:** Changes from `COMPLETED` ➔ `APPROVED`
+* **Enquiry Status:** Changes from `ASSIGNED` ➔ `COMPLETED` (and eventually `CLOSED` once accounting settles).
+
+---
+
+### Summary of Status Flow Variables:
+**`Enquiry.status`:**
+`PENDING` ➔ `SELECTED` ➔ `RATE_FIXED` ➔ `ASSIGNED` ➔ `COMPLETED` ➔ `CLOSED`
+
+**`Logistics.assignmentStatus`:** 
+`PENDING` (Assigned by OM) ➔ `IN_PROGRESS` (Driver running) ➔ `COMPLETED` (Driver Drops off) ➔ `APPROVED` (OM verifies).
+
+**`Logistics.transitStatus` (Driver's live map tracking):**
+`DISPATCHED` ➔ `EN_ROUTE_TO_FARM` ➔ `ARRIVED_AT_FARM` ➔ `LOADING` ➔ `IN_TRANSIT_TO_DESTINATION` ➔ `ARRIVED_AT_DESTINATION`.

@@ -354,7 +354,13 @@ const updateTripReport = async (req, res) => {
 // @query   ?month=3&year=2026
 const getDriverReports = async (req, res) => {
     try {
-        const userId = req.user._id;
+        let userId = req.user._id;
+
+        // Allow Admin and Operational Manager to fetch reports for specific drivers
+        if (['Admin', 'Operational Manager'].includes(req.user.role) && req.query.driverId) {
+            userId = req.query.driverId;
+        }
+
         const now = new Date();
         const month = Number(req.query.month) || (now.getMonth() + 1);
         const year = Number(req.query.year) || now.getFullYear();
