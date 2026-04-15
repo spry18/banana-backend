@@ -347,10 +347,10 @@ const getMunshiReports = async (req, res) => {
         const startDate = new Date(year, month - 1, 1);
         const endDate = new Date(year, month, 1);
 
-        // All submitted packing records for this Munshi in the month
+        // All submitted or approved packing records for this Munshi in the month
         const packings = await Packing.find({
             munshiId,
-            status: 'SUBMITTED',
+            status: { $in: ['SUBMITTED', 'APPROVED'] },
             createdAt: { $gte: startDate, $lt: endDate },
         })
             .populate('assignmentId', 'purchaseRate companyId')

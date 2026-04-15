@@ -80,11 +80,11 @@ const createAssignment = async (req, res) => {
             lightInTime,
             lightOutTime,
             teamName:    teamName    || null,
-            assignmentStatus: 'IN_PROGRESS',
+            assignmentStatus: 'PENDING',   // Driver has not yet started — becomes IN_PROGRESS on first transitStatus update
         });
 
-        // Dispatch in progress — not ASSIGNED (SLA cron resets ASSIGNED selector slots only)
-        enquiry.status = 'IN_PROGRESS';
+        // Advance enquiry: RATE_FIXED → ASSIGNED (awaiting driver dispatch)
+        enquiry.status = 'ASSIGNED';
         await enquiry.save();
 
         // === NOTIFICATIONS ===

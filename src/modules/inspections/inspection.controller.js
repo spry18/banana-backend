@@ -71,6 +71,11 @@ const createInspection = async (req, res) => {
 
         const selectorId = req.user._id;
 
+        const existing = await Inspection.findOne({ enquiryId });
+        if (existing) {
+            return res.status(400).json({ message: 'An inspection has already been submitted for this enquiry' });
+        }
+
         // ── 5. Save inspection using mapped DB field names ────────────────────
         const inspection = await Inspection.create({
             enquiryId,

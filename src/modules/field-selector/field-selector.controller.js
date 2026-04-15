@@ -33,8 +33,12 @@ const getDashboard = async (req, res) => {
             // Selector rejected the plot
             Enquiry.countDocuments({ ...baseFilter, status: 'REJECTED' }),
 
-            // Admin rescheduled = selector missed the visit window
-            Enquiry.countDocuments({ ...baseFilter, status: 'CANCELLED' }),
+            // Missed = still PENDING but the scheduledDate has passed
+            Enquiry.countDocuments({
+                ...baseFilter,
+                scheduledDate: { $lt: new Date() },
+                status: 'PENDING',
+            }),
 
             // Visited = inspection was submitted (SELECTED + REJECTED + downstream statuses)
             Enquiry.countDocuments({

@@ -1,396 +1,402 @@
-﻿{
-"info": {
-"_postman_id": "eicher-app-complete-guid",
-"name": "Eicher App Collection (Complete)",
-"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-},
-"item": [
 {
-"name": "1. Login",
-"event": [
-{
-"listen": "test",
-"script": {
-"exec": [
-"if (pm.response.code === 200) {",
-"    var responseData = pm.response.json();",
-"    if (responseData && responseData.token) {",
-"        pm.collectionVariables.set(\"token\", responseData.token);",
-"        console.log(\"Authentication token saved.\");",
-"    }",
-"}"
-],
-"type": "text/javascript"
-}
-}
-],
-"request": {
-"auth": {
-"type": "noauth"
-},
-"method": "POST",
-"header": [],
-"body": {
-"mode": "raw",
-"raw": "{\n    \"mobileNo\": \"1000000000\",\n    \"password\": \"password123\"\n}",
-"options": {
-"raw": {
-"language": "json"
-}
-}
-},
-"url": {
-"raw": "{{baseUrl}}/api/users/login",
-"host": [
-"{{baseUrl}}"
-],
-"path": [
-"api",
-"users",
-"login"
-]
-},
-"description": "Authenticate to get a JWT token."
-},
-"response": []
-},
-{
-"name": "2. Start Shift",
-"request": {
-"method": "POST",
-"header": [],
-"body": {
-"mode": "formdata",
-"formdata": [
-{
-"key": "startKm",
-"value": "10000",
-"type": "text"
-},
-{
-"key": "vehicleNumber",
-"value": "TN-01-AB-1234",
-"type": "text"
-},
-{
-"key": "petrolAdvance",
-"value": "500",
-"type": "text"
-},
-{
-"key": "startKmPhoto",
-"type": "file",
-"src": []
-},
-{
-"key": "petrolReceiptPhoto",
-"type": "file",
-"src": []
-}
-]
-},
-"url": {
-"raw": "{{baseUrl}}/api/daily-logs/start",
-"host": [
-"{{baseUrl}}"
-],
-"path": [
-"api",
-"daily-logs",
-"start"
-]
-},
-"description": "Driver starts their daily shift."
-},
-"response": []
-},
-{
-"name": "3. Dashboard",
-"request": {
-"method": "GET",
-"header": [],
-"url": {
-"raw": "{{baseUrl}}/api/driver/dashboard",
-"host": [
-"{{baseUrl}}"
-],
-"path": [
-"api",
-"driver",
-"dashboard"
-]
-}
-},
-"response": []
-},
-{
-"name": "4. Start Trip",
-"request": {
-"method": "PATCH",
-"header": [],
-"body": {
-"mode": "raw",
-"raw": "{\n    \"transitStatus\": \"EN_ROUTE_TO_FARM\"\n}",
-"options": {
-"raw": {
-"language": "json"
-}
-}
-},
-"url": {
-"raw": "{{baseUrl}}/api/driver/assignments/{{assignmentId}}/status",
-"host": [
-"{{baseUrl}}"
-],
-"path": [
-"api",
-"driver",
-"assignments",
-"{{assignmentId}}",
-"status"
-]
-}
-},
-"response": []
-},
-{
-"name": "5. Submit Trip",
-"request": {
-"method": "POST",
-"header": [],
-"body": {
-"mode": "formdata",
-"formdata": [
-{
-"key": "startRoute",
-"value": "Coimbatore",
-"type": "text"
-},
-{
-"key": "midRoute",
-"value": "Salem",
-"type": "text"
-},
-{
-"key": "destination",
-"value": "Chennai",
-"type": "text"
-},
-{
-"key": "totalKm",
-"value": "500",
-"type": "text"
-},
-{
-"key": "tollExpense",
-"value": "750",
-"type": "text"
-},
-{
-"key": "isHault",
-"value": "false",
-"type": "text"
-},
-{
-"key": "isLineCancel",
-"value": "false",
-"type": "text"
-},
-{
-"key": "weightSlipPhoto",
-"type": "file",
-"src": []
-},
-{
-"key": "dieselSlipPhoto",
-"type": "file",
-"src": []
-},
-{
-"key": "unloadSlipPhoto",
-"type": "file",
-"src": []
-},
-{
-"key": "endKmPhoto",
-"type": "file",
-"src": []
-}
-]
-},
-"url": {
-"raw": "{{baseUrl}}/api/driver/trips/{{assignmentId}}",
-"host": [
-"{{baseUrl}}"
-],
-"path": [
-"api",
-"driver",
-"trips",
-"{{assignmentId}}"
-]
-}
-},
-"response": []
-},
-{
-"name": "6. History",
-"request": {
-"method": "GET",
-"header": [],
-"url": {
-"raw": "{{baseUrl}}/api/driver/history?page=1",
-"host": [
-"{{baseUrl}}"
-],
-"path": [
-"api",
-"driver",
-"history"
-],
-"query": [
-{
-"key": "page",
-"value": "1"
-}
-]
-}
-},
-"response": []
-},
-{
-"name": "7. Monthly Report",
-"request": {
-"method": "GET",
-"header": [],
-"url": {
-"raw": "{{baseUrl}}/api/driver/reports?month=03&year=2026",
-"host": [
-"{{baseUrl}}"
-],
-"path": [
-"api",
-"driver",
-"reports"
-],
-"query": [
-{
-"key": "month",
-"value": "03"
-},
-{
-"key": "year",
-"value": "2026"
-}
-]
-}
-},
-"response": []
-},
-{
-"name": "8. End Shift",
-"request": {
-"method": "PATCH",
-"header": [],
-"body": {
-"mode": "formdata",
-"formdata": [
-{
-"key": "endKm",
-"value": "10500",
-"type": "text"
-},
-{
-"key": "endKmPhoto",
-"type": "file",
-"src": []
-}
-]
-},
-"url": {
-"raw": "{{baseUrl}}/api/daily-logs/end",
-"host": [
-"{{baseUrl}}"
-],
-"path": [
-"api",
-"daily-logs",
-"end"
-]
-}
-},
-"response": []
-},
-{
-"name": "9. Profile",
-"request": {
-"method": "GET",
-"header": [],
-"url": {
-"raw": "{{baseUrl}}/api/driver/profile",
-"host": [
-"{{baseUrl}}"
-],
-"path": [
-"api",
-"driver",
-"profile"
-]
-}
-},
-"response": []
-},
-{
-"name": "10. Get Diesel Advances",
-"request": {
-"method": "GET",
-"header": [],
-"url": {
-"raw": "{{baseUrl}}/api/diesel-advance?page=1&limit=10",
-"host": [
-"{{baseUrl}}"
-],
-"path": [
-"api",
-"diesel-advance"
-],
-"query": [
-{
-"key": "page",
-"value": "1"
-},
-{
-"key": "limit",
-"value": "10"
-}
-]
-}
-},
-"response": []
-}
-],
-"auth": {
-"type": "bearer",
-"bearer": [
-{
-"key": "token",
-"value": "{{token}}",
-"type": "string"
-}
-]
-},
-"variable": [
-{
-"key": "baseUrl",
-"value": "http://localhost:5000"
-},
-{
-"key": "token",
-"value": ""
-},
-{
-"key": "assignmentId",
-"value": ""
-}
-]
+  "info": {
+    "_postman_id": "eicher-app-v2-2026",
+    "name": "🚛 Eicher Driver App",
+    "description": "Complete API collection for the Eicher (main truck) Driver mobile app.\n\n**Role required:** `driver eicher`\n\n**E2E Flow:**\n1. Login → capture token\n2. Check Today Log → decide whether to show Start Shift screen\n3. POST Start Shift (once per day)\n4. GET Dashboard → note your {{assignmentId}}\n5. Update Transit Status through all 6 steps (DISPATCHED → ARRIVED_AT_DESTINATION)\n6. POST Submit Trip Report (at ARRIVED_AT_DESTINATION)\n7. PATCH End Shift (once per day)\n\n**Status Flow (transitStatus):**\n`DISPATCHED` → `EN_ROUTE_TO_FARM` → `ARRIVED_AT_FARM` → `LOADING` → `IN_TRANSIT_TO_DESTINATION` → `ARRIVED_AT_DESTINATION`\n\n**assignmentStatus auto-promotion:**\nOnce transitStatus moves away from `DISPATCHED`, the backend automatically promotes `assignmentStatus` from `PENDING` → `IN_PROGRESS`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "assignmentId", "value": "", "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "0. Auth",
+      "item": [
+        {
+          "name": "POST Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  var data = pm.response.json();",
+                  "  if (data && data.token) {",
+                  "    pm.collectionVariables.set('token', data.token);",
+                  "    console.log('✅ Eicher token saved:', data.token);",
+                  "  }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobileNo\": \"1000000000\",\n  \"password\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "login"]
+            },
+            "description": "Login as Eicher Driver. The test script auto-saves the JWT to `{{token}}`.\n\n**Response fields of interest:**\n- `token` — JWT bearer token\n- `user.role` — should be `driver eicher`\n- `user.vehicleId` — the pre-assigned vehicle"
+          },
+          "response": []
+        },
+        {
+          "name": "GET My Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/driver/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "driver", "profile"]
+            },
+            "description": "Returns full driver profile including populated vehicleId (vehicleNumber, vehicleType). Use this to pre-fill the Start Shift form with the default vehicle number."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "1. Daily Log — Shift Start",
+      "item": [
+        {
+          "name": "GET Check Today Log Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/daily-logs/check-today",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "daily-logs", "check-today"]
+            },
+            "description": "🚦 CALL THIS FIRST ON APP OPEN.\n\nReturns whether the current driver has already started their day:\n```json\n// Shift already started:\n{ \"isStarted\": true, \"logId\": \"<ObjectId>\", \"role\": \"driver eicher\" }\n\n// Shift not started yet:\n{ \"isStarted\": false }\n```\n- `isStarted: true`  → skip the meter photo screen, go directly to Dashboard.\n- `isStarted: false` → show the Start Shift / Odometer screen (Step 2)."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Start Shift",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "startKm", "value": "46820", "type": "text", "description": "Current odometer reading (km)" },
+                { "key": "vehicleNumber", "value": "MH-15-AB-1234", "type": "text", "description": "Vehicle registration number" },
+                { "key": "petrolAdvance", "value": "500", "type": "text", "description": "Amount of petrol advance taken (₹). Send 0 if none." },
+                { "key": "startKmPhoto", "type": "file", "src": [], "description": "📷 Required — Photo of odometer at start of shift" },
+                { "key": "petrolReceiptPhoto", "type": "file", "src": [], "description": "📷 Optional — Photo of petrol receipt if advance taken" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/daily-logs/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "daily-logs", "start"]
+            },
+            "description": "Starts the daily shift log. Each driver can only have ONE active log per day.\n\n**Constraint:** Returns `400` if a log already exists for today — use `check-today` first.\n\n**Response:** The created DailyLog document including `_id` (the logId)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Dashboard",
+      "item": [
+        {
+          "name": "GET Driver Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/driver/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "driver", "dashboard"]
+            },
+            "description": "Returns:\n- `kpis` — counts of active / completed / cancelled assignments scoped to this driver\n- `activeAssignments[]` — all Logistics records where `driverId` OR `pickupDriverId` = this user AND `assignmentStatus` is `PENDING` or `IN_PROGRESS`\n\nEach assignment includes full farmer info, munshi, vehicle details.\n\n👉 Save `activeAssignments[0]._id` into `{{assignmentId}}` to proceed with status updates and trip submission."
+          },
+          "response": []
+        },
+        {
+          "name": "GET My Assignments (Simple List)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/driver/assignments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "driver", "assignments"]
+            },
+            "description": "Alternative to Dashboard — returns a flat array of active assignment documents (PENDING + IN_PROGRESS). Useful for drop-down assignment picker screens."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Transit Status Updates",
+      "description": "Update the live position of the truck in 5 steps. Each PATCH call on the same `{{assignmentId}}` advances the `transitStatus` forward.\n\n⚡ **Auto-promotion:** The first call away from `DISPATCHED` automatically changes `assignmentStatus` from `PENDING` → `IN_PROGRESS`.",
+      "item": [
+        {
+          "name": "Step 1 — EN_ROUTE_TO_FARM",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transitStatus\": \"EN_ROUTE_TO_FARM\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/driver/assignments/{{assignmentId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "driver", "assignments", "{{assignmentId}}", "status"]
+            },
+            "description": "Driver has left the depot and is heading to the farm.\n\n🔄 `assignmentStatus` auto-promoted: `PENDING` → `IN_PROGRESS`\n🔄 `transitStatus`: `DISPATCHED` → `EN_ROUTE_TO_FARM`"
+          },
+          "response": []
+        },
+        {
+          "name": "Step 2 — ARRIVED_AT_FARM",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transitStatus\": \"ARRIVED_AT_FARM\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/driver/assignments/{{assignmentId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "driver", "assignments", "{{assignmentId}}", "status"]
+            },
+            "description": "Truck has arrived at the farm. The Munshi is now ready to begin loading/packing supervision.\n\n🔄 `transitStatus`: `EN_ROUTE_TO_FARM` → `ARRIVED_AT_FARM`"
+          },
+          "response": []
+        },
+        {
+          "name": "Step 3 — LOADING",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transitStatus\": \"LOADING\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/driver/assignments/{{assignmentId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "driver", "assignments", "{{assignmentId}}", "status"]
+            },
+            "description": "Boxes are being loaded onto the truck. The Munshi will now submit the Packing report.\n\n🔄 `transitStatus`: `ARRIVED_AT_FARM` → `LOADING`"
+          },
+          "response": []
+        },
+        {
+          "name": "Step 4 — IN_TRANSIT_TO_DESTINATION",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transitStatus\": \"IN_TRANSIT_TO_DESTINATION\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/driver/assignments/{{assignmentId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "driver", "assignments", "{{assignmentId}}", "status"]
+            },
+            "description": "Loading is complete. Truck is now in transit to Cold Storage / destination.\n\n🔄 `transitStatus`: `LOADING` → `IN_TRANSIT_TO_DESTINATION`"
+          },
+          "response": []
+        },
+        {
+          "name": "Step 5 — ARRIVED_AT_DESTINATION",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transitStatus\": \"ARRIVED_AT_DESTINATION\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/driver/assignments/{{assignmentId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "driver", "assignments", "{{assignmentId}}", "status"]
+            },
+            "description": "Truck has arrived and unloaded at the destination. Now submit the Trip Report (Step 4).\n\n🔄 `transitStatus`: `IN_TRANSIT_TO_DESTINATION` → `ARRIVED_AT_DESTINATION`"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Trip Report",
+      "item": [
+        {
+          "name": "POST Submit Trip Report",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "startRoute", "value": "Coimbatore Depot", "type": "text", "description": "Starting point of the route" },
+                { "key": "midRoute", "value": "Salem Bypass", "type": "text", "description": "Optional mid-route stop name" },
+                { "key": "destination", "value": "Chennai Cold Storage", "type": "text", "description": "Final delivery destination" },
+                { "key": "totalKm", "value": "500", "type": "text", "description": "Total kilometers driven for this trip" },
+                { "key": "tollExpense", "value": "750", "type": "text", "description": "Total toll paid (₹)" },
+                { "key": "isHault", "value": "false", "type": "text", "description": "true if the truck was halted/parked overnight" },
+                { "key": "isLineCancel", "value": "false", "type": "text", "description": "true if the line/route was cancelled" },
+                { "key": "teamMembers", "value": "Raju, Suresh", "type": "text", "description": "Optional — names of other crew members" },
+                {
+                  "key": "farmerBoxBreakdown",
+                  "value": "[{\"farmerName\": \"Farmer A\", \"boxCount\": 80}, {\"farmerName\": \"Farmer B\", \"boxCount\": 60}]",
+                  "type": "text",
+                  "description": "JSON string — breakdown of boxes per farmer loaded on this truck"
+                },
+                { "key": "weightSlipPhoto", "type": "file", "src": [], "description": "📷 Required — Weight Bridge slip photo" },
+                { "key": "dieselSlipPhoto", "type": "file", "src": [], "description": "📷 Required — Diesel receipt photo" },
+                { "key": "unloadSlipPhoto", "type": "file", "src": [], "description": "📷 Required — Unloading receipt / delivery confirmation photo" },
+                { "key": "endKmPhoto", "type": "file", "src": [], "description": "📷 Recommended — Odometer photo at destination" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/driver/trips/{{assignmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "driver", "trips", "{{assignmentId}}"]
+            },
+            "description": "Submit the final trip report for this assignment.\n\n**Constraints:**\n- Only one Trip per `assignmentId` per driver. Duplicate submission returns `400`.\n- The `driverType` is **auto-detected** from the JWT role: `driver eicher` → `Eicher`.\n- This does **NOT** close the Enquiry. The OM must approve the Packing report to set `Enquiry.status = COMPLETED`.\n\n**After submission:**\n- `Logistics.assignmentStatus` will be updated to `COMPLETED` by the Trip's OM review approval.\n- A PDF system report is auto-generated (`systemReportUrl`)."
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH Update Trip Report (After Rejection)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "totalKm", "value": "510", "type": "text", "description": "Corrected total km" },
+                { "key": "tollExpense", "value": "800", "type": "text", "description": "Corrected toll amount" },
+                { "key": "weightSlipPhoto", "type": "file", "src": [], "description": "📷 Re-upload corrected weight slip" },
+                { "key": "unloadSlipPhoto", "type": "file", "src": [], "description": "📷 Re-upload corrected unload slip" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/driver/trips/{{tripId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "driver", "trips", "{{tripId}}"]
+            },
+            "description": "Update a previously submitted trip report. Only allowed if `reviewStatus` is `PENDING` or `REJECTED`.\n\nUse `:tripId` (the `_id` from the POST Submit response).\n\n**Behaviour:** If `reviewStatus` was `REJECTED`, it is automatically reset to `PENDING` so the OM reviews the corrected report.\n\nOnly supply the fields you want to change — unset fields are left untouched."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. History & Reports",
+      "item": [
+        {
+          "name": "GET Paginated Trip History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/driver/history?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "driver", "history"],
+              "query": [
+                { "key": "page", "value": "1", "description": "Page number (default: 1)" },
+                { "key": "limit", "value": "20", "description": "Records per page (default: 20)" }
+              ]
+            },
+            "description": "Returns all completed trip reports for this driver, paginated and sorted newest first."
+          },
+          "response": []
+        },
+        {
+          "name": "GET Monthly Report & KPI",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/driver/reports?month=4&year=2026",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "driver", "reports"],
+              "query": [
+                { "key": "month", "value": "4", "description": "Month number 1-12 (default: current month)" },
+                { "key": "year", "value": "2026", "description": "4-digit year (default: current year)" }
+              ]
+            },
+            "description": "Returns a monthly summary:\n- `summary.totalTrips` — number of completed trips\n- `summary.totalKm` — total kilometers driven\n- `summary.totalToll` — total toll expenses (₹)\n- `summary.totalFuelAdvance` — total diesel advance received (₹)\n- `summary.totalHaults` — number of overnight halts\n- `summary.totalLineCancels` — number of line cancellations\n- `dailyTripLog[]` — trips grouped by date"
+          },
+          "response": []
+        },
+        {
+          "name": "GET My Diesel Advances",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/diesel-advance?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "diesel-advance"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            },
+            "description": "Returns diesel/fuel advances that were issued to this driver by the OM. Useful for the earnings reconciliation screen."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6. Daily Log — Shift End",
+      "item": [
+        {
+          "name": "PATCH End Shift",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "endKm", "value": "47320", "type": "text", "description": "Odometer reading at end of shift" },
+                { "key": "endKmPhoto", "type": "file", "src": [], "description": "📷 Required — Photo of odometer at end of shift" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/daily-logs/end",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "daily-logs", "end"]
+            },
+            "description": "Closes the active Day Log for today. Call this at the end of the driver's workday.\n\n**Constraint:** Returns `404` if no active log exists for today."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
 }

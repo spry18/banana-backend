@@ -113,7 +113,7 @@ const submitTripReport = async (req, res) => {
             return res.status(404).json({ message: 'Assignment not found' });
         }
 
-        const isDrv = assignment.driverId.toString() === userId.toString();
+        const isDrv = assignment.driverId && assignment.driverId.toString() === userId.toString();
         const isPkp = assignment.pickupDriverId && assignment.pickupDriverId.toString() === userId.toString();
         if (!isDrv && !isPkp && req.user.role !== 'Admin') {
             return res.status(403).json({ message: 'You are not assigned to this logistics record' });
@@ -522,6 +522,13 @@ const updateTransitStatus = async (req, res) => {
         }
 
         assignment.transitStatus = transitStatus;
+
+        // Auto-promote assignmentStatus: once a driver moves beyond DISPATCHED,
+        // flip PENDING → IN_PROGRESS so the OM dashboard reflects live activity.
+        if (transitStatus !== 'DISPATCHED' && assignment.assignmentStatus === 'PENDING') {
+            assignment.assignmentStatus = 'IN_PROGRESS';
+        }
+
         await assignment.save();
 
         res.status(200).json(assignment);
