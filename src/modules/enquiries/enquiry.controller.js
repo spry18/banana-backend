@@ -231,8 +231,44 @@ const getEnquiryById = async (req, res) => {
             .populate('selectorId', 'firstName lastName mobileNo')
             .lean();
 
+        // Join the logistics record to expose munshi, driver, vehicle, team data
+        const Logistics = require('../logistics/logistics.model');
+        const logistics = await Logistics.findOne({ enquiryId: enquiry._id })
+            .populate('munshiId', 'firstName lastName')
+            .populate('driverId', 'firstName lastName mobileNo')
+            .populate('vehicleId', 'vehicleNumber vehicleType')
+            .lean();
+
+        const logisticsData = logistics ? {
+            munshi: logistics.munshiId
+                ? `${logistics.munshiId.firstName} ${logistics.munshiId.lastName}`
+                : null,
+            driver: logistics.driverId
+                ? `${logistics.driverId.firstName} ${logistics.driverId.lastName}`
+                : null,
+            driverMobile: logistics.driverId ? logistics.driverId.mobileNo : null,
+            vehicleNumber: logistics.vehicleId ? logistics.vehicleId.vehicleNumber : null,
+            teamName: logistics.teamName || null,
+        } : null;
+
+        // Shape flat response exactly as per frontend View Details contract
+        const e = enquiry.toObject();
         res.status(200).json({
-            ...enquiry.toObject(),
+            ...e,
+            farmerName: `${e.farmerFirstName} ${e.farmerLastName}`,
+            mobile: e.farmerMobile,
+            boxCount: e.estimatedBoxes || null,
+            rate: e.purchaseRate || null,
+            company: e.companyId ? e.companyId.companyName : null,
+            fieldOwner: e.fieldOwnerId ? {
+                name: `${e.fieldOwnerId.firstName} ${e.fieldOwnerId.lastName}`,
+                mobile: e.fieldOwnerId.mobileNo,
+            } : null,
+            fieldSelector: inspection && inspection.selectorId ? {
+                name: `${inspection.selectorId.firstName} ${inspection.selectorId.lastName}`,
+                remarks: inspection.remarks || null,
+            } : null,
+            logistics: logisticsData,
             inspection: inspection || null,
         });
     } catch (error) {

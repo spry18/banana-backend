@@ -21,8 +21,27 @@ const createCompany = async (req, res) => {
 
 const getCompanies = async (req, res) => {
     try {
-        const companies = await Company.find({ isActive: true });
+        const filter = req.query.includeInactive === 'true' ? {} : { isActive: true };
+        const companies = await Company.find(filter);
         res.json(companies);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+const toggleCompanyStatus = async (req, res) => {
+    try {
+        const { isActive } = req.body;
+        if (typeof isActive !== 'boolean') {
+            return res.status(400).json({ message: 'isActive (boolean) is required in request body' });
+        }
+        const company = await Company.findByIdAndUpdate(
+            req.params.id,
+            { isActive },
+            { new: true }
+        );
+        if (!company) return res.status(404).json({ message: 'Company not found' });
+        res.json({ message: `Company ${isActive ? 'activated' : 'deactivated'} successfully`, company });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -62,7 +81,8 @@ const createBrand = async (req, res) => {
 
 const getBrands = async (req, res) => {
     try {
-        const brands = await Brand.find({ isActive: true }).populate('companyId', 'companyName');
+        const filter = req.query.includeInactive === 'true' ? {} : { isActive: true };
+        const brands = await Brand.find(filter).populate('companyId', 'companyName');
         res.json(brands);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -103,8 +123,27 @@ const createAgent = async (req, res) => {
 
 const getAgents = async (req, res) => {
     try {
-        const agents = await Agent.find({ isActive: true });
+        const filter = req.query.includeInactive === 'true' ? {} : { isActive: true };
+        const agents = await Agent.find(filter);
         res.json(agents);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+const toggleAgentStatus = async (req, res) => {
+    try {
+        const { isActive } = req.body;
+        if (typeof isActive !== 'boolean') {
+            return res.status(400).json({ message: 'isActive (boolean) is required in request body' });
+        }
+        const agent = await Agent.findByIdAndUpdate(
+            req.params.id,
+            { isActive },
+            { new: true }
+        );
+        if (!agent) return res.status(404).json({ message: 'Agent not found' });
+        res.json({ message: `Agent ${isActive ? 'activated' : 'deactivated'} successfully`, agent });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -144,8 +183,27 @@ const createVehicle = async (req, res) => {
 
 const getVehicles = async (req, res) => {
     try {
-        const vehicles = await Vehicle.find({ isActive: true });
+        const filter = req.query.includeInactive === 'true' ? {} : { isActive: true };
+        const vehicles = await Vehicle.find(filter);
         res.json(vehicles);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+const toggleVehicleStatus = async (req, res) => {
+    try {
+        const { isActive } = req.body;
+        if (typeof isActive !== 'boolean') {
+            return res.status(400).json({ message: 'isActive (boolean) is required in request body' });
+        }
+        const vehicle = await Vehicle.findByIdAndUpdate(
+            req.params.id,
+            { isActive },
+            { new: true }
+        );
+        if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
+        res.json({ message: `Vehicle ${isActive ? 'activated' : 'deactivated'} successfully`, vehicle });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -185,8 +243,27 @@ const createGeneration = async (req, res) => {
 
 const getGenerations = async (req, res) => {
     try {
-        const generations = await Generation.find({ isActive: true });
+        const filter = req.query.includeInactive === 'true' ? {} : { isActive: true };
+        const generations = await Generation.find(filter);
         res.json(generations);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+const toggleGenerationStatus = async (req, res) => {
+    try {
+        const { isActive } = req.body;
+        if (typeof isActive !== 'boolean') {
+            return res.status(400).json({ message: 'isActive (boolean) is required in request body' });
+        }
+        const generation = await Generation.findByIdAndUpdate(
+            req.params.id,
+            { isActive },
+            { new: true }
+        );
+        if (!generation) return res.status(404).json({ message: 'Generation not found' });
+        res.json({ message: `Generation ${isActive ? 'activated' : 'deactivated'} successfully`, generation });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -261,6 +338,7 @@ module.exports = {
     getCompanies,
     updateCompany,
     deleteCompany,
+    toggleCompanyStatus,
     createBrand,
     getBrands,
     updateBrand,
@@ -269,14 +347,17 @@ module.exports = {
     getAgents,
     updateAgent,
     deleteAgent,
+    toggleAgentStatus,
     createVehicle,
     getVehicles,
     updateVehicle,
     deleteVehicle,
+    toggleVehicleStatus,
     createGeneration,
     getGenerations,
     updateGeneration,
     deleteGeneration,
+    toggleGenerationStatus,
     getFormDropdowns,
     getDrivers,
 };

@@ -3,6 +3,7 @@ const Inspection = require('../inspections/inspection.model');
 const Trip = require('../execution/trip.model');
 const DailyLog = require('../auditing/dailyLog.model');
 const User = require('../users/user.model');
+const Logistics = require('../logistics/logistics.model');
 
 // @desc    Get comprehensive Admin dashboard KPIs
 // @route   GET /api/admin/dashboard-stats
@@ -305,7 +306,8 @@ const getStaffPerformance = async (req, res) => {
 };
 
 // @desc    Field Visit Monitoring Dashboard — counts + filterable table
-// @route   GET /api/admin/field-selection/monitoring
+// @route   GET /api/admin/field-selection/monitoring  (legacy alias kept)
+// @route   GET /api/admin/field-visit-monitoring      (new frontend contract URL)
 // @access  Private (Admin, Operational Manager)
 const getMonitoringDashboard = async (req, res) => {
     try {
@@ -315,7 +317,8 @@ const getMonitoringDashboard = async (req, res) => {
             status,
             location,
             fieldOwner,
-            assignedSelector,
+            selector,          // frontend sends ?selector=id
+            date,              // frontend sends ?date=YYYY-MM-DD
         } = req.query;
 
         const skip = (Number(page) - 1) * Number(limit);
@@ -336,11 +339,24 @@ const getMonitoringDashboard = async (req, res) => {
             Enquiry.countDocuments({ scheduledDate: { $gt: now } }),
         ]);
 
+        // ── Filter dropdown seed data (locations, owners, selectors) ─────
+        const [locationDocs, ownerDocs, selectorDocs] = await Promise.all([
+            Enquiry.distinct('location'),
+            User.find({ role: 'Field Owner', isActive: true }).select('_id firstName lastName').lean(),
+            User.find({ role: 'Field Selector', isActive: true }).select('_id firstName lastName').lean(),
+        ]);
+
+        const filters = {
+            locations: locationDocs.filter(Boolean),
+            fieldOwners: ownerDocs.map(u => ({ id: u._id, name: `${u.firstName} ${u.lastName}` })),
+            selectors: selectorDocs.map(u => ({ id: u._id, name: `${u.firstName} ${u.lastName}` })),
+        };
+
         // ── Table filter query ───────────────────────────────────────────
         const query = {};
 
         if (status) {
-            if (status === 'Missed') {
+            if (status === 'MISSED') {
                 query.scheduledDate = { $lt: now };
                 query.status = 'PENDING';
             } else {
@@ -356,29 +372,215 @@ const getMonitoringDashboard = async (req, res) => {
             query.fieldOwnerId = fieldOwner;
         }
 
-        if (assignedSelector) {
-            query.assignedSelectorId = assignedSelector;
+        if (selector) {
+            query.assignedSelectorId = selector;
+        }
+
+        if (date) {
+            const start = new Date(date);
+            const end = new Date(date);
+            end.setDate(end.getDate() + 1);
+            query.scheduledDate = { $gte: start, $lt: end };
         }
 
         const total = await Enquiry.countDocuments(query);
 
-        const tableData = await Enquiry.find(query)
+        const rawTable = await Enquiry.find(query)
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(Number(limit))
-            .populate('fieldOwnerId', 'firstName lastName mobileNo')
-            .populate('assignedSelectorId', 'firstName lastName mobileNo')
+            .populate('fieldOwnerId', 'firstName lastName')
+            .populate('assignedSelectorId', 'firstName lastName')
             .lean();
 
+        // Map to exact frontend contract shape
+        const tableData = rawTable.map(e => {
+            // Determine effective status for MISSED tab
+            let effectiveStatus = e.status;
+            if (e.status === 'PENDING' && e.scheduledDate && new Date(e.scheduledDate) < now) {
+                effectiveStatus = 'MISSED';
+            }
+
+            // Dynamic button logic
+            const buttonMap = {
+                PENDING: 'View Details',
+                SELECTED: 'Fix Rate',
+                MISSED: 'Reassign',
+                RESCHEDULED: 'Reschedule',
+                ASSIGNED: 'View Details',
+                REJECTED: 'View Details',
+                RATE_FIXED: 'View Details',
+                IN_PROGRESS: 'View Details',
+                COMPLETED: 'View Details',
+            };
+
+            return {
+                id: e._id,
+                enquiryId: e.enquiryId,
+                farmerName: `${e.farmerFirstName} ${e.farmerLastName}`,
+                location: e.location,
+                fieldOwner: e.fieldOwnerId
+                    ? `${e.fieldOwnerId.firstName} ${e.fieldOwnerId.lastName}`
+                    : null,
+                fieldSelector: e.assignedSelectorId
+                    ? `${e.assignedSelectorId.firstName} ${e.assignedSelectorId.lastName}`
+                    : null,
+                visitDate: e.scheduledDate || null,
+                harvestTime: e.scheduledTime || null,
+                status: effectiveStatus,
+                action: buttonMap[effectiveStatus] || 'View Details',
+            };
+        });
+
+        const totalPages = Math.ceil(total / Number(limit));
+
         res.json({
-            counts: { totalPlots, selected, rejected, missed, futureSelection },
+            counts: { totalPlots, selected, rejected, futureSelection, missed },
+            filters,
             tableData,
-            page: Number(page),
-            pages: Math.ceil(total / Number(limit)),
+            pagination: { page: Number(page), totalPages },
         });
     } catch (error) {
         console.error('Monitoring dashboard error:', error);
         res.status(500).json({ message: 'Server error while fetching monitoring dashboard' });
+    }
+};
+
+// @desc    Field Selection Management consolidated dashboard
+// @route   GET /api/admin/field-selection-dashboard
+// @access  Private (Admin, Operational Manager)
+const getFieldSelectionDashboard = async (req, res) => {
+    try {
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const todayEnd = new Date(todayStart);
+        todayEnd.setDate(todayEnd.getDate() + 1);
+
+        // ── Stats ─────────────────────────────────────────────────────────
+        const [
+            todayVisited,
+            selectedCount,
+            rejectedCount,
+            futureSelection,
+            missedCount,
+            fixRateCount,
+        ] = await Promise.all([
+            // Inspections submitted today
+            Inspection.countDocuments({ createdAt: { $gte: todayStart, $lt: todayEnd } }),
+            Enquiry.countDocuments({ status: 'SELECTED' }),
+            Enquiry.countDocuments({ status: 'REJECTED' }),
+            Enquiry.countDocuments({ scheduledDate: { $gt: now }, status: 'PENDING' }),
+            Enquiry.countDocuments({ scheduledDate: { $lt: now }, status: 'PENDING' }),
+            Enquiry.countDocuments({ status: 'RATE_FIXED' }),
+        ]);
+
+        // ── Today's Visited Plots ─────────────────────────────────────────
+        const todayInspections = await Inspection.find({
+            createdAt: { $gte: todayStart, $lt: todayEnd },
+        })
+            .populate({
+                path: 'enquiryId',
+                select: 'farmerFirstName farmerLastName location fieldOwnerId assignedSelectorId',
+                populate: [
+                    { path: 'fieldOwnerId', select: 'firstName lastName' },
+                    { path: 'assignedSelectorId', select: 'firstName lastName' },
+                ],
+            })
+            .lean();
+
+        const todayVisitedPlots = todayInspections.map(ins => {
+            const e = ins.enquiryId || {};
+            return {
+                enquiryId: e._id || null,
+                farmerName: e.farmerFirstName ? `${e.farmerFirstName} ${e.farmerLastName}` : 'Unknown',
+                location: e.location || null,
+                fieldOwner: e.fieldOwnerId ? `${e.fieldOwnerId.firstName} ${e.fieldOwnerId.lastName}` : null,
+                fieldSelector: e.assignedSelectorId ? `${e.assignedSelectorId.firstName} ${e.assignedSelectorId.lastName}` : null,
+                status: ins.decision === 'APPROVED' ? 'SELECTED' : ins.decision === 'REJECTED' ? 'REJECTED' : ins.decision,
+            };
+        });
+
+        // ── Field Selector Data (aggregated from DailyLogs + Inspections) ─
+        const selectorKmAgg = await DailyLog.aggregate([
+            { $match: { status: 'COMPLETED' } },
+            {
+                $group: {
+                    _id: '$userId',
+                    totalKM: { $sum: { $subtract: [{ $ifNull: ['$endKm', 0] }, '$startKm'] } },
+                },
+            },
+        ]);
+        const kmBySelector = {};
+        selectorKmAgg.forEach(r => { kmBySelector[r._id.toString()] = r.totalKM; });
+
+        const selectorPlotAgg = await Inspection.aggregate([
+            { $group: { _id: '$selectorId', totalVisitedPlots: { $sum: 1 } } },
+        ]);
+
+        const selectorIds = selectorPlotAgg.map(r => r._id);
+        const selectorUsers = await User.find({ _id: { $in: selectorIds } }).select('_id firstName lastName').lean();
+        const selectorUserMap = {};
+        selectorUsers.forEach(u => { selectorUserMap[u._id.toString()] = `${u.firstName} ${u.lastName}`; });
+
+        const fieldSelectorData = selectorPlotAgg.map(r => ({
+            selectorName: selectorUserMap[r._id.toString()] || 'Unknown',
+            totalKM: kmBySelector[r._id.toString()] || 0,
+            totalVisitedPlots: r.totalVisitedPlots,
+        }));
+
+        // ── Field Owner Data ──────────────────────────────────────────────
+        const ownerPlotAgg = await Enquiry.aggregate([
+            { $group: { _id: '$fieldOwnerId', totalAssignedPlots: { $sum: 1 } } },
+        ]);
+        const ownerIds = ownerPlotAgg.map(r => r._id);
+        const ownerUsers = await User.find({ _id: { $in: ownerIds } }).select('_id firstName lastName').lean();
+        const ownerUserMap = {};
+        ownerUsers.forEach(u => { ownerUserMap[u._id.toString()] = `${u.firstName} ${u.lastName}`; });
+
+        const fieldOwnerData = ownerPlotAgg.map(r => ({
+            ownerName: ownerUserMap[r._id.toString()] || 'Unknown',
+            totalAssignedPlots: r.totalAssignedPlots,
+        }));
+
+        // ── Enquiry Progress (recent SELECTED / RATE_FIXED enquiries) ─────
+        const progressEnquiries = await Enquiry.find({
+            status: { $in: ['SELECTED', 'RATE_FIXED', 'ASSIGNED', 'IN_PROGRESS'] },
+        })
+            .sort({ updatedAt: -1 })
+            .limit(50)
+            .populate('fieldOwnerId', 'firstName lastName')
+            .populate('assignedSelectorId', 'firstName lastName')
+            .populate('companyId', 'companyName')
+            .lean();
+
+        const enquiryProgress = progressEnquiries.map(e => ({
+            enquiryId: e._id,
+            farmerName: `${e.farmerFirstName} ${e.farmerLastName}`,
+            location: e.location,
+            rate: e.purchaseRate ? `₹${e.purchaseRate}/kg` : null,
+            company: e.companyId ? e.companyId.companyName : null,
+            fieldOwner: e.fieldOwnerId ? `${e.fieldOwnerId.firstName} ${e.fieldOwnerId.lastName}` : null,
+            fieldSelector: e.assignedSelectorId ? `${e.assignedSelectorId.firstName} ${e.assignedSelectorId.lastName}` : null,
+            status: e.status,
+        }));
+
+        res.json({
+            stats: {
+                todayVisited,
+                selected: selectedCount,
+                rejected: rejectedCount,
+                futureSelection,
+                missed: missedCount,
+                fixRate: fixRateCount,
+            },
+            todayVisitedPlots,
+            fieldSelectorData,
+            fieldOwnerData,
+            enquiryProgress,
+        });
+    } catch (error) {
+        console.error('Field selection dashboard error:', error);
+        res.status(500).json({ message: 'Server error while fetching field selection dashboard' });
     }
 };
 
@@ -388,4 +590,5 @@ module.exports = {
     getFieldSelectionOverview,
     getStaffPerformance,
     getMonitoringDashboard,
+    getFieldSelectionDashboard,
 };

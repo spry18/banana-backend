@@ -286,7 +286,7 @@
                     }
                 },
                 {
-                    "name": "GET Field Visit Monitoring Dashboard",
+                    "name": "GET Field Visit Monitoring (NEW — frontend contract)",
                     "request": {
                         "method": "GET",
                         "header": [
@@ -296,52 +296,38 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/admin/field-selection/monitoring?page=1&limit=20",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "admin",
-                                "field-selection",
-                                "monitoring"
-                            ],
+                            "raw": "{{baseUrl}}/api/admin/field-visit-monitoring?page=1&limit=20",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "admin", "field-visit-monitoring"],
                             "query": [
-                                {
-                                    "key": "page",
-                                    "value": "1"
-                                },
-                                {
-                                    "key": "limit",
-                                    "value": "20"
-                                },
-                                {
-                                    "key": "status",
-                                    "value": "",
-                                    "disabled": true,
-                                    "description": "Filter: PENDING | SELECTED | REJECTED | RATE_FIXED | ASSIGNED | COMPLETED | Missed"
-                                },
-                                {
-                                    "key": "location",
-                                    "value": "",
-                                    "disabled": true,
-                                    "description": "Partial match on location string"
-                                },
-                                {
-                                    "key": "fieldOwner",
-                                    "value": "",
-                                    "disabled": true,
-                                    "description": "Filter by Field Owner user _id"
-                                },
-                                {
-                                    "key": "assignedSelector",
-                                    "value": "",
-                                    "disabled": true,
-                                    "description": "Filter by Assigned Selector user _id"
-                                }
+                                { "key": "page", "value": "1" },
+                                { "key": "limit", "value": "20" },
+                                { "key": "status", "value": "", "disabled": true, "description": "PENDING | SELECTED | REJECTED | MISSED | ASSIGNED | RATE_FIXED | COMPLETED" },
+                                { "key": "location", "value": "", "disabled": true },
+                                { "key": "fieldOwner", "value": "", "disabled": true, "description": "User _id" },
+                                { "key": "selector", "value": "", "disabled": true, "description": "User _id" },
+                                { "key": "date", "value": "", "disabled": true, "description": "YYYY-MM-DD" }
                             ]
                         },
-                        "description": "Combined monitoring dashboard for the Field Visit page.\n\n## Response Shape:\n```json\n{\n  \"counts\": {\n    \"totalPlots\": 120,\n    \"selected\": 45,\n    \"rejected\": 10,\n    \"missed\": 5,\n    \"futureSelection\": 20\n  },\n  \"tableData\": [...],\n  \"page\": 1,\n  \"pages\": 6\n}\n```\n\n## Counts (Top Cards):\n- **totalPlots** — all enquiries\n- **selected** — status = SELECTED\n- **rejected** — status = REJECTED\n- **missed** — scheduledDate < now AND status = PENDING\n- **futureSelection** — scheduledDate > now (any status)\n\n## Table Filters (query params):\n- `status` — any valid enquiry status, or 'Missed' (maps to past scheduledDate + PENDING)\n- `location` — partial case-insensitive match\n- `fieldOwner` — exact User ObjectId\n- `assignedSelector` — exact User ObjectId\n\n## Populated Fields in tableData:\n- `fieldOwnerId` → { firstName, lastName, mobileNo }\n- `assignedSelectorId` → { firstName, lastName, mobileNo }"
+                        "description": "PRIMARY endpoint for Field Visit Monitoring page.\n\n## Response Shape (frontend contract):\n```json\n{\n  \"counts\": { \"totalPlots\": 42, \"selected\": 12, \"rejected\": 5, \"futureSelection\": 3, \"missed\": 4 },\n  \"filters\": {\n    \"locations\": [\"Solapur\", \"Pune\"],\n    \"fieldOwners\": [{ \"id\": \"...\", \"name\": \"Raj Sharma\" }],\n    \"selectors\": [{ \"id\": \"...\", \"name\": \"Prashant Desai\" }]\n  },\n  \"tableData\": [\n    {\n      \"id\": \"...\",\n      \"enquiryId\": \"ENQ-...\",\n      \"farmerName\": \"Santosh Ingale\",\n      \"location\": \"Solapur\",\n      \"fieldOwner\": \"Raj Sharma\",\n      \"fieldSelector\": \"Prashant Desai\",\n      \"visitDate\": null,\n      \"harvestTime\": null,\n      \"status\": \"PENDING\",\n      \"action\": \"View Details\"\n    }\n  ],\n  \"pagination\": { \"page\": 1, \"totalPages\": 5 }\n}\n```\n\n## Dynamic Button Logic (computed server-side in 'action' field):\n- PENDING → View Details\n- SELECTED → Fix Rate\n- MISSED → Reassign\n- RESCHEDULED → Reschedule\n- ASSIGNED/REJECTED/RATE_FIXED → View Details\n\n## Tabs ↔ status param:\n- All → (no status param)\n- Selected → status=SELECTED\n- Rejected → status=REJECTED\n- Future → status=RESCHEDULED\n- Missed → status=MISSED"
+                    }
+                },
+                {
+                    "name": "GET Field Selection Management Dashboard (NEW)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/admin/field-selection-dashboard",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "admin", "field-selection-dashboard"]
+                        },
+                        "description": "Consolidated single-call endpoint for the Field Selection Management page.\n\n## Response Shape (frontend contract):\n```json\n{\n  \"stats\": {\n    \"todayVisited\": 56,\n    \"selected\": 25,\n    \"rejected\": 4,\n    \"futureSelection\": 8,\n    \"missed\": 10,\n    \"fixRate\": 20\n  },\n  \"todayVisitedPlots\": [...],\n  \"fieldSelectorData\": [{ \"selectorName\": \"Mauli Bhosle\", \"totalKM\": 150, \"totalVisitedPlots\": 12 }],\n  \"fieldOwnerData\": [{ \"ownerName\": \"Shubham Ransing\", \"totalAssignedPlots\": 5 }],\n  \"enquiryProgress\": [{ \"enquiryId\": \"...\", \"farmerName\": \"...\", \"rate\": \"₹12.80/kg\", \"company\": \"Nature\", \"status\": \"SELECTED\" }]\n}\n```"
                     }
                 }
             ]
@@ -350,7 +336,7 @@
             "name": "2. Enquiry Actions (Admin)",
             "item": [
                 {
-                    "name": "GET Single Enquiry Details (Plots + Inspection + Photos)",
+                    "name": "GET Single Enquiry Details — View Details (full contract)",
                     "request": {
                         "method": "GET",
                         "header": [
@@ -361,16 +347,10 @@
                         ],
                         "url": {
                             "raw": "{{baseUrl}}/api/enquiries/{{enquiryId}}",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "enquiries",
-                                "{{enquiryId}}"
-                            ]
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "enquiries", "{{enquiryId}}"]
                         },
-                        "description": "Returns the full enquiry record populated with: generation, agent, fieldOwner, assignedSelector, company — plus the joined Inspection record (all 20 photos + composition percentages)."
+                        "description": "Returns full enquiry with all joins including logistics.\n\n## Response Shape (frontend View Details contract):\n```json\n{\n  \"farmerName\": \"Parag Survase\",\n  \"mobile\": \"9876543210\",\n  \"location\": \"Falwani\",\n  \"subLocation\": \"...\",\n  \"boxCount\": 600,\n  \"packingType\": \"13 Kg\",\n  \"rate\": 918,\n  \"company\": \"Nature\",\n  \"status\": \"SELECTED\",\n  \"fieldOwner\": { \"name\": \"Vikas Wagh\", \"mobile\": \"8390002226\" },\n  \"fieldSelector\": { \"name\": \"Mauli Bhosle\", \"remarks\": \"High quality 20-30% pulp\" },\n  \"logistics\": {\n    \"munshi\": \"Hakim\",\n    \"driver\": \"Sidhu Wagh\",\n    \"driverMobile\": \"...\",\n    \"vehicleNumber\": \"MH45AF8299\",\n    \"teamName\": \"Team_Hakim\"\n  },\n  \"inspection\": { ... }\n}\n```"
                     }
                 },
                 {
@@ -1979,6 +1959,110 @@
                             ]
                         },
                         "description": "Downloads a formatted Excel file (.xlsx) of all enquiries matching the optional filters. Use 'Send and Download' in Postman."
+                    }
+                }
+            ]
+        }
+    ,
+        {
+            "name": "NEW — Req 3: Master Setup Status Toggle (Activate/Deactivate)",
+            "item": [
+                {
+                    "name": "PATCH Toggle Company Status",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"isActive\": false\n}",
+                            "options": { "raw": { "language": "json" } }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/master-data/companies/{{companyId}}/status",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "master-data", "companies", "{{companyId}}", "status"]
+                        },
+                        "description": "Activate or Deactivate a Company. Set isActive=false to deactivate (record is NOT deleted). Set isActive=true to reactivate.\n\nRequest Body: { \"isActive\": true | false }\n\nResponse: { \"message\": \"Company activated/deactivated successfully\", \"company\": {...} }"
+                    }
+                },
+                {
+                    "name": "PATCH Toggle Agent Status",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"isActive\": false\n}",
+                            "options": { "raw": { "language": "json" } }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/master-data/agents/{{agentId}}/status",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "master-data", "agents", "{{agentId}}", "status"]
+                        },
+                        "description": "Activate or Deactivate an Agent. isActive=false deactivates (safe, reversible), isActive=true reactivates."
+                    }
+                },
+                {
+                    "name": "PATCH Toggle Vehicle Status",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"isActive\": false\n}",
+                            "options": { "raw": { "language": "json" } }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/master-data/vehicles/REPLACE_VEHICLE_ID/status",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "master-data", "vehicles", "REPLACE_VEHICLE_ID", "status"]
+                        },
+                        "description": "Activate or Deactivate a Vehicle. isActive=false deactivates (safe, reversible), isActive=true reactivates."
+                    }
+                },
+                {
+                    "name": "PATCH Toggle Generation Status",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"isActive\": false\n}",
+                            "options": { "raw": { "language": "json" } }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/master-data/generations/REPLACE_GENERATION_ID/status",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "master-data", "generations", "REPLACE_GENERATION_ID", "status"]
+                        },
+                        "description": "Activate or Deactivate a Generation (banana variety). isActive=false deactivates (safe, reversible), isActive=true reactivates.\n\nGET /api/master-data/generations returns only active records by default. Pass ?includeInactive=true to see all."
+                    }
+                },
+                {
+                    "name": "GET Companies (including inactive)",
+                    "request": {
+                        "method": "GET",
+                        "header": [ { "key": "Authorization", "value": "Bearer {{adminToken}}" } ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/master-data/companies?includeInactive=true",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "master-data", "companies"],
+                            "query": [{ "key": "includeInactive", "value": "true" }]
+                        },
+                        "description": "Pass ?includeInactive=true to see both active and deactivated records. Without it, only isActive=true records are returned."
                     }
                 }
             ]
