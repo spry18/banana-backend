@@ -359,6 +359,8 @@ const getMonitoringDashboard = async (req, res) => {
             if (status === 'MISSED') {
                 query.scheduledDate = { $lt: now };
                 query.status = 'PENDING';
+            } else if (status === 'FUTURE_SELECTION') {
+                query.scheduledDate = { $gt: now };
             } else {
                 query.status = status;
             }
@@ -393,6 +395,13 @@ const getMonitoringDashboard = async (req, res) => {
             .populate('assignedSelectorId', 'firstName lastName')
             .lean();
 
+        const tableEnquiryIds = rawTable.map(e => e._id);
+        const associatedInspections = await Inspection.find({ enquiryId: { $in: tableEnquiryIds } }).lean();
+        const inspectionMap = associatedInspections.reduce((acc, ins) => {
+            acc[ins.enquiryId.toString()] = ins;
+            return acc;
+        }, {});
+
         // Map to exact frontend contract shape
         const tableData = rawTable.map(e => {
             // Determine effective status for MISSED tab
@@ -414,6 +423,8 @@ const getMonitoringDashboard = async (req, res) => {
                 COMPLETED: 'View Details',
             };
 
+            const inspection = inspectionMap[e._id.toString()];
+
             return {
                 id: e._id,
                 enquiryId: e.enquiryId,
@@ -425,12 +436,18 @@ const getMonitoringDashboard = async (req, res) => {
                 fieldSelector: e.assignedSelectorId
                     ? `${e.assignedSelectorId.firstName} ${e.assignedSelectorId.lastName}`
                     : null,
-                visitDate: e.scheduledDate || null,
-                harvestTime: e.scheduledTime || null,
+                // Requirement Fix: "Visited Date" should prioritize inspection time, then fallback to scheduled
+                visitDate: inspection 
+                    ? new Date(inspection.createdAt).toLocaleDateString('en-IN') 
+                    : (e.scheduledDate ? new Date(e.scheduledDate).toLocaleDateString('en-IN') : null),
+                // Requirement Fix: "Harvesting Time" should prioritize the choice made by the selector during inspection
+                harvestTime: inspection ? inspection.harvestingTime : (e.scheduledTime || null),
                 status: effectiveStatus,
+
                 action: buttonMap[effectiveStatus] || 'View Details',
             };
         });
+
 
         const totalPages = Math.ceil(total / Number(limit));
 
@@ -480,10 +497,11 @@ const getFieldSelectionDashboard = async (req, res) => {
         })
             .populate({
                 path: 'enquiryId',
-                select: 'farmerFirstName farmerLastName location fieldOwnerId assignedSelectorId',
+                select: 'farmerFirstName farmerLastName location fieldOwnerId assignedSelectorId farmerMobile plantCount purchaseRate companyId',
                 populate: [
                     { path: 'fieldOwnerId', select: 'firstName lastName' },
                     { path: 'assignedSelectorId', select: 'firstName lastName' },
+                    { path: 'companyId', select: 'companyName' },
                 ],
             })
             .lean();
@@ -496,6 +514,10 @@ const getFieldSelectionDashboard = async (req, res) => {
                 location: e.location || null,
                 fieldOwner: e.fieldOwnerId ? `${e.fieldOwnerId.firstName} ${e.fieldOwnerId.lastName}` : null,
                 fieldSelector: e.assignedSelectorId ? `${e.assignedSelectorId.firstName} ${e.assignedSelectorId.lastName}` : null,
+                farmerMobile: e.farmerMobile || 'N/A',
+                plantCount: e.plantCount || 0,
+                company: e.companyId ? e.companyId.companyName : 'N/A',
+                rate: e.purchaseRate ? `₹${e.purchaseRate}/kg` : 'Not Fixed',
                 status: ins.decision === 'APPROVED' ? 'SELECTED' : ins.decision === 'REJECTED' ? 'REJECTED' : ins.decision,
             };
         });
@@ -561,6 +583,8 @@ const getFieldSelectionDashboard = async (req, res) => {
             company: e.companyId ? e.companyId.companyName : null,
             fieldOwner: e.fieldOwnerId ? `${e.fieldOwnerId.firstName} ${e.fieldOwnerId.lastName}` : null,
             fieldSelector: e.assignedSelectorId ? `${e.assignedSelectorId.firstName} ${e.assignedSelectorId.lastName}` : null,
+            farmerMobile: e.farmerMobile,
+            plantCount: e.plantCount,
             status: e.status,
         }));
 
