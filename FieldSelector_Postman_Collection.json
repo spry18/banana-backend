@@ -560,6 +560,48 @@
                                     "type": "text"
                                 },
                                 {
+                                    "key": "generation",
+                                    "value": "M",
+                                    "description": "Generation of the plot — optional",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "plantCount",
+                                    "value": "3000",
+                                    "description": "Number of plants — optional",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "status",
+                                    "value": "Select Iraq",
+                                    "description": "Status of the plot — optional",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "caliper",
+                                    "value": "42/44/46",
+                                    "description": "Caliper measurement — optional",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "length",
+                                    "value": "7+",
+                                    "description": "Length measurement — optional",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "plotType",
+                                    "value": "NFC",
+                                    "description": "Type of plot — optional",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "greenLeaf",
+                                    "value": "7 to 9",
+                                    "description": "Green leaf count — optional",
+                                    "type": "text"
+                                },
+                                {
                                     "key": "photos",
                                     "description": "Plot photo #1 — REQUIRED. In Postman, duplicate this row (up to 20 times) each with key 'photos' and type File to send multiple photos.",
                                     "type": "file",
@@ -663,6 +705,41 @@
                                     "key": "decision",
                                     "value": "REJECTED",
                                     "description": "Sends 'REJECTED' — backend sets Enquiry.status = REJECTED and fires a WhatsApp rejection notification to the farmer.",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "generation",
+                                    "value": "M",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "plantCount",
+                                    "value": "3000",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "status",
+                                    "value": "Select Iraq",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "caliper",
+                                    "value": "42/44/46",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "length",
+                                    "value": "7+",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "plotType",
+                                    "value": "NFC",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "greenLeaf",
+                                    "value": "7 to 9",
                                     "type": "text"
                                 },
                                 {

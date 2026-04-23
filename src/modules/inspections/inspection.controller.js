@@ -47,6 +47,15 @@ const createInspection = async (req, res) => {
             isThroughPartner,
             partnerName,
             decision,             // UI sends 'SELECTED' or 'REJECTED'
+            
+            // ── NEW FIELDS (Optional) ──
+            generation,
+            plantCount,
+            status,
+            caliper,
+            length,
+            plotType,
+            greenLeaf,
         } = req.body;
 
         // ── 2. Build photo URL array from uploaded files ──────────────────────
@@ -94,6 +103,14 @@ const createInspection = async (req, res) => {
             partnerName,
             photos,
             decision: dbDecision,           // 'APPROVED' | 'REJECTED'
+            // ── NEW FIELDS (Optional) ──
+            generation,
+            plantCount: plantCount ? Number(plantCount) : undefined,
+            status,
+            caliper,
+            length,
+            plotType,
+            greenLeaf,
         });
 
         // ── 6. Propagate decision to parent Enquiry ───────────────────────────

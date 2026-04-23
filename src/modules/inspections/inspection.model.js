@@ -64,6 +64,35 @@ const inspectionSchema = new mongoose.Schema(
             type: [String],
             required: true,
         },
+        // New fields added for updated Field Selector report
+        generation: {
+            type: String,
+            required: false,
+        },
+        plantCount: {
+            type: Number,
+            required: false,
+        },
+        status: {
+            type: String,
+            required: false,
+        },
+        caliper: {
+            type: String,
+            required: false,
+        },
+        length: {
+            type: String,
+            required: false,
+        },
+        plotType: {
+            type: String,
+            required: false,
+        },
+        greenLeaf: {
+            type: String,
+            required: false,
+        },
         decision: {
             type: String,
             enum: ['APPROVED', 'REJECTED'],
