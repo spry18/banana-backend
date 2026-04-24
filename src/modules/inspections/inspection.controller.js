@@ -49,9 +49,6 @@ const createInspection = async (req, res) => {
             decision,             // UI sends 'SELECTED' or 'REJECTED'
             
             // ── NEW FIELDS (Optional) ──
-            generation,
-            plantCount,
-            status,
             caliper,
             length,
             plotType,
@@ -104,9 +101,6 @@ const createInspection = async (req, res) => {
             photos,
             decision: dbDecision,           // 'APPROVED' | 'REJECTED'
             // ── NEW FIELDS (Optional) ──
-            generation,
-            plantCount: plantCount ? Number(plantCount) : undefined,
-            status,
             caliper,
             length,
             plotType,

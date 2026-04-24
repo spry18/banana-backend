@@ -559,24 +559,7 @@
                                     "description": "Send exactly 'SELECTED' or 'REJECTED'. Backend maps SELECTED → DB 'APPROVED' and sets Enquiry.status = 'SELECTED' — REQUIRED",
                                     "type": "text"
                                 },
-                                {
-                                    "key": "generation",
-                                    "value": "M",
-                                    "description": "Generation of the plot — optional",
-                                    "type": "text"
-                                },
-                                {
-                                    "key": "plantCount",
-                                    "value": "3000",
-                                    "description": "Number of plants — optional",
-                                    "type": "text"
-                                },
-                                {
-                                    "key": "status",
-                                    "value": "Select Iraq",
-                                    "description": "Status of the plot — optional",
-                                    "type": "text"
-                                },
+
                                 {
                                     "key": "caliper",
                                     "value": "42/44/46",
@@ -707,21 +690,7 @@
                                     "description": "Sends 'REJECTED' — backend sets Enquiry.status = REJECTED and fires a WhatsApp rejection notification to the farmer.",
                                     "type": "text"
                                 },
-                                {
-                                    "key": "generation",
-                                    "value": "M",
-                                    "type": "text"
-                                },
-                                {
-                                    "key": "plantCount",
-                                    "value": "3000",
-                                    "type": "text"
-                                },
-                                {
-                                    "key": "status",
-                                    "value": "Select Iraq",
-                                    "type": "text"
-                                },
+
                                 {
                                     "key": "caliper",
                                     "value": "42/44/46",

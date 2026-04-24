@@ -65,18 +65,6 @@ const inspectionSchema = new mongoose.Schema(
             required: true,
         },
         // New fields added for updated Field Selector report
-        generation: {
-            type: String,
-            required: false,
-        },
-        plantCount: {
-            type: Number,
-            required: false,
-        },
-        status: {
-            type: String,
-            required: false,
-        },
         caliper: {
             type: String,
             required: false,
