@@ -156,6 +156,15 @@ Action: Viewing the financial audit trail of all fuel given out.
 
 API: GET /api/diesel-advance (Supports pagination and filtering).
 
+⛽ Page 8b: Petrol Advance (Form & History)
+
+Action: Logging a petrol advance for a Field Selector and viewing the history.
+
+API (Create): POST /api/petrol-advance
+Payload: multipart/form-data containing fieldSelectorId, vehicleNumber (optional), amount, remark, and an optional receiptPhoto file.
+
+API (History): GET /api/petrol-advance (Supports pagination and filtering by fieldSelectorId).
+
 🔔 Page 9: Notifications & Alerts
 
 Action: Viewing system updates (Trip Submitted, Delayed, etc.).

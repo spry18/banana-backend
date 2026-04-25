@@ -84,6 +84,9 @@ app.use('/api/execution', require('./src/modules/execution/execution.routes'));
 // Diesel Advance module (OM fuel advances to drivers)
 app.use('/api/diesel-advance', require('./src/modules/diesel-advance/dieselAdvance.routes'));
 
+// Petrol Advance module (OM fuel advances to Field Selectors)
+app.use('/api/petrol-advance', require('./src/modules/petrol-advance/petrolAdvance.routes'));
+
 // Operational Manager module
 app.use('/api/operational-manager', require('./src/modules/operational-manager/om.routes'));
 

@@ -20,5 +20,9 @@ class NotificationService {
     static sendDieselAdvanceReceipt(mobile, driverName, amount, vehicleNumber) {
         console.log(`[WhatsApp OUT] To: ${mobile} | Msg: Hello ${driverName}, a diesel advance of ₹${amount} has been issued to you for vehicle ${vehicleNumber}. Please retain your fuel receipts for records.`);
     }
+    static sendPetrolAdvanceReceipt(mobile, name, amount, vehicleNumber) {
+        const vehicleInfo = vehicleNumber ? ` for vehicle ${vehicleNumber}` : '';
+        console.log(`[WhatsApp OUT] To: ${mobile} | Msg: Hello ${name}, a petrol advance of ₹${amount} has been issued to you${vehicleInfo}. Please retain your fuel receipts for records.`);
+    }
 }
 module.exports = NotificationService;

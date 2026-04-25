@@ -1119,6 +1119,104 @@
                     }
                 }
             ]
+        },
+        {
+            "name": "Petrol Advance",
+            "item": [
+                {
+                    "name": "Create Petrol Advance",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "fieldSelectorId",
+                                    "value": "{{fieldSelectorId}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "vehicleNumber",
+                                    "value": "MH12 AB1234",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "amount",
+                                    "value": "500",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "remark",
+                                    "value": "Weekly petrol advance",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "receiptPhoto",
+                                    "type": "file",
+                                    "src": []
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/petrol-advance",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "petrol-advance"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Petrol Advance History",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/petrol-advance?page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "petrol-advance"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                },
+                                {
+                                    "key": "fieldSelectorId",
+                                    "value": "{{fieldSelectorId}}",
+                                    "disabled": true
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
         }
     ]
 }

@@ -559,7 +559,6 @@
                                     "description": "Send exactly 'SELECTED' or 'REJECTED'. Backend maps SELECTED → DB 'APPROVED' and sets Enquiry.status = 'SELECTED' — REQUIRED",
                                     "type": "text"
                                 },
-
                                 {
                                     "key": "caliper",
                                     "value": "42/44/46",
@@ -690,7 +689,6 @@
                                     "description": "Sends 'REJECTED' — backend sets Enquiry.status = REJECTED and fires a WhatsApp rejection notification to the farmer.",
                                     "type": "text"
                                 },
-
                                 {
                                     "key": "caliper",
                                     "value": "42/44/46",
@@ -730,6 +728,50 @@
                             ]
                         },
                         "description": "Submits a REJECTED inspection.\n\nOn REJECTED:\n1. Inspection saved with `decision: REJECTED`\n2. Parent `Enquiry.status` set to `REJECTED`\n3. WhatsApp rejection notification fired to the farmer's mobile number"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Petrol Advance",
+            "item": [
+                {
+                    "name": "Get Petrol Advance History",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/petrol-advance?page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "petrol-advance"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                },
+                                {
+                                    "key": "fieldSelectorId",
+                                    "value": "{{fieldSelectorId}}",
+                                    "disabled": true
+                                }
+                            ]
+                        }
                     },
                     "response": []
                 }
