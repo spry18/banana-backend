@@ -208,7 +208,7 @@
                                 "dashboard-stats"
                             ]
                         },
-                        "description": "Returns: totalEnquiries, pendingVisits, selectedPlots, rejectedPlots, tripsCompleted, alertsCount"
+                        "description": "Returns: totalEnquiries, pendingVisits, selectedPlots, rejectedPlots, tripsCompleted, alertsCount.\n\n**Updated (Apr 2026):** The `enquiries` object now also includes:\n- `missedPlots` — enquiries whose scheduledDate is in the past and status is still PENDING\n- `rescheduled` — enquiries with status RESCHEDULED"
                     }
                 },
                 {
@@ -342,6 +342,12 @@
                                     "value": "",
                                     "disabled": true,
                                     "description": "YYYY-MM-DD"
+                                },
+                                {
+                                    "key": "companyId",
+                                    "value": "",
+                                    "disabled": true,
+                                    "description": "Filter table rows by Company ObjectId (NEW Apr 2026)"
                                 }
                             ]
                         },
@@ -2295,6 +2301,83 @@
                                 }
                             ]
                         }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "12. Reports (NEW Apr 2026)",
+            "description": "New dedicated reporting endpoints. Require Admin or Operational Manager token.",
+            "item": [
+                {
+                    "name": "GET Detailed Field Selection Report",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/reports/field-selection?page=1&limit=20",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "reports", "field-selection"],
+                            "query": [
+                                { "key": "page", "value": "1" },
+                                { "key": "limit", "value": "20" },
+                                { "key": "search", "value": "", "disabled": true, "description": "Search by farmer name or mobile" },
+                                { "key": "location", "value": "", "disabled": true, "description": "Filter by location string" },
+                                { "key": "companyId", "value": "", "disabled": true, "description": "Filter by Company ObjectId" }
+                            ]
+                        },
+                        "description": "Returns top-level stats and a paginated table for the Detailed Field Selection Report page.\n\n## Response Shape:\n```json\n{\n  \"stats\": {\n    \"totalBoxes\": 1200,\n    \"totalWastage\": 45.5,\n    \"totalRejected\": 8,\n    \"totalTrips\": 30,\n    \"lineRejected\": 3\n  },\n  \"total\": 50,\n  \"page\": 1,\n  \"pages\": 3,\n  \"tableData\": [\n    {\n      \"date\": \"2026-04-10T00:00:00Z\",\n      \"farmerName\": \"Santosh Ingale\",\n      \"mobileNumber\": \"9876543210\",\n      \"location\": \"Solapur\",\n      \"rate\": 918,\n      \"fieldOwner\": \"Raj Sharma\",\n      \"fieldSelector\": \"Prashant Desai\",\n      \"company\": \"Nature Fresh\",\n      \"weight\": 600\n    }\n  ]\n}\n```"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET Detailed Execution Report",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/reports/execution-detailed?page=1&limit=20",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "reports", "execution-detailed"],
+                            "query": [
+                                { "key": "page", "value": "1" },
+                                { "key": "limit", "value": "20" },
+                                { "key": "search", "value": "", "disabled": true, "description": "Search by farmer name or mobile" },
+                                { "key": "location", "value": "", "disabled": true, "description": "Filter by location string" },
+                                { "key": "companyId", "value": "", "disabled": true, "description": "Filter by Company ObjectId" }
+                            ]
+                        },
+                        "description": "Returns top-level stats and a paginated logistics/execution table for the Detailed Execution Report page.\n\n## Response Shape:\n```json\n{\n  \"stats\": {\n    \"totalEnquiries\": 100,\n    \"selectedPlots\": 60,\n    \"rejectedPlots\": 8,\n    \"missedPlots\": 5,\n    \"rescheduled\": 3\n  },\n  \"total\": 30,\n  \"page\": 1,\n  \"pages\": 2,\n  \"tableData\": [\n    {\n      \"mobile\": \"9876543210\",\n      \"location\": \"Solapur\",\n      \"teamName\": \"Team Hakim\",\n      \"eicherDriver\": \"Sidhu Wagh\",\n      \"weight\": 312,\n      \"wastage\": 5.5\n    }\n  ]\n}\n```"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET Munshi Harvesting Report",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/reports/munshi-harvesting",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "reports", "munshi-harvesting"]
+                        },
+                        "description": "Returns aggregated harvesting data per Munshi (all Munshis, Admin scope). Covers current month + last 3 months (quarterly).\n\n## Response Shape:\n```json\n[\n  {\n    \"munshiName\": \"Hakim Shaikh\",\n    \"perDay\": 120,\n    \"perMonth\": 2400,\n    \"quarterly\": 6800\n  }\n]\n```\n\nValues represent **total boxes packed** (not weight in kg)."
                     },
                     "response": []
                 }

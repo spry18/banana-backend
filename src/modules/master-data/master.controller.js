@@ -4,6 +4,7 @@ const Agent = require('./agent.model');
 const Vehicle = require('./vehicle.model');
 const Generation = require('./generation.model');
 const User = require('../users/user.model');
+const Enquiry = require('../enquiries/enquiry.model');
 
 // --- Companies ---
 const createCompany = async (req, res) => {
@@ -306,7 +307,7 @@ const getDrivers = async (req, res) => {
 const getFormDropdowns = async (req, res) => {
     try {
         // Run all queries in parallel for best performance
-        const [companies, agents, generations, selectors, brands, munshis, eicherDrivers, pickupDrivers] = await Promise.all([
+        const [companies, agents, generations, selectors, brands, munshis, eicherDrivers, pickupDrivers, locations] = await Promise.all([
             Company.find({ isActive: true }).select('_id companyName legalName headquarters').lean(),
             Agent.find({ isActive: true }).select('_id agentName mobileNo location').lean(),
             Generation.find({ isActive: true }).select('_id name description').lean(),
@@ -315,6 +316,7 @@ const getFormDropdowns = async (req, res) => {
             User.find({ role: { $regex: /munshi/i }, isActive: true }).select('_id firstName lastName mobileNo').lean(),
             User.find({ role: 'driver eicher', isActive: true }).select('_id firstName lastName mobileNo vehicleId').populate('vehicleId', 'vehicleNumber vehicleType').lean(),
             User.find({ role: 'driver pickup', isActive: true }).select('_id firstName lastName mobileNo vehicleId').populate('vehicleId', 'vehicleNumber vehicleType').lean(),
+            Enquiry.distinct('location'),
         ]);
 
         res.status(200).json({
@@ -326,6 +328,7 @@ const getFormDropdowns = async (req, res) => {
             munshis,
             eicherDrivers,
             pickupDrivers,
+            locations: locations.filter(Boolean),
         });
     } catch (error) {
         console.error('Error fetching form dropdowns:', error);

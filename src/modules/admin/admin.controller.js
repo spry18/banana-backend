@@ -21,6 +21,7 @@ const getAdminStats = async (req, res) => {
             tripsCompleted,
             missedFieldsCount,
             eodIssuesCount,
+            rescheduledPlots,
         ] = await Promise.all([
             Enquiry.countDocuments(),
             Enquiry.countDocuments({ status: 'PENDING' }),
@@ -42,6 +43,7 @@ const getAdminStats = async (req, res) => {
                 endMeterPhotoUrl: { $exists: false },
                 startTime: { $lt: new Date(Date.now() - 12 * 60 * 60 * 1000) }, // >12h ago
             }),
+            Enquiry.countDocuments({ status: 'RESCHEDULED' }),
         ]);
 
         const alertsCount = missedFieldsCount + eodIssuesCount;
@@ -55,6 +57,8 @@ const getAdminStats = async (req, res) => {
                 ratFixed: ratFixedPlots,
                 assigned: assignedPlots,
                 completed: completedPlots,
+                missedPlots: missedFieldsCount,
+                rescheduled: rescheduledPlots,
             },
             tripsCompleted,
             alertsCount,
@@ -319,6 +323,7 @@ const getMonitoringDashboard = async (req, res) => {
             fieldOwner,
             selector,          // frontend sends ?selector=id
             date,              // frontend sends ?date=YYYY-MM-DD
+            companyId,
         } = req.query;
 
         const skip = (Number(page) - 1) * Number(limit);
@@ -372,6 +377,10 @@ const getMonitoringDashboard = async (req, res) => {
 
         if (fieldOwner) {
             query.fieldOwnerId = fieldOwner;
+        }
+
+        if (companyId) {
+            query.companyId = companyId;
         }
 
         if (selector) {

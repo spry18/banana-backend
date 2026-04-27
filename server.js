@@ -99,6 +99,9 @@ app.use('/api/driver', require('./src/modules/driver/driver.routes'));
 // Phase 4+7: Admin aggregation routes (dashboard-stats, alerts, field-selection, performance)
 app.use('/api/admin', require('./src/modules/admin/admin.routes'));
 
+// Reports module (Field Selection Report, Execution Detailed Report, Munshi Harvesting)
+app.use('/api/reports', require('./src/modules/reports/reports.routes'));
+
 // Field Owner module
 app.use('/api/field-owner', require('./src/modules/field-owner/field-owner.routes'));
 
