@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createAdvance, getAdvanceHistory } = require('./petrolAdvance.controller');
+const { createAdvance, getAdvanceHistory, getDistribution } = require('./petrolAdvance.controller');
 const { protect, authorize } = require('../../middlewares/auth.middleware');
 const upload = require('../../middlewares/upload.middleware');
 
@@ -18,5 +18,12 @@ router
         authorize('Admin', 'Operational Manager', 'Field Owner', 'Field Selector'),
         getAdvanceHistory
     );
+
+// GET /api/petrol-advance/distribution?groupBy=day|month|year&fieldSelectorId=<optional>
+router.get(
+    '/distribution',
+    authorize('Admin', 'Operational Manager'),
+    getDistribution
+);
 
 module.exports = router;

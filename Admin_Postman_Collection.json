@@ -2303,6 +2303,92 @@
                         }
                     },
                     "response": []
+                },
+                {
+                    "name": "GET Petrol Advance Distribution (Day / Month / Year + Per Selector)",
+                    "request": {
+                        "method": "GET",
+                        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/petrol-advance/distribution?groupBy=month",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "petrol-advance", "distribution"],
+                            "query": [
+                                { "key": "groupBy", "value": "month", "description": "day | month | year. day = last 30 days, month = last 12 months, year = all years" },
+                                { "key": "fieldSelectorId", "value": "", "disabled": true, "description": "Optional: filter to a single field selector" }
+                            ]
+                        },
+                        "description": "Distribution report for petrol advances (Field Selectors).\n\n## Response Shape:\n```json\n{\n  \"groupBy\": \"month\",\n  \"timeSeries\": [\n    { \"label\": \"Apr 2026\", \"totalAmount\": 4500, \"count\": 6 },\n    { \"label\": \"Mar 2026\", \"totalAmount\": 3200, \"count\": 4 }\n  ],\n  \"perSelector\": [\n    { \"_id\": \"...\", \"selectorName\": \"Prashant Desai\", \"mobile\": \"9876543210\", \"totalAmount\": 2500, \"count\": 3 }\n  ]\n}\n```"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Diesel Advance",
+            "item": [
+                {
+                    "name": "Create Diesel Advance",
+                    "request": {
+                        "method": "POST",
+                        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" }],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                { "key": "driverId", "value": "{{driverId}}", "type": "text" },
+                                { "key": "amount", "value": "500", "type": "text" },
+                                { "key": "remark", "value": "Fuel for morning run", "type": "text" },
+                                { "key": "vehicleNumber", "value": "", "type": "text", "disabled": true, "description": "Optional — auto-resolved from driver's linked vehicle" },
+                                { "key": "assignmentId", "value": "", "type": "text", "disabled": true, "description": "Optional — link to a Logistics assignment" },
+                                { "key": "receiptPhoto", "src": [], "type": "file", "disabled": true }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/diesel-advance",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "diesel-advance"]
+                        },
+                        "description": "Issue a diesel advance to an Eicher or Pickup driver. vehicleNumber is auto-resolved from the driver's linked vehicle if not provided. Triggers WhatsApp receipt to driver."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET Diesel Advance History",
+                    "request": {
+                        "method": "GET",
+                        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/diesel-advance?page=1&limit=20",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "diesel-advance"],
+                            "query": [
+                                { "key": "page", "value": "1" },
+                                { "key": "limit", "value": "20" },
+                                { "key": "driverId", "value": "", "disabled": true, "description": "Filter by driver ObjectId" },
+                                { "key": "assignmentId", "value": "", "disabled": true, "description": "Filter by logistics assignment ObjectId" }
+                            ]
+                        },
+                        "description": "Paginated list of all diesel advances. Drivers see only their own records automatically."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET Diesel Advance Distribution (Day / Month / Year + Per Driver)",
+                    "request": {
+                        "method": "GET",
+                        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/diesel-advance/distribution?groupBy=month",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "diesel-advance", "distribution"],
+                            "query": [
+                                { "key": "groupBy", "value": "month", "description": "day | month | year. day = last 30 days, month = last 12 months, year = all years" },
+                                { "key": "driverId", "value": "", "disabled": true, "description": "Optional: filter to a single driver" }
+                            ]
+                        },
+                        "description": "Distribution report for diesel advances (Eicher + Pickup drivers).\n\n## Response Shape:\n```json\n{\n  \"groupBy\": \"month\",\n  \"timeSeries\": [\n    { \"label\": \"Apr 2026\", \"totalAmount\": 12000, \"count\": 15 },\n    { \"label\": \"Mar 2026\", \"totalAmount\": 9800, \"count\": 12 }\n  ],\n  \"perDriver\": [\n    { \"_id\": \"...\", \"driverName\": \"Sidhu Wagh\", \"mobile\": \"9876543210\", \"role\": \"driver eicher\", \"vehicleNumbers\": [\"MH45AF8299\"], \"totalAmount\": 5000, \"count\": 6 }\n  ]\n}\n```\n\n**perDriver** always sorted by highest advance total. Includes all vehicle numbers used by that driver."
+                    },
+                    "response": []
                 }
             ]
         },

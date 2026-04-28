@@ -2,6 +2,7 @@ const DieselAdvance = require('./dieselAdvance.model');
 const User = require('../users/user.model');
 const NotificationService = require('../../services/notification.service');
 const { logSystemAction } = require('../../utils/auditLogger');
+const mongoose = require('mongoose');
 
 // @desc    Issue a diesel advance to a driver
 // @route   POST /api/diesel-advance
@@ -116,7 +117,118 @@ const getAdvanceHistory = async (req, res) => {
     }
 };
 
+// @desc    Get diesel advance distribution — day / month / year wise + per-driver breakdown
+// @route   GET /api/diesel-advance/distribution
+// @access  Protected (Admin, Operational Manager)
+const getDistribution = async (req, res) => {
+    try {
+        const { groupBy = 'month', driverId } = req.query;
+
+        const matchStage = {};
+        if (driverId) {
+            matchStage.driverId = new mongoose.Types.ObjectId(driverId);
+        }
+
+        // ── Date grouping expression ──────────────────────────────────────
+        let groupId;
+        const now = new Date();
+
+        if (groupBy === 'day') {
+            // Last 30 days
+            matchStage.createdAt = { $gte: new Date(now - 30 * 24 * 60 * 60 * 1000) };
+            groupId = {
+                year: { $year: '$createdAt' },
+                month: { $month: '$createdAt' },
+                day: { $dayOfMonth: '$createdAt' },
+            };
+        } else if (groupBy === 'year') {
+            groupId = { year: { $year: '$createdAt' } };
+        } else {
+            // Default: month — last 12 months
+            matchStage.createdAt = { $gte: new Date(new Date().setMonth(now.getMonth() - 11)) };
+            groupId = {
+                year: { $year: '$createdAt' },
+                month: { $month: '$createdAt' },
+            };
+        }
+
+        // ── 1. Time-series aggregation ────────────────────────────────────
+        const timeSeriesRaw = await DieselAdvance.aggregate([
+            { $match: matchStage },
+            {
+                $group: {
+                    _id: groupId,
+                    totalAmount: { $sum: '$amount' },
+                    count: { $sum: 1 },
+                },
+            },
+            { $sort: { '_id.year': -1, '_id.month': -1, '_id.day': -1 } },
+        ]);
+
+        // Build readable labels
+        const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const timeSeries = timeSeriesRaw.map(r => {
+            let label;
+            if (groupBy === 'day') {
+                label = `${r._id.day} ${MONTHS[r._id.month - 1]} ${r._id.year}`;
+            } else if (groupBy === 'year') {
+                label = `${r._id.year}`;
+            } else {
+                label = `${MONTHS[r._id.month - 1]} ${r._id.year}`;
+            }
+            return { label, totalAmount: r.totalAmount, count: r.count };
+        });
+
+        // ── 2. Per-driver breakdown ───────────────────────────────────────
+        const perDriverRaw = await DieselAdvance.aggregate([
+            { $match: matchStage },
+            {
+                $group: {
+                    _id: '$driverId',
+                    totalAmount: { $sum: '$amount' },
+                    count: { $sum: 1 },
+                    vehicleNumbers: { $addToSet: '$vehicleNumber' },
+                },
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: '_id',
+                    foreignField: '_id',
+                    as: 'user',
+                },
+            },
+            { $unwind: { path: '$user', preserveNullAndEmpty: true } },
+            {
+                $project: {
+                    _id: 1,
+                    totalAmount: 1,
+                    count: 1,
+                    vehicleNumbers: 1,
+                    driverName: { $concat: ['$user.firstName', ' ', '$user.lastName'] },
+                    mobile: '$user.mobileNo',
+                    role: '$user.role',
+                },
+            },
+            { $sort: { totalAmount: -1 } },
+        ]);
+
+        res.json({
+            groupBy,
+            timeSeries,
+            perDriver: perDriverRaw,
+        });
+    } catch (error) {
+        console.error('Error fetching diesel advance distribution:', error);
+        if (error.name === 'CastError') {
+            return res.status(400).json({ message: `Invalid ID format: ${error.path}` });
+        }
+        res.status(500).json({ message: 'Server error while fetching diesel advance distribution' });
+    }
+};
+
 module.exports = {
     createAdvance,
     getAdvanceHistory,
+    getDistribution,
 };
