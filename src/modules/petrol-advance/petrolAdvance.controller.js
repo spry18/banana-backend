@@ -187,13 +187,19 @@ const getDistribution = async (req, res) => {
                     as: 'user',
                 },
             },
-            { $unwind: { path: '$user', preserveNullAndEmpty: true } },
+            { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
             {
                 $project: {
                     _id: 1,
                     totalAmount: 1,
                     count: 1,
-                    selectorName: { $concat: ['$user.firstName', ' ', '$user.lastName'] },
+                    selectorName: { 
+                        $concat: [
+                            { $ifNull: ['$user.firstName', 'Unknown'] }, 
+                            ' ', 
+                            { $ifNull: ['$user.lastName', 'User'] }
+                        ] 
+                    },
                     mobile: '$user.mobileNo',
                 },
             },
@@ -207,10 +213,13 @@ const getDistribution = async (req, res) => {
         });
     } catch (error) {
         console.error('Error fetching petrol advance distribution:', error);
+        try {
+            require('fs').appendFileSync('c:/Users/Vaibhav/Desktop/Banana Import Expoort/backend-error.log', `PETROL ERROR: ${error.stack}\n`);
+        } catch (e) {}
         if (error.name === 'CastError') {
             return res.status(400).json({ message: `Invalid ID format: ${error.path}` });
         }
-        res.status(500).json({ message: 'Server error while fetching petrol advance distribution' });
+        res.status(500).json({ message: 'Server error while fetching petrol advance distribution', error: error.message });
     }
 };
 

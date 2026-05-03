@@ -477,10 +477,36 @@ const getMonitoringDashboard = async (req, res) => {
 // @access  Private (Admin, Operational Manager)
 const getFieldSelectionDashboard = async (req, res) => {
     try {
+        const { selectorDate, ownerDate, visitedDate } = req.query;
+
         const now = new Date();
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const todayEnd = new Date(todayStart);
-        todayEnd.setDate(todayEnd.getDate() + 1);
+        let todayStart, todayEnd;
+        if (visitedDate) {
+            const vDate = new Date(visitedDate);
+            todayStart = new Date(vDate.getFullYear(), vDate.getMonth(), vDate.getDate());
+            todayEnd = new Date(todayStart);
+            todayEnd.setDate(todayEnd.getDate() + 1);
+        } else {
+            todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            todayEnd = new Date(todayStart);
+            todayEnd.setDate(todayEnd.getDate() + 1);
+        }
+        
+        let selectorDateStart, selectorDateEnd;
+        if (selectorDate) {
+            const sDate = new Date(selectorDate);
+            selectorDateStart = new Date(sDate.getFullYear(), sDate.getMonth(), sDate.getDate());
+            selectorDateEnd = new Date(selectorDateStart);
+            selectorDateEnd.setDate(selectorDateEnd.getDate() + 1);
+        }
+
+        let ownerDateStart, ownerDateEnd;
+        if (ownerDate) {
+            const oDate = new Date(ownerDate);
+            ownerDateStart = new Date(oDate.getFullYear(), oDate.getMonth(), oDate.getDate());
+            ownerDateEnd = new Date(ownerDateStart);
+            ownerDateEnd.setDate(ownerDateEnd.getDate() + 1);
+        }
 
         // ── Stats ─────────────────────────────────────────────────────────
         const [
@@ -531,9 +557,12 @@ const getFieldSelectionDashboard = async (req, res) => {
             };
         });
 
-        // ── Field Selector Data (aggregated from DailyLogs + Inspections) ─
+        const kmMatch = { status: 'COMPLETED' };
+        if (selectorDate) {
+            kmMatch.date = { $gte: selectorDateStart, $lt: selectorDateEnd };
+        }
         const selectorKmAgg = await DailyLog.aggregate([
-            { $match: { status: 'COMPLETED' } },
+            { $match: kmMatch },
             {
                 $group: {
                     _id: '$userId',
@@ -544,7 +573,12 @@ const getFieldSelectionDashboard = async (req, res) => {
         const kmBySelector = {};
         selectorKmAgg.forEach(r => { kmBySelector[r._id.toString()] = r.totalKM; });
 
+        const selectorPlotMatch = {};
+        if (selectorDate) {
+            selectorPlotMatch.createdAt = { $gte: selectorDateStart, $lt: selectorDateEnd };
+        }
         const selectorPlotAgg = await Inspection.aggregate([
+            { $match: selectorPlotMatch },
             { $group: { _id: '$selectorId', totalVisitedPlots: { $sum: 1 } } },
         ]);
 
@@ -560,7 +594,12 @@ const getFieldSelectionDashboard = async (req, res) => {
         }));
 
         // ── Field Owner Data ──────────────────────────────────────────────
+        const ownerPlotMatch = {};
+        if (ownerDate) {
+            ownerPlotMatch.createdAt = { $gte: ownerDateStart, $lt: ownerDateEnd };
+        }
         const ownerPlotAgg = await Enquiry.aggregate([
+            { $match: ownerPlotMatch },
             { $group: { _id: '$fieldOwnerId', totalAssignedPlots: { $sum: 1 } } },
         ]);
         const ownerIds = ownerPlotAgg.map(r => r._id);
