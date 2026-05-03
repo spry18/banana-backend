@@ -24,5 +24,14 @@ class NotificationService {
         const vehicleInfo = vehicleNumber ? ` for vehicle ${vehicleNumber}` : '';
         console.log(`[WhatsApp OUT] To: ${mobile} | Msg: Hello ${name}, a petrol advance of ₹${amount} has been issued to you${vehicleInfo}. Please retain your fuel receipts for records.`);
     }
+    static sendExtraVehicleAlert(mobile, name, vehicleNumber, farmLocation) {
+        console.log(`[WhatsApp OUT] To: ${mobile} | Msg: Hello ${name}, you have been assigned as an extra vehicle (${vehicleNumber}) for pickup at ${farmLocation}. Please coordinate with the Munshi on site.`);
+    }
+    static sendExtraVehicleNotifyMunshi(mobile, munshiName, extraVehicleNumber, extraDriverName) {
+        console.log(`[WhatsApp OUT] To: ${mobile} | Msg: Hello ${munshiName}, an extra vehicle (${extraVehicleNumber}) driven by ${extraDriverName} has been added to your assignment. Please coordinate on site.`);
+    }
+    static sendExtraVehicleNotifyOriginalDriver(mobile, driverName, extraVehicleNumber) {
+        console.log(`[WhatsApp OUT] To: ${mobile} | Msg: Hello ${driverName}, an extra vehicle (${extraVehicleNumber}) has been added to your assignment for additional support.`);
+    }
 }
 module.exports = NotificationService;

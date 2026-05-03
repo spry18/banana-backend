@@ -1,0 +1,166 @@
+# Extra Vehicle — Complete API Flow (All 3 Roles)
+
+## How It Works (Key Insight)
+
+The overflow (extra vehicle) is a **separate Logistics record** with its own `_id`. This means:
+- Munshi submits **separate packing reports** for each vehicle (original `_id` and overflow `_id`)
+- Driver submits **separate trip reports** for each vehicle
+- OM approves/rejects **each packing report separately**
+- All existing APIs **already work** because they query by `assignmentId` / `munshiId` / `driverId`
+
+> [!IMPORTANT]
+> No extra code was needed for Munshi to submit two reports — since overflow is a separate Logistics record, `POST /api/munshi/packing/:overflowId` just works. Same for driver trips.
+
+---
+
+## Role 1: OM (Operational Manager)
+
+### Step 1 — View All Assignments (see pending, completed, all)
+
+| Action | API | Purpose |
+|--------|-----|---------|
+| Get all plots | `GET /api/operational-manager/plots?stage=All` | See all enquiries with their logistics array (originals + rollovers + overflows) |
+| Get assigned plots | `GET /api/operational-manager/plots?stage=Assigned` | See PENDING assignments |
+| Get completed plots | `GET /api/operational-manager/plots?stage=Completed` | See COMPLETED assignments |
+| Get single assignment | `GET /api/logistics/:id` | View one assignment detail |
+| Get all assignments | `GET /api/logistics` | List all logistics records |
+
+### Step 2 — Add Extra Vehicle
+
+| Action | API | Body |
+|--------|-----|------|
+| Add extra vehicle | `POST /api/logistics/:originalId/add-vehicle` | `{ driverId, munshiId?, companyId?, purchaseRate?, totalBoxes?, priority?, lightInTime?, lightOutTime?, teamName?, scheduledDate? }` |
+
+**Response:** New overflow Logistics record with `isOverflow: true`
+
+### Step 3 — View Related (Original + All Extras)
+
+| Action | API | Response |
+|--------|-----|----------|
+| Get full chain | `GET /api/logistics/:anyId/related` | `{ original, rollovers[], overflows[], totalRelated }` |
+
+### Step 4 — Approve/Reject Packing (for EACH vehicle separately)
+
+| Action | API | Notes |
+|--------|-----|-------|
+| Approve original vehicle packing | `POST /api/operational-manager/assignments/:originalId/approve` | Marks original as APPROVED |
+| Approve overflow vehicle packing | `POST /api/operational-manager/assignments/:overflowId/approve` | Marks overflow as APPROVED |
+| Reject original vehicle packing | `POST /api/operational-manager/assignments/:originalId/reject` | `{ remark: "..." }` |
+| Reject overflow vehicle packing | `POST /api/operational-manager/assignments/:overflowId/reject` | `{ remark: "..." }` |
+
+---
+
+## Role 2: Munshi
+
+### Step 1 — Dashboard (sees ALL assignments including overflows)
+
+| Action | API | Notes |
+|--------|-----|-------|
+| Get dashboard | `GET /api/munshi/dashboard` | KPIs + active assignments (includes overflows if same munshi) |
+| Get assignments list | `GET /api/munshi/assignments` | Paginated, filter by status |
+| Get assignments (pending) | `GET /api/munshi/assignments?status=PENDING` | Filter pending |
+| Get assignments (completed) | `GET /api/munshi/assignments?status=COMPLETED` | Filter completed |
+
+> [!NOTE]
+> The Munshi dashboard queries by `munshiId`. If the overflow has the **same** munshi, it appears automatically. If a **different** munshi was assigned, it appears in THEIR dashboard instead.
+
+### Step 2 — Add Extra Vehicle (Munshi can also add)
+
+| Action | API | Body |
+|--------|-----|------|
+| Add extra vehicle | `POST /api/munshi/assignments/:originalId/add-vehicle` | `{ driverId, munshiId?, ... }` |
+
+### Step 3 — Submit Packing Report (SEPARATELY for each vehicle)
+
+**For original vehicle:**
+
+| Action | API | Body |
+|--------|-----|------|
+| Submit packing | `POST /api/munshi/packing/:originalAssignmentId` | `{ box4H, box5H, ..., totalBoxes, wastageKg, ... }` |
+| Get packing | `GET /api/munshi/assignments/:originalAssignmentId/packing` | View submitted packing |
+
+**For overflow vehicle (SAME flow, different ID):**
+
+| Action | API | Body |
+|--------|-----|------|
+| Submit packing | `POST /api/munshi/packing/:overflowAssignmentId` | `{ box4H, box5H, ..., totalBoxes, wastageKg, ... }` |
+| Get packing | `GET /api/munshi/assignments/:overflowAssignmentId/packing` | View submitted packing |
+
+> [!IMPORTANT]
+> **How Munshi submits two reports:** The original vehicle has assignment ID `ABC`, the overflow has ID `XYZ`. Munshi calls `POST /api/munshi/packing/ABC` for vehicle 1 and `POST /api/munshi/packing/XYZ` for vehicle 2. Both are independent packing records.
+
+### Step 4 — Cancel / Rollover
+
+| Action | API | Notes |
+|--------|-----|-------|
+| Cancel overflow | `POST /api/munshi/packing/:overflowId` with `{ cancellationReason }` | Cancels ONLY the overflow, NOT the enquiry |
+| Rollover overflow | `POST /api/munshi/assignments/:overflowId/rollover` | Creates a rollover of the overflow for next day |
+
+---
+
+## Role 3: Driver
+
+### Step 1 — Dashboard (extra driver sees their assignment)
+
+| Action | API | Notes |
+|--------|-----|-------|
+| Get dashboard | `GET /api/driver/dashboard` | Shows active assignments where this driver is `driverId` or `pickupDriverId` |
+| Get assignments | `GET /api/driver/assignments` | All assignments for this driver |
+
+> [!NOTE]
+> The **extra driver** will see the overflow assignment in their dashboard automatically (queries by `driverId`). The **original driver** still sees only their original assignment.
+
+### Step 2 — Submit Trip Report (for their specific assignment)
+
+| Action | API | Notes |
+|--------|-----|-------|
+| Submit trip (Eicher) | `POST /api/driver/trips/:overflowAssignmentId` | Trip report for the overflow vehicle |
+| Submit trip (Pickup) | `POST /api/driver/trips/:overflowAssignmentId` | Same endpoint, different fields |
+| Update trip | `PATCH /api/driver/trips/:tripId` | Update existing trip |
+| Update transit status | `PATCH /api/driver/assignments/:overflowId/status` | `{ transitStatus: "EN_ROUTE_TO_FARM" }` |
+
+### Step 3 — History & Reports
+
+| Action | API | Notes |
+|--------|-----|-------|
+| Trip history | `GET /api/driver/history` | Shows all past trips including overflow trips |
+| Reports | `GET /api/driver/reports` | Monthly reports |
+
+---
+
+## Bug Fix Applied
+
+### Cancellation Guard Fix in `munshi.controller.js`
+
+```diff
+-// Only cancel the enquiry if this is the ORIGINAL assignment (not a rollover day)
+-if (!assignment.isRollover && assignment.enquiryId) {
++// Only cancel the enquiry if this is the ORIGINAL assignment (not a rollover or overflow)
++if (!assignment.isRollover && !assignment.isOverflow && assignment.enquiryId) {
+```
+
+**Why:** If you cancel an overflow assignment, it should NOT cancel the parent enquiry. Only cancelling the ORIGINAL assignment cancels the enquiry.
+
+---
+
+## Complete API Table (All APIs That Work With Overflow)
+
+| # | Method | Endpoint | Role | What It Does | Overflow Ready? |
+|---|--------|----------|------|-------------|----------------|
+| 1 | POST | `/api/logistics/:id/add-vehicle` | OM, Admin, Munshi | Add extra vehicle | **NEW** ✅ |
+| 2 | POST | `/api/munshi/assignments/:id/add-vehicle` | Munshi, OM, Admin | Same as #1 | **NEW** ✅ |
+| 3 | GET | `/api/logistics/:id/related` | OM, Admin, Munshi | Get full chain | **NEW** ✅ |
+| 4 | GET | `/api/operational-manager/plots?stage=All` | OM, Admin | logistics is array now | **MODIFIED** ✅ |
+| 5 | GET | `/api/munshi/dashboard` | Munshi | Includes overflows | Auto ✅ |
+| 6 | GET | `/api/munshi/assignments` | Munshi | Includes overflows | Auto ✅ |
+| 7 | POST | `/api/munshi/packing/:id` | Munshi | Submit packing per vehicle | Auto ✅ |
+| 8 | GET | `/api/munshi/assignments/:id/packing` | Munshi | Get packing per vehicle | Auto ✅ |
+| 9 | GET | `/api/driver/dashboard` | Driver | Extra driver sees overflow | Auto ✅ |
+| 10 | GET | `/api/driver/assignments` | Driver | Extra driver sees overflow | Auto ✅ |
+| 11 | POST | `/api/driver/trips/:id` | Driver | Trip per vehicle | Auto ✅ |
+| 12 | PATCH | `/api/driver/assignments/:id/status` | Driver | Transit status per vehicle | Auto ✅ |
+| 13 | POST | `/api/operational-manager/assignments/:id/approve` | OM | Approve per vehicle | Auto ✅ |
+| 14 | POST | `/api/operational-manager/assignments/:id/reject` | OM | Reject per vehicle | Auto ✅ |
+| 15 | GET | `/api/logistics/:id` | OM, Admin | Single assignment detail | Auto ✅ |
+| 16 | GET | `/api/logistics` | OM, Admin | All assignments | Auto ✅ |
+| 17 | POST | `/api/munshi/assignments/:id/rollover` | Munshi | Extra day for any record | Auto ✅ |

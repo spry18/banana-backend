@@ -70,6 +70,10 @@ const logisticsSchema = new mongoose.Schema(
             ref: 'Logistics',
             default: null,
         },
+        isOverflow: {
+            type: Boolean,
+            default: false,
+        },
         teamName: {
             type: String,
             default: null,

@@ -101,27 +101,18 @@ const getOmPlots = async (req, res) => {
                 .populate('vehicleId', 'vehicleNumber')
                 .lean();
 
-            // An enquiry can have multiple Logistics records (original + rollovers).
-            // Use status priority so APPROVED/COMPLETED always shows over CANCELLED.
-            const statusPriority = { 'APPROVED': 6, 'COMPLETED': 5, 'IN_PROGRESS': 4, 'PENDING': 3, 'REJECTED': 2, 'CANCELLED': 1 };
+            // An enquiry can have multiple Logistics records (original + rollovers + overflows).
+            // Return ALL records grouped by enquiry so the frontend can display the full picture.
             const logisticsMap = {};
             logisticsRecords.forEach(l => {
                 const key = l.enquiryId.toString();
-                const existing = logisticsMap[key];
-                if (!existing) {
-                    logisticsMap[key] = l;
-                } else {
-                    const newPriority = statusPriority[l.assignmentStatus] || 0;
-                    const oldPriority = statusPriority[existing.assignmentStatus] || 0;
-                    if (newPriority > oldPriority) {
-                        logisticsMap[key] = l;
-                    }
-                }
+                if (!logisticsMap[key]) logisticsMap[key] = [];
+                logisticsMap[key].push(l);
             });
 
             const data = enquiries.map(e => ({
                 ...e,
-                logistics: logisticsMap[e._id.toString()] || null,
+                logistics: logisticsMap[e._id.toString()] || [],
             }));
 
             return res.status(200).json({

@@ -765,6 +765,71 @@
                         "description": "Admin can roll over any Logistics assignment to the next harvest day. Clones same Munshi, Driver, Pickup Driver, Vehicle with fresh PENDING status. isRollover=true, parentAssignmentId links to the original.\n\nReplace {{enquiryId}} with the actual Logistics assignment _id (not enquiry _id)."
                     },
                     "response": []
+                },
+                {
+                    "name": "POST Add Extra Vehicle (Overflow)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"driverId\": \"REPLACE_WITH_EXTRA_DRIVER_ID\",\n  \"munshiId\": \"OPTIONAL_DIFFERENT_MUNSHI_ID\",\n  \"companyId\": \"OPTIONAL_OVERRIDE_COMPANY_ID\",\n  \"purchaseRate\": 918,\n  \"totalBoxes\": 200,\n  \"priority\": \"HIGH\",\n  \"lightInTime\": \"05:00 AM\",\n  \"lightOutTime\": \"07:00 AM\",\n  \"teamName\": \"Overflow Crew-01\",\n  \"scheduledDate\": \"2026-04-30\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/logistics/REPLACE_WITH_ASSIGNMENT_ID/add-vehicle",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "logistics",
+                                "REPLACE_WITH_ASSIGNMENT_ID",
+                                "add-vehicle"
+                            ]
+                        },
+                        "description": "Add an extra vehicle to an existing assignment when the original vehicle is full. Creates a new overflow Logistics record with isOverflow=true, parentAssignmentId pointing to the original.\n\nRequired: driverId\nOptional (defaults to original assignment values if omitted): munshiId, companyId, purchaseRate, totalBoxes, priority, lightInTime, lightOutTime, teamName, scheduledDate\n\nWhatsApp notifications sent to: extra driver, assigned munshi, and original driver.\n\nAccess: Admin, Operational Manager, Munshi.\nAlso available via: POST /api/munshi/assignments/:id/add-vehicle"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET Related Assignments (Original + Rollovers + Overflows)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/logistics/REPLACE_WITH_ASSIGNMENT_ID/related",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "logistics",
+                                "REPLACE_WITH_ASSIGNMENT_ID",
+                                "related"
+                            ]
+                        },
+                        "description": "Returns the full chain for any assignment: the root original assignment, all rollovers (extra days), and all overflows (extra vehicles). Walks up parentAssignmentId to find the root, then fetches all descendants.\n\nResponse: { original, rollovers[], overflows[], totalRelated }"
+                    },
+                    "response": []
                 }
             ]
         },

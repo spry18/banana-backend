@@ -226,8 +226,8 @@ const submitPackingReport = async (req, res) => {
             assignment.assignmentStatus = 'CANCELLED';
             await assignment.save();
 
-            // Only cancel the enquiry if this is the ORIGINAL assignment (not a rollover day)
-            if (!assignment.isRollover && assignment.enquiryId) {
+            // Only cancel the enquiry if this is the ORIGINAL assignment (not a rollover or overflow)
+            if (!assignment.isRollover && !assignment.isOverflow && assignment.enquiryId) {
                 await Enquiry.findByIdAndUpdate(assignment.enquiryId._id || assignment.enquiryId, {
                     status: 'CANCELLED',
                 });

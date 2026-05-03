@@ -1,0 +1,123 @@
+Complete Changes Summary — Extra Vehicle & Extra Day Feature
+What Was Done
+Two frontend improvement requests were implemented:
+
+Extra Vehicle (Overflow) — When a vehicle is full, OM/Munshi can add an extra vehicle with full assignment details
+Extra Day (Rollover) API Audit — Verified existing APIs & improved OM Plots to return all logistics records
+Files Modified (6 Files)
+1. 
+logistics.model.js
+Change: Added isOverflow boolean field to schema
+
+diff
++   isOverflow: {
++       type: Boolean,
++       default: false,
++   },
+NOTE
+
+Works alongside existing isRollover and parentAssignmentId fields. Overflow = extra vehicle, Rollover = extra day.
+
+2. 
+logistics.controller.js
+Change: Added 2 new controller functions
+
+addExtraVehicle — Creates overflow assignment
+Route: POST /api/logistics/:id/add-vehicle
+Access: Admin, Operational Manager, Munshi
+Required field: driverId
+Optional fields (fallback to original if not sent):
+Field	Type	Example
+munshiId	ObjectId	Different munshi for extra vehicle
+companyId	ObjectId	Different company
+purchaseRate	Number	918
+totalBoxes	Number	200
+priority	String	HIGH / MEDIUM / LOW
+lightInTime	String	"05:00 AM"
+lightOutTime	String	"07:00 AM"
+teamName	String	"Overflow Crew-01"
+scheduledDate	Date	"2026-04-30"
+Creates: New Logistics record with isOverflow: true, parentAssignmentId → original
+
+Sends 3 WhatsApp notifications:
+
+Extra driver → "You have been assigned as extra vehicle..."
+Munshi (could be different) → "An extra vehicle driven by X added..."
+Original driver → "An extra vehicle added for support..."
+Validations:
+
+Original assignment must exist and NOT be COMPLETED/CANCELLED/APPROVED
+Driver must exist and have a vehicle linked
+Extra driver cannot be the same as original driver
+If munshiId provided, validates munshi exists
+getRelatedAssignments — Returns full assignment chain
+Route: GET /api/logistics/:id/related
+Access: Admin, Operational Manager, Munshi
+Response:
+json
+{
+    "original": { ... },
+    "rollovers": [ ... ],
+    "overflows": [ ... ],
+    "totalRelated": 3
+}
+Walks up parentAssignmentId chain to find root, then fetches all children + grandchildren
+3. 
+notification.service.js
+Change: Added 3 new WhatsApp notification methods
+
+Method	Sent To	Message
+sendExtraVehicleAlert(mobile, name, vehicleNo, farmLocation)	Extra Driver	"You have been assigned as extra vehicle (MH-12-XX-1234) for pickup at Farm Location"
+sendExtraVehicleNotifyMunshi(mobile, munshiName, vehicleNo, driverName)	Munshi	"An extra vehicle (MH-12-XX-1234) driven by Driver Name has been added"
+sendExtraVehicleNotifyOriginalDriver(mobile, driverName, vehicleNo)	Original Driver	"An extra vehicle (MH-12-XX-1234) has been added for support"
+4. 
+logistics.routes.js
+Change: Added 2 new routes
+
+POST  /api/logistics/:id/add-vehicle  → addExtraVehicle    (Admin, OM, Munshi)
+GET   /api/logistics/:id/related      → getRelatedAssignments (Admin, OM, Munshi)
+5. 
+munshi.routes.js
+Change: Added Munshi-facing add-vehicle route
+
+POST  /api/munshi/assignments/:id/add-vehicle  → addExtraVehicle (Munshi, Admin, OM)
+NOTE
+
+Same controller, two route paths. Munshi can use /api/munshi/assignments/:id/add-vehicle, OM can use /api/logistics/:id/add-vehicle.
+
+6. 
+om.controller.js
+Change: OM Plots "All" stage — logistics field changed from single object to array
+
+diff
+// BEFORE
+-logistics: singleBestRecord || null
+ // AFTER
++logistics: [allRecords] || []
+WARNING
+
+Breaking Change for Frontend: GET /api/operational-manager/plots?stage=All now returns logistics as an array instead of a single object. Frontend must update to iterate over logistics[].
+
+7. 
+Admin_Postman_Collection.json
+Change: Added 2 new requests in "3. Logistics" folder
+
+POST Add Extra Vehicle (Overflow)
+GET Related Assignments (Original + Rollovers + Overflows)
+Complete API Reference
+New APIs
+#	Method	Endpoint	Access	Purpose
+1	POST	/api/logistics/:id/add-vehicle	Admin, OM, Munshi	Add extra vehicle to assignment
+2	POST	/api/munshi/assignments/:id/add-vehicle	Munshi, Admin, OM	Same as #1 (Munshi namespace)
+3	GET	/api/logistics/:id/related	Admin, OM, Munshi	Get original + rollovers + overflows chain
+Modified APIs
+#	Method	Endpoint	What Changed
+4	GET	/api/operational-manager/plots?stage=All	logistics is now an array [] instead of single object
+Existing APIs (No Changes, Auto-Include Overflows)
+#	Method	Endpoint	Why It Works
+5	GET	/api/munshi/dashboard	Filters by munshiId — overflow uses same/different munshi
+6	GET	/api/munshi/assignments	Same munshiId filter
+7	GET	/api/driver/dashboard	Filters by driverId — extra driver sees their assignment
+8	GET	/api/logistics	Returns ALL logistics records
+9	GET	/api/logistics/:id	Works for any single record (original or overflow)
+10	POST	/api/munshi/assignments/:id/rollover	Existing rollover (extra day) — unchanged
