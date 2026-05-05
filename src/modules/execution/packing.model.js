@@ -68,9 +68,6 @@ const packingSchema = new mongoose.Schema(
             type: Number,
             required: true,
         },
-        wastageReason: {
-            type: String,
-        },
         remarks: {
             type: String,
             default: '',

@@ -203,13 +203,21 @@ const submitPackingReport = async (req, res) => {
             box16Kg = 0,
             totalBoxes,
             wastageKg = 0,
-            wastageReason,
             remarks,
             lineNo,
             teamName,
             brandId,
             cancellationReason,
         } = req.body;
+
+        // ── 24-HOUR EDIT GUARD ──
+        // Packing can only be submitted within 24 hours of assignment creation
+        const hoursSinceCreation = (Date.now() - new Date(assignment.createdAt).getTime()) / (1000 * 60 * 60);
+        if (hoursSinceCreation > 24) {
+            return res.status(403).json({
+                message: 'Packing entry can only be submitted within 24 hours of assignment creation',
+            });
+        }
 
         // ── CANCELLATION FLOW ──
         if (cancellationReason) {
@@ -251,11 +259,7 @@ const submitPackingReport = async (req, res) => {
             });
         }
 
-        // Wastage validation
-        if (Number(wastageKg) > 0 && !wastageReason) {
-            return res.status(400).json({ message: 'wastageReason is required when wastageKg > 0' });
-        }
-
+        // Wastage validation removed — wastageReason no longer required
         // Handle uploaded photos
         const photos = req.files ? req.files.map(f => `/uploads/${f.filename}`) : [];
 
@@ -276,7 +280,6 @@ const submitPackingReport = async (req, res) => {
             box16Kg,
             totalBoxes,
             wastageKg,
-            wastageReason,
             remarks: remarks || '',
             lineNo: lineNo || '',
             teamName: teamName || '',
@@ -521,7 +524,6 @@ const updatePackingReport = async (req, res) => {
             box16Kg = 0,
             totalBoxes,
             wastageKg = 0,
-            wastageReason,
             remarks,
             lineNo,
             teamName,
@@ -538,10 +540,7 @@ const updatePackingReport = async (req, res) => {
             });
         }
 
-        // Wastage validation
-        if (Number(wastageKg) > 0 && !wastageReason) {
-            return res.status(400).json({ message: 'wastageReason is required when wastageKg > 0' });
-        }
+        // Wastage validation removed — wastageReason no longer required
 
         // Handle new photos (replace old ones if provided)
         let photos = packing.photos;
@@ -564,7 +563,6 @@ const updatePackingReport = async (req, res) => {
         packing.box16Kg = box16Kg;
         packing.totalBoxes = totalBoxes;
         packing.wastageKg = wastageKg;
-        packing.wastageReason = wastageReason;
         packing.remarks = remarks || '';
         packing.lineNo = lineNo || '';
         packing.teamName = teamName || '';

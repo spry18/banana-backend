@@ -496,6 +496,77 @@ const getMissedPlots = async (req, res) => {
         res.status(500).json({ message: 'Server error while fetching missed plots report' });
     }
 };
+// @desc    Get enquiry history for a specific farmer
+// @route   GET /api/enquiries/farmer-history
+// @access  Private (Admin, Field Owner)
+// @query   ?farmerMobile=9999999999 OR ?farmerName=Ramesh
+const getFarmerEnquiryHistory = async (req, res) => {
+    try {
+        const { farmerMobile, farmerName, page = 1, limit = 20 } = req.query;
+        const skip = (Number(page) - 1) * Number(limit);
+
+        if (!farmerMobile && !farmerName) {
+            return res.status(400).json({ message: 'Provide at least farmerMobile or farmerName as a query param' });
+        }
+
+        const query = { status: { $in: ['SELECTED', 'REJECTED'] } };
+
+        if (farmerMobile) {
+            query.farmerMobile = farmerMobile.trim();
+        } else if (farmerName) {
+            const regex = new RegExp(farmerName.trim(), 'i');
+            query.$or = [
+                { farmerFirstName: regex },
+                { farmerLastName: regex },
+            ];
+        }
+
+        const [enquiries, total] = await Promise.all([
+            Enquiry.find(query)
+                .sort({ updatedAt: -1 })
+                .skip(skip)
+                .limit(Number(limit))
+                .select('enquiryId farmerFirstName farmerLastName farmerMobile status location updatedAt')
+                .lean(),
+            Enquiry.countDocuments(query),
+        ]);
+
+        // For REJECTED enquiries, pull the rejection reason from the linked Inspection record
+        const Inspection = require('../inspections/inspection.model');
+        const data = await Promise.all(
+            enquiries.map(async (enq) => {
+                const entry = {
+                    enquiryId:   enq.enquiryId,
+                    date:        enq.updatedAt,
+                    farmerName:  `${enq.farmerFirstName} ${enq.farmerLastName}`.trim(),
+                    mobileNo:    enq.farmerMobile,
+                    location:    enq.location,
+                    fieldStatus: enq.status,  // 'SELECTED' | 'REJECTED'
+                };
+
+                if (enq.status === 'REJECTED') {
+                    const inspection = await Inspection.findOne({ enquiryId: enq._id })
+                        .select('generalNotes decision')
+                        .lean();
+                    entry.rejectionReason = inspection?.generalNotes || null;
+                }
+
+                return entry;
+            })
+        );
+
+        res.status(200).json({
+            total,
+            page: Number(page),
+            pages: Math.ceil(total / Number(limit)),
+            data,
+        });
+    } catch (error) {
+        console.error('Error fetching farmer enquiry history:', error);
+        res.status(500).json({ message: 'Server error while fetching farmer enquiry history' });
+    }
+};
+
 
 module.exports = {
     createEnquiry,
@@ -507,4 +578,5 @@ module.exports = {
     foRescheduleEnquiry,
     runSlaTimeoutCheck,
     getMissedPlots,
+    getFarmerEnquiryHistory,
 };

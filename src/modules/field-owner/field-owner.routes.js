@@ -5,6 +5,8 @@ const {
     getFODashboard,
     getFOPlots,
     getSelectorsPerformance,
+    getSelectorsPerformanceWeekly,
+    getSelectorsPerformanceMonthly,
     getSelectorMileage,
     getFOSelectors,
 } = require('./field-owner.controller');
@@ -17,6 +19,12 @@ router.get('/dashboard', getFODashboard);
 
 // GET /api/field-owner/plots?status=Missed|Rescheduled|SELECTED|REJECTED&location=&search=&page=&limit=
 router.get('/plots', getFOPlots);
+
+// GET /api/field-owner/selectors-performance/weekly
+router.get('/selectors-performance/weekly', getSelectorsPerformanceWeekly);
+
+// GET /api/field-owner/selectors-performance/monthly
+router.get('/selectors-performance/monthly', getSelectorsPerformanceMonthly);
 
 // GET /api/field-owner/selectors-performance?startDate=&endDate=
 router.get('/selectors-performance', getSelectorsPerformance);

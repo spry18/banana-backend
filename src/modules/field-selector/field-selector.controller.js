@@ -13,7 +13,6 @@ const getDashboard = async (req, res) => {
 
         // Run all aggregation counters in parallel for performance
         const [
-            total,
             assigned,
             selected,
             rejected,
@@ -21,9 +20,6 @@ const getDashboard = async (req, res) => {
             visited,
             recentActivity,
         ] = await Promise.all([
-            // All enquiries ever linked to this selector
-            Enquiry.countDocuments(baseFilter),
-
             // Assigned = still in PENDING (not yet inspected)
             Enquiry.countDocuments({ ...baseFilter, status: 'PENDING' }),
 
@@ -56,7 +52,6 @@ const getDashboard = async (req, res) => {
 
         res.status(200).json({
             kpis: {
-                total,
                 assigned,
                 selected,
                 rejected,

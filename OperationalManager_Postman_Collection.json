@@ -724,7 +724,7 @@
                                     "key": "remark",
                                     "value": "Fuel for Solapur run",
                                     "type": "text",
-                                    "description": "Optional reason/notes"
+                                    "description": "OPTIONAL — reason/notes. Can be omitted entirely from the request body."
                                 },
                                 {
                                     "key": "assignmentId",

@@ -643,13 +643,7 @@
                                     "key": "wastageKg",
                                     "value": "8",
                                     "type": "text",
-                                    "description": "Wastage in kg"
-                                },
-                                {
-                                    "key": "wastageReason",
-                                    "value": "Wind scarring on lower hands — discarded at line",
-                                    "type": "text",
-                                    "description": "Required when wastageKg > 0"
+                                    "description": "Wastage in kg (optional, defaults to 0)"
                                 },
                                 {
                                     "key": "remarks",
@@ -701,7 +695,7 @@
                                 "{{assignmentId}}"
                             ]
                         },
-                        "description": "Submits a completed packing report for an assignment.\n\nSide effects:\n- Packing status → SUBMITTED\n- Logistics assignmentStatus → COMPLETED (awaiting OM packing approve/reject)\n- Enquiry stays IN_PROGRESS until OM **Approve Packing** (then Enquiry → COMPLETED)\n- WhatsApp packing summary sent to farmer\n\nVALIDATION:\n- totalBoxes must equal the sum of all 7 box types (here 312 to match OM dispatch)\n- wastageReason required if wastageKg > 0\n- Prevents duplicate submissions"
+                        "description": "Submits a completed packing report for an assignment.\n\n**⏱ 24-HOUR GUARD:** Submission is only allowed within 24 hours of assignment creation. Returns 403 after that window.\n\nSide effects:\n- Packing status → SUBMITTED\n- Logistics assignmentStatus → COMPLETED (awaiting OM packing approve/reject)\n- Enquiry stays IN_PROGRESS until OM **Approve Packing** (then Enquiry → COMPLETED)\n- WhatsApp packing summary sent to farmer\n\nVALIDATION:\n- totalBoxes must equal the sum of all box types\n- `wastageReason` is no longer required (removed 2026-05-05)\n- Prevents duplicate submissions"
                     }
                 },
                 {
@@ -760,7 +754,7 @@
                                 "packing"
                             ]
                         },
-                        "description": "NEW — Fetches an existing packing report (especially after OM rejection).\n\nReturns the full packing document including:\n- All box counts (box4H, box5H, etc.)\n- Photos array (file paths)\n- status ('SUBMITTED', 'REJECTED', etc.)\n- **omRemark** — The OM's rejection comment (if status = REJECTED)\n- Wastage details (wastageKg, wastageReason)\n- Brand, team, line info\n\nUsed by the mobile app to pre-fill the Packing form when resubmitting after rejection."
+                        "description": "Fetches an existing packing report (especially after OM rejection).\n\nReturns the full packing document including:\n- All box counts (box4H, box5H, etc.)\n- Photos array (file paths)\n- status ('SUBMITTED', 'REJECTED', etc.)\n- **omRemark** — The OM's rejection comment (if status = REJECTED)\n- Wastage details (wastageKg)\n- Brand, team, line info\n\nUsed by the mobile app to pre-fill the Packing form when resubmitting after rejection."
                     }
                 },
                 {
@@ -799,12 +793,6 @@
                                     "value": "6",
                                     "type": "text",
                                     "description": "Corrected wastage in kg"
-                                },
-                                {
-                                    "key": "wastageReason",
-                                    "value": "Recount discard — bruised hands removed",
-                                    "type": "text",
-                                    "description": "Corrected wastage reason (required if wastageKg > 0)"
                                 },
                                 {
                                     "key": "remarks",
@@ -851,7 +839,7 @@
                                 "packing"
                             ]
                         },
-                        "description": "NEW — Resubmits a rejected packing report with corrected box counts and optional new photos.\n\n## Prerequisites:\n- Assignment must have Packing status = REJECTED\n- Assignment must belong to the logged-in Munshi\n\n## Side Effects:\n- Packing status → SUBMITTED (back to submittable state)\n- Packing.omRemark → null (clears the OM's rejection comment)\n- Logistics.assignmentStatus → COMPLETED (assignment marked as done)\n\n## Validation:\n- totalBoxes must equal sum of all 7 box types\n- wastageReason required if wastageKg > 0\n- If new photos provided, they replace old ones; otherwise photos remain unchanged\n\nTest to ensure OM can then review the resubmitted report."
+                        "description": "Resubmits a rejected packing report with corrected box counts and optional new photos.\n\n## Prerequisites:\n- Assignment must have Packing status = REJECTED\n- Assignment must belong to the logged-in Munshi\n\n## Side Effects:\n- Packing status → SUBMITTED (back to submittable state)\n- Packing.omRemark → null (clears the OM's rejection comment)\n- Logistics.assignmentStatus → COMPLETED (assignment marked as done)\n\n## Validation:\n- totalBoxes must equal sum of all box types\n- `wastageReason` is no longer required (removed 2026-05-05)\n- If new photos provided, they replace old ones; otherwise photos remain unchanged\n\nTest to ensure OM can then review the resubmitted report."
                     }
                 },
                 {

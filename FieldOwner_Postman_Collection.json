@@ -167,7 +167,7 @@
                                 "dashboard"
                             ]
                         },
-                        "description": "Returns 6 KPIs (total, selected, rejected, missed, futureSelection, fixedRate) scoped to the logged-in FO + last 5 recent actionable plots (Selected, Rate Fixed, Assigned, Completed) with rich populated fields (generation, companyName, packing, volume, recovery)."
+                        "description": "Returns 6 KPIs (total, selected, rejected, missed, futureSelection, fixedRate) scoped to the logged-in FO.\n\n## recentActivity (last 5 items)\nNow includes SELECTED, RESCHEDULED, and ASSIGNED enquiries.\n\n**New fields per activity item:**\n- `isRescheduled` (bool) — highlight in orange on the frontend\n- `scheduledDate` — original visit date\n- `rescheduleDate` — new date (only when isRescheduled = true)\n- `editableUntil` + `isEditable` — **only present when status = ASSIGNED** (24h edit window from creation)\n\n**Sort order:** RESCHEDULED items appear first, then by updatedAt descending."
                     }
                 }
             ]
@@ -349,6 +349,56 @@
                             ]
                         },
                         "description": "Returns all enquiries where missedAssignments is not empty. Each entry includes the selector(s) who failed to visit within 24h (firstName, lastName, mobileNo), sorted by updatedAt descending."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET Farmer Enquiry History",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries/farmer-history?farmerMobile=9876543210",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries",
+                                "farmer-history"
+                            ],
+                            "query": [
+                                {
+                                    "key": "farmerMobile",
+                                    "value": "9876543210",
+                                    "description": "10-digit mobile number — search by exact mobile. Use this OR farmerName, not both."
+                                },
+                                {
+                                    "key": "farmerName",
+                                    "value": "Ramesh",
+                                    "description": "Case-insensitive partial name search (first or last). Use this OR farmerMobile.",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1",
+                                    "description": "Page number (default 1)",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20",
+                                    "description": "Items per page (default 20)",
+                                    "disabled": true
+                                }
+                            ]
+                        },
+                        "description": "NEW — Fetches all past SELECTED and REJECTED enquiry records for a specific farmer.\n\n**Use case:** Before creating a new enquiry, the FO can look up whether this farmer has been visited before and why the plot was rejected.\n\n**Query params (at least one required):**\n- `farmerMobile` — exact 10-digit match (preferred for precision)\n- `farmerName` — case-insensitive partial match on first OR last name\n\n**Response per item:**\n```json\n{\n  \"enquiryId\": \"ENQ-001\",\n  \"date\": \"2026-04-20T10:00:00.000Z\",\n  \"farmerName\": \"Ramesh Patil\",\n  \"mobileNo\": \"9876543210\",\n  \"location\": \"Nashik\",\n  \"fieldStatus\": \"REJECTED\",\n  \"rejectionReason\": \"High chelling — plot not viable\" // only present on REJECTED\n}\n```\n\nAccess: Admin, Field Owner."
                     },
                     "response": []
                 }
@@ -660,6 +710,56 @@
                             ]
                         },
                         "description": "Returns all selectors assigned to this FO's enquiries with: totalKm, totalDays, visitedPlots, approvedPlots, rejectedPlots."
+                    }
+                },
+                {
+                    "name": "GET Selectors Performance (Weekly — this Mon–Sun)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/selectors-performance/weekly",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "selectors-performance",
+                                "weekly"
+                            ]
+                        },
+                        "description": "Returns selector performance aggregated for the **current ISO week** (Monday 00:00 → Sunday 23:59, auto-calculated by the backend). No query params required.\n\nResponse includes `period: 'weekly'`, `startDate`, `endDate`, and the `data[]` array with the same shape as the custom date endpoint."
+                    }
+                },
+                {
+                    "name": "GET Selectors Performance (Monthly — this calendar month)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/selectors-performance/monthly",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "selectors-performance",
+                                "monthly"
+                            ]
+                        },
+                        "description": "Returns selector performance aggregated for the **current calendar month** (1st 00:00 → last day 23:59, auto-calculated by the backend). No query params required.\n\nResponse includes `period: 'monthly'`, `startDate`, `endDate`, and the `data[]` array with the same shape as the custom date endpoint."
                     }
                 },
                 {

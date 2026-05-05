@@ -304,7 +304,7 @@
                                 "dashboard"
                             ]
                         },
-                        "description": "Returns a scoped dashboard for the logged-in selector only.\n\nResponse shape:\n```json\n{\n  \"kpis\": {\n    \"total\": 42,\n    \"assigned\": 10,\n    \"selected\": 18,\n    \"rejected\": 7,\n    \"missed\": 3,\n    \"visited\": 25\n  },\n  \"recentActivity\": [ ... last 5 enquiries ... ]\n}\n```"
+                        "description": "Returns a scoped dashboard for the logged-in selector only.\n\n**Note (2026-05-05):** `total` has been removed from the KPI response — it was redundant.\n\nResponse shape:\n```json\n{\n  \"kpis\": {\n    \"assigned\": 10,\n    \"selected\": 18,\n    \"rejected\": 7,\n    \"missed\": 3,\n    \"visited\": 25\n  },\n  \"recentActivity\": [ ... last 5 enquiries ... ]\n}\n```"
                     },
                     "response": []
                 },
