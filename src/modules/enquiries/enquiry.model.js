@@ -31,7 +31,7 @@ const enquirySchema = new mongoose.Schema(
         plantCount: {
             type: Number,
             required: true,
-            min: [1000, 'Plant count must be at least 1000.'],
+            min: [1, 'Plant count must be at least 1.'],
         },
         generation: {
             type: mongoose.Schema.Types.ObjectId,
