@@ -33,7 +33,7 @@ const createEnquiry = async (req, res) => {
             return res.status(404).json({ message: 'Assigned Selector not found with the provided ID' });
         }
 
-        if (agentId) {
+        if (agentId && agentId.trim() !== "") {
             const agent = await Agent.findById(agentId);
             if (!agent) {
                 return res.status(404).json({ message: 'Agent not found with the provided ID' });
@@ -58,7 +58,7 @@ const createEnquiry = async (req, res) => {
             subLocation,
             plantCount,
             generation,
-            agentId,
+            agentId: (agentId && agentId.trim() !== "") ? agentId : null,
             agentAttached: agentAttached ?? false,
             visitPriority: visitPriority || 'Medium',
             fieldOwnerId,
@@ -158,18 +158,22 @@ const updateEnquiry = async (req, res) => {
         }
 
         // If updating selector or agent, validate their existence
-        if (req.body.assignedSelectorId) {
+        if (req.body.assignedSelectorId && req.body.assignedSelectorId.trim() !== "") {
             const selector = await User.findById(req.body.assignedSelectorId);
             if (!selector) {
                 return res.status(404).json({ message: 'Assigned Selector not found with the provided ID' });
             }
+        } else if (req.body.assignedSelectorId === "") {
+            req.body.assignedSelectorId = null;
         }
 
-        if (req.body.agentId) {
+        if (req.body.agentId && req.body.agentId.trim() !== "") {
             const agent = await Agent.findById(req.body.agentId);
             if (!agent) {
                 return res.status(404).json({ message: 'Agent not found with the provided ID' });
             }
+        } else if (req.body.agentId === "") {
+            req.body.agentId = null;
         }
 
         // We should ensure we don't accidentally overwrite system-controlled fields if not allowed, 
