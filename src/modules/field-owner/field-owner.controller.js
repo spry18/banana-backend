@@ -75,11 +75,9 @@ const getFODashboard = async (req, res) => {
                     recovery: inspection ? inspection.recoveryPercent : '-',
                     updatedAt: enq.updatedAt,
                 };
-                // Expose 24h edit window only for ASSIGNED fields
-                if (enq.status === 'ASSIGNED') {
-                    activity.editableUntil = enq.editableUntil || null;
-                    activity.isEditable = enq.editableUntil ? new Date() < new Date(enq.editableUntil) : false;
-                }
+                // Show edit window state for all enquiries (FO can edit within 24h of creation/reschedule)
+                activity.editableUntil = enq.editableUntil || null;
+                activity.isEditable = enq.editableUntil ? new Date() < new Date(enq.editableUntil) : true;
                 return activity;
             })
         );
@@ -180,7 +178,7 @@ const _buildSelectorsPerformance = async (startDate, endDate) => {
     if (startDate || endDate) {
         logMatch.date = {};
         if (startDate) logMatch.date.$gte = new Date(startDate);
-        if (endDate)   logMatch.date.$lte = new Date(endDate);
+        if (endDate) logMatch.date.$lte = new Date(endDate);
     }
     const kmStats = await DailyLog.aggregate([
         { $match: logMatch },
@@ -192,7 +190,7 @@ const _buildSelectorsPerformance = async (startDate, endDate) => {
     if (startDate || endDate) {
         inspMatch.createdAt = {};
         if (startDate) inspMatch.createdAt.$gte = new Date(startDate);
-        if (endDate)   inspMatch.createdAt.$lte = new Date(endDate);
+        if (endDate) inspMatch.createdAt.$lte = new Date(endDate);
     }
     const plotStats = await Inspection.aggregate([
         { $match: inspMatch },
@@ -206,22 +204,22 @@ const _buildSelectorsPerformance = async (startDate, endDate) => {
         },
     ]);
 
-    const kmMap   = Object.fromEntries(kmStats.map((s) => [s._id.toString(), s]));
+    const kmMap = Object.fromEntries(kmStats.map((s) => [s._id.toString(), s]));
     const plotMap = Object.fromEntries(plotStats.map((s) => [s._id.toString(), s]));
     const selectors = await User.find({ _id: { $in: selectorIds } }).select('firstName lastName mobileNo role');
 
     const data = selectors.map((user) => {
         const id = user._id.toString();
         return {
-            selectorId:    user._id,
-            name:          `${user.firstName} ${user.lastName}`,
-            mobileNo:      user.mobileNo,
-            role:          user.role,
-            totalKm:       kmMap[id]?.totalKm    || 0,
-            totalDays:     kmMap[id]?.totalDays  || 0,
-            visitedPlots:  plotMap[id]?.visitedPlots || 0,
-            approvedPlots: plotMap[id]?.approved     || 0,
-            rejectedPlots: plotMap[id]?.rejected     || 0,
+            selectorId: user._id,
+            name: `${user.firstName} ${user.lastName}`,
+            mobileNo: user.mobileNo,
+            role: user.role,
+            totalKm: kmMap[id]?.totalKm || 0,
+            totalDays: kmMap[id]?.totalDays || 0,
+            visitedPlots: plotMap[id]?.visitedPlots || 0,
+            approvedPlots: plotMap[id]?.approved || 0,
+            rejectedPlots: plotMap[id]?.rejected || 0,
         };
     });
     data.sort((a, b) => b.visitedPlots - a.visitedPlots);
@@ -261,7 +259,7 @@ const getSelectorsPerformanceWeekly = async (req, res) => {
         res.json({
             period: 'weekly',
             startDate: monday.toISOString().slice(0, 10),
-            endDate:   sunday.toISOString().slice(0, 10),
+            endDate: sunday.toISOString().slice(0, 10),
             data,
         });
     } catch (error) {
@@ -277,13 +275,13 @@ const getSelectorsPerformanceMonthly = async (req, res) => {
     try {
         const now = new Date();
         const firstDay = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-        const lastDay  = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
         const data = await _buildSelectorsPerformance(firstDay, lastDay);
         res.json({
             period: 'monthly',
             startDate: firstDay.toISOString().slice(0, 10),
-            endDate:   lastDay.toISOString().slice(0, 10),
+            endDate: lastDay.toISOString().slice(0, 10),
             data,
         });
     } catch (error) {

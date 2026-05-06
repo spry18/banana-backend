@@ -151,9 +151,10 @@ const updateEnquiry = async (req, res) => {
             return res.status(404).json({ message: 'Enquiry not found' });
         }
 
-        // Check if editable window has expired
-        if (new Date() > enquiry.editableUntil) {
-            return res.status(403).json({ message: 'Edit window of 24 hours has expired.' });
+        // 24-hour edit guard: enquiry is locked after editableUntil expires
+        // The clock is reset every time the enquiry is rescheduled
+        if (enquiry.editableUntil && new Date() > enquiry.editableUntil) {
+            return res.status(403).json({ message: 'Edit window of 24 hours has expired. Reschedule the enquiry to unlock editing.' });
         }
 
         // If updating selector or agent, validate their existence
@@ -305,6 +306,8 @@ const rescheduleEnquiry = async (req, res) => {
         const before = { scheduledDate: enquiry.scheduledDate, scheduledTime: enquiry.scheduledTime };
         enquiry.scheduledDate = new Date(scheduledDate);
         enquiry.scheduledTime = scheduledTime || null;
+        // Reset the 24-hour edit window so FO/Admin can edit again after admin reschedule
+        enquiry.editableUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
         await enquiry.save();
 
         await logSystemAction(
@@ -365,15 +368,15 @@ const fixRate = async (req, res) => {
             status: enquiry.status,
         };
 
-        enquiry.companyId      = companyId;
-        enquiry.purchaseRate   = purchaseRate;
-        enquiry.remarks        = remarks || '';
-        enquiry.status         = 'RATE_FIXED';
+        enquiry.companyId = companyId;
+        enquiry.purchaseRate = purchaseRate;
+        enquiry.remarks = remarks || '';
+        enquiry.status = 'RATE_FIXED';
         // Record which FO actually closed the deal (Global Shared Pool model)
-        enquiry.rateFixedBy    = req.user._id;
+        enquiry.rateFixedBy = req.user._id;
 
         // Optional planning fields — set if provided, leave existing value if not
-        if (packingType)    enquiry.packingType    = packingType;
+        if (packingType) enquiry.packingType = packingType;
         if (estimatedBoxes) enquiry.estimatedBoxes = estimatedBoxes;
 
         await enquiry.save();
@@ -431,6 +434,8 @@ const foRescheduleEnquiry = async (req, res) => {
         enquiry.status = 'RESCHEDULED';
         enquiry.rescheduleDate = new Date(rescheduleDate);
         enquiry.assignedSelectorId = null;
+        // Reset the 24-hour edit window so FO/Admin can edit again after reschedule
+        enquiry.editableUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
         await enquiry.save();
 
@@ -536,11 +541,11 @@ const getFarmerEnquiryHistory = async (req, res) => {
         const data = await Promise.all(
             enquiries.map(async (enq) => {
                 const entry = {
-                    enquiryId:   enq.enquiryId,
-                    date:        enq.updatedAt,
-                    farmerName:  `${enq.farmerFirstName} ${enq.farmerLastName}`.trim(),
-                    mobileNo:    enq.farmerMobile,
-                    location:    enq.location,
+                    enquiryId: enq.enquiryId,
+                    date: enq.updatedAt,
+                    farmerName: `${enq.farmerFirstName} ${enq.farmerLastName}`.trim(),
+                    mobileNo: enq.farmerMobile,
+                    location: enq.location,
                     fieldStatus: enq.status,  // 'SELECTED' | 'REJECTED'
                 };
 

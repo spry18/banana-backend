@@ -22,7 +22,7 @@ router
 // GET /api/petrol-advance/distribution?groupBy=day|month|year&fieldSelectorId=<optional>
 router.get(
     '/distribution',
-    authorize('Admin', 'Operational Manager'),
+    authorize('Admin', 'Operational Manager', 'Field Owner', 'Field Selector'),
     getDistribution
 );
 

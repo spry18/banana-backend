@@ -126,7 +126,7 @@ const enquirySchema = new mongoose.Schema(
         ],
         editableUntil: {
             type: Date,
-            required: true,
+            required: false,
         },
     },
     { timestamps: true }

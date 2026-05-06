@@ -695,7 +695,7 @@
                                 "{{assignmentId}}"
                             ]
                         },
-                        "description": "Submits a completed packing report for an assignment.\n\n**⏱ 24-HOUR GUARD:** Submission is only allowed within 24 hours of assignment creation. Returns 403 after that window.\n\nSide effects:\n- Packing status → SUBMITTED\n- Logistics assignmentStatus → COMPLETED (awaiting OM packing approve/reject)\n- Enquiry stays IN_PROGRESS until OM **Approve Packing** (then Enquiry → COMPLETED)\n- WhatsApp packing summary sent to farmer\n\nVALIDATION:\n- totalBoxes must equal the sum of all box types\n- `wastageReason` is no longer required (removed 2026-05-05)\n- Prevents duplicate submissions"
+                        "description": "Submits a completed packing report for an assignment.\n\nSide effects:\n- Packing status → SUBMITTED\n- Logistics assignmentStatus → COMPLETED (awaiting OM packing approve/reject)\n- Enquiry stays IN_PROGRESS until OM **Approve Packing** (then Enquiry → COMPLETED)\n- WhatsApp packing summary sent to farmer\n\nVALIDATION:\n- totalBoxes must equal the sum of all box types\n- `wastageReason` is no longer required (removed 2026-05-05)\n- Prevents duplicate submissions"
                     }
                 },
                 {

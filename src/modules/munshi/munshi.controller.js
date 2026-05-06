@@ -210,14 +210,6 @@ const submitPackingReport = async (req, res) => {
             cancellationReason,
         } = req.body;
 
-        // ── 24-HOUR EDIT GUARD ──
-        // Packing can only be submitted within 24 hours of assignment creation
-        const hoursSinceCreation = (Date.now() - new Date(assignment.createdAt).getTime()) / (1000 * 60 * 60);
-        if (hoursSinceCreation > 24) {
-            return res.status(403).json({
-                message: 'Packing entry can only be submitted within 24 hours of assignment creation',
-            });
-        }
 
         // ── CANCELLATION FLOW ──
         if (cancellationReason) {
