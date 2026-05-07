@@ -1,4 +1,5 @@
 const Enquiry = require('../enquiries/enquiry.model');
+const Inspection = require('../inspections/inspection.model');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // @desc    Get Field Selector dashboard KPIs
@@ -46,7 +47,9 @@ const getDashboard = async (req, res) => {
             Enquiry.find(baseFilter)
                 .sort({ updatedAt: -1 })
                 .limit(5)
-                .select('enquiryId farmerFirstName farmerLastName location status scheduledDate updatedAt')
+                .select('enquiryId farmerFirstName farmerLastName farmerMobile location subLocation status scheduledDate updatedAt generation companyId packingType estimatedBoxes')
+                .populate('generation', 'name')
+                .populate('companyId', 'name')
                 .lean(),
         ]);
 
@@ -141,20 +144,57 @@ const getFieldDetails = async (req, res) => {
         const selectorId = req.user._id;
         const enquiryId = req.params.id;
 
-        const enquiry = await Enquiry.findOne({
-            _id: enquiryId,
-            assignedSelectorId: selectorId,
-            createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-        })
-            .populate('generation', 'name')
-            .populate('fieldOwnerId', 'firstName lastName mobileNo')
-            .lean();
+        // Fetch the enquiry and its linked inspection in parallel
+        const [enquiry, inspection] = await Promise.all([
+            Enquiry.findOne({
+                _id: enquiryId,
+                assignedSelectorId: selectorId,
+                createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+            })
+                .populate('generation', 'name')
+                .populate('companyId', 'name')
+                .populate('fieldOwnerId', 'firstName lastName mobileNo')
+                .lean(),
+
+            // Inspection uses enquiryId (ObjectId ref to Enquiry._id)
+            Inspection.findOne({ enquiryId }).lean(),
+        ]);
 
         if (!enquiry) {
             return res.status(404).json({ message: 'Enquiry not found, not assigned to you, or no longer visible' });
         }
 
-        res.status(200).json(enquiry);
+        // Map DB field names back to the UI field names the frontend expects
+        let inspectionData = null;
+        if (inspection) {
+            inspectionData = {
+                _id:               inspection._id,
+                harvestingStage:   inspection.harvestingStage,
+                volumeBox:         inspection.volumeBoxRange,   // DB → UI name
+                recoveryPercent:   inspection.recoveryPercent,
+                packingSize:       inspection.packingSize,
+                chellingPercent:   inspection.chelling,         // DB → UI name
+                spiklingPercent:   inspection.spikling,         // DB → UI name
+                pulpePercent:      inspection.pulpe,            // DB → UI name
+                phreepsPercent:    inspection.phreeps,          // DB → UI name
+                harvestingTime:    inspection.harvestingTime,
+                generalNotes:      inspection.generalNotes,
+                isThroughPartner:  inspection.isThroughPartner,
+                partnerName:       inspection.partnerName ?? null,
+                photos:            inspection.photos,
+                caliper:           inspection.caliper ?? null,
+                length:            inspection.length ?? null,
+                plotType:          inspection.plotType ?? null,
+                greenLeaf:         inspection.greenLeaf ?? null,
+                decision:          inspection.decision,
+                submittedAt:       inspection.createdAt,
+            };
+        }
+
+        res.status(200).json({
+            ...enquiry,
+            inspection: inspectionData,  // null when not yet submitted, full object after submission
+        });
     } catch (error) {
         console.error('Error fetching field details:', error);
         if (error.name === 'CastError') {

@@ -1,0 +1,244 @@
+{
+    "info": {
+        "name": "Banana Transport — Data Import API",
+        "_postman_id": "banana-import-v1-2026",
+        "description": "CSV-based historical data import for Banana Transport.\n\n## Import Order (MUST follow this sequence)\n1. `POST /api/import/master-data?type=agents`\n2. `POST /api/import/master-data?type=companies`\n3. `POST /api/import/master-data?type=generations`\n4. `POST /api/import/master-data?type=vehicles`\n5. `POST /api/import/master-data?type=users`\n6. `POST /api/import/enquiries`\n\n## How to use\n- All requests use `multipart/form-data`\n- Attach your CSV file using the field name **`file`**\n- All routes require Admin token in `Authorization: Bearer {{adminToken}}`\n- Sample CSV files are in the `/sample-import-data/` folder of the project\n\n## Duplicate Handling\n- Master data: if unique key (mobile/name/plate) already exists → **skipped** (no error)\n- Enquiries: if same `farmerMobile` + `scheduledDate` already exists → **skipped**\n\n## Default Password for Imported Users\nAll users imported via the users CSV get the default password: `Welcome@123`",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:5000",
+            "type": "string"
+        },
+        {
+            "key": "adminToken",
+            "value": "",
+            "type": "string",
+            "description": "Paste your Admin JWT token here after login"
+        }
+    ],
+    "item": [
+        {
+            "name": "STEP 1 — Master Data",
+            "item": [
+                {
+                    "name": "1A. Import Agents",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "file",
+                                    "type": "file",
+                                    "src": [],
+                                    "description": "Upload agents.csv from the sample-import-data/ folder"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/import/master-data?type=agents",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "import", "master-data"],
+                            "query": [
+                                {
+                                    "key": "type",
+                                    "value": "agents",
+                                    "description": "Import type — agents | companies | generations | vehicles | users"
+                                }
+                            ]
+                        },
+                        "description": "Imports agents from CSV. Skips rows where `mobileNo` already exists.\n\n**CSV Columns:** `agentName`, `mobileNo`, `contactPerson`, `location`, `notes`\n\n**Required:** agentName, mobileNo, contactPerson, location\n\n**Sample file:** `sample-import-data/agents.csv`"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "1B. Import Companies",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "file",
+                                    "type": "file",
+                                    "src": [],
+                                    "description": "Upload companies.csv"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/import/master-data?type=companies",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "import", "master-data"],
+                            "query": [
+                                {
+                                    "key": "type",
+                                    "value": "companies"
+                                }
+                            ]
+                        },
+                        "description": "Imports buying companies. Skips rows where `companyName` already exists (case-insensitive).\n\n**CSV Columns:** `companyName`, `legalName`, `taxId`, `headquarters`, `procurementNotes`\n\n**Required:** companyName, headquarters\n\n**Sample file:** `sample-import-data/companies.csv`"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "1C. Import Generations",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "file",
+                                    "type": "file",
+                                    "src": [],
+                                    "description": "Upload generations.csv"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/import/master-data?type=generations",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "import", "master-data"],
+                            "query": [
+                                {
+                                    "key": "type",
+                                    "value": "generations"
+                                }
+                            ]
+                        },
+                        "description": "Imports banana generation/variety types (G9, F1, Robusta etc). Skips if name already exists.\n\n**CSV Columns:** `name`, `description`\n\n**Required:** name\n\n**Sample file:** `sample-import-data/generations.csv`"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "1D. Import Vehicles",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "file",
+                                    "type": "file",
+                                    "src": [],
+                                    "description": "Upload vehicles.csv"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/import/master-data?type=vehicles",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "import", "master-data"],
+                            "query": [
+                                {
+                                    "key": "type",
+                                    "value": "vehicles"
+                                }
+                            ]
+                        },
+                        "description": "Imports vehicle fleet. Skips if `vehicleNumber` already exists.\n\n**CSV Columns:** `vehicleNumber`, `vehicleType`\n\n**Required:** Both columns\n\n**vehicleType must be exactly:** `Eicher` or `Pickup`\n\n**Sample file:** `sample-import-data/vehicles.csv`"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "1E. Import Users / Staff",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "file",
+                                    "type": "file",
+                                    "src": [],
+                                    "description": "Upload users.csv"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/import/master-data?type=users",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "import", "master-data"],
+                            "query": [
+                                {
+                                    "key": "type",
+                                    "value": "users"
+                                }
+                            ]
+                        },
+                        "description": "Imports staff/users and creates login accounts. Skips if `mobileNo` already exists.\n\n**Default password for all imported users:** `Welcome@123` (hashed automatically)\n\n**CSV Columns:** `firstName`, `lastName`, `mobileNo`, `role`, `email`\n\n**Required:** firstName, lastName, mobileNo, role\n\n**Valid roles:** `Admin`, `Field Owner`, `Field Selector`, `Operational Manager`, `Munshi`, `driver eicher`, `driver pickup`\n\n**Sample file:** `sample-import-data/users.csv`"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "STEP 2 — Historical Enquiries",
+            "item": [
+                {
+                    "name": "2A. Import Enquiries (Historical Records)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "file",
+                                    "type": "file",
+                                    "src": [],
+                                    "description": "Upload enquiries.csv from the sample-import-data/ folder"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/import/enquiries",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api", "import", "enquiries"]
+                        },
+                        "description": "Imports historical farmer enquiry records. **Must run AFTER all master data is imported.**\n\n## How String Matching Works\nThe CSV uses plain text names — the backend auto-resolves them to MongoDB ObjectIds:\n- `generation` → matched by exact name (case-insensitive) in Generation collection\n- `agentName` → matched by exact name (case-insensitive) in Agent collection\n- `companyName` → matched by exact name (case-insensitive) in Company collection\n- `fieldOwnerMobile` → matched by mobile number in User collection\n- `fieldSelectorMobile` → matched by mobile number in User collection\n\n## Required Columns\n`farmerFirstName`, `farmerLastName`, `farmerMobile`, `location`, `plantCount`, `generation`, `status`, `fieldOwnerMobile`\n\n## Optional Columns\n`subLocation`, `agentName`, `visitPriority`, `purchaseRate`, `packingType`, `estimatedBoxes`, `companyName`, `scheduledDate`, `remarks`, `fieldSelectorMobile`\n\n## Valid status values\n`COMPLETED`, `REJECTED`, `CANCELLED`, `PENDING`, `SELECTED`, `RATE_FIXED`, `IN_PROGRESS`\n\n## Duplicate Check\nSkips if same `farmerMobile` + `scheduledDate` already exists in DB\n\n## Historical records\n`editableUntil` is set to `null` — these records are permanently locked from editing\n\n**Sample file:** `sample-import-data/enquiries.csv`"
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ]
+}
