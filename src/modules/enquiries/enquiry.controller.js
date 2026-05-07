@@ -546,6 +546,7 @@ const getFarmerEnquiryHistory = async (req, res) => {
         const data = await Promise.all(
             enquiries.map(async (enq) => {
                 const entry = {
+                    _id: enq._id,             // MongoDB ObjectId — use this to call /api/enquiries/:id
                     enquiryId: enq.enquiryId,
                     date: enq.updatedAt,
                     farmerName: `${enq.farmerFirstName} ${enq.farmerLastName}`.trim(),
