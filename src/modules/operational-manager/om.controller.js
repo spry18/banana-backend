@@ -24,7 +24,7 @@ const getOmDashboard = async (req, res) => {
             Logistics.find()
                 .sort({ createdAt: -1 })
                 .limit(5)
-                .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName location')
+                .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName location packingType')
                 .populate({ path: 'driverId', select: 'firstName lastName vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
                 .populate('munshiId', 'firstName lastName')
                 .lean(),
@@ -42,6 +42,7 @@ const getOmDashboard = async (req, res) => {
                 enquiryRef: a.enquiryId?.enquiryId || 'N/A',
                 farmerName: a.enquiryId ? `${a.enquiryId.farmerFirstName} ${a.enquiryId.farmerLastName}` : 'N/A',
                 location: a.enquiryId?.location || 'N/A',
+                packingType: a.enquiryId?.packingType || 'N/A',
                 driver: a.driverId ? `${a.driverId.firstName} ${a.driverId.lastName}` : 'N/A',
                 munshi: a.munshiId ? `${a.munshiId.firstName} ${a.munshiId.lastName}` : 'N/A',
                 lightInTime: a.lightInTime,
@@ -189,7 +190,14 @@ const getOmPlots = async (req, res) => {
                     .sort({ createdAt: -1 })
                     .skip(skip)
                     .limit(Number(limit))
-                    .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName farmerMobile location')
+                    .populate({
+                        path: 'enquiryId',
+                        select: 'enquiryId farmerFirstName farmerLastName farmerMobile location packingType fieldOwnerId assignedSelectorId',
+                        populate: [
+                            { path: 'fieldOwnerId', select: 'firstName lastName mobileNo' },
+                            { path: 'assignedSelectorId', select: 'firstName lastName mobileNo' }
+                        ]
+                    })
                     .populate('companyId', 'companyName')
                     .populate('munshiId', 'firstName lastName mobileNo')
                     .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
@@ -232,7 +240,14 @@ const getOmPlots = async (req, res) => {
                     .sort({ createdAt: -1 })
                     .skip(skip)
                     .limit(Number(limit))
-                    .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName farmerMobile location')
+                    .populate({
+                        path: 'enquiryId',
+                        select: 'enquiryId farmerFirstName farmerLastName farmerMobile location packingType fieldOwnerId assignedSelectorId',
+                        populate: [
+                            { path: 'fieldOwnerId', select: 'firstName lastName mobileNo' },
+                            { path: 'assignedSelectorId', select: 'firstName lastName mobileNo' }
+                        ]
+                    })
                     .populate('companyId', 'companyName')
                     .populate('munshiId', 'firstName lastName mobileNo')
                     .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
@@ -290,7 +305,14 @@ const getOmPlots = async (req, res) => {
                     .sort({ createdAt: -1 })
                     .skip(skip)
                     .limit(Number(limit))
-                    .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName farmerMobile location')
+                    .populate({
+                        path: 'enquiryId',
+                        select: 'enquiryId farmerFirstName farmerLastName farmerMobile location packingType fieldOwnerId assignedSelectorId',
+                        populate: [
+                            { path: 'fieldOwnerId', select: 'firstName lastName mobileNo' },
+                            { path: 'assignedSelectorId', select: 'firstName lastName mobileNo' }
+                        ]
+                    })
                     .populate('companyId', 'companyName')
                     .populate('munshiId', 'firstName lastName mobileNo')
                     .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
@@ -457,7 +479,14 @@ const getApprovedPlots = async (req, res) => {
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(Number(limit))
-                .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName farmerMobile location')
+                .populate({
+                    path: 'enquiryId',
+                    select: 'enquiryId farmerFirstName farmerLastName farmerMobile location packingType fieldOwnerId assignedSelectorId',
+                    populate: [
+                        { path: 'fieldOwnerId', select: 'firstName lastName mobileNo' },
+                        { path: 'assignedSelectorId', select: 'firstName lastName mobileNo' }
+                    ]
+                })
                 .populate('companyId', 'companyName')
                 .populate('munshiId', 'firstName lastName mobileNo')
                 .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
