@@ -201,7 +201,7 @@ const importEnquiries = async (req, res) => {
         const Company     = require('../master-data/company.model');
         const User        = require('../users/user.model');
 
-        const validStatuses = ['PENDING', 'SELECTED', 'REJECTED', 'RATE_FIXED', 'RESCHEDULED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CLOSED', 'CANCELLED'];
+        const validStatuses = ['PENDING', 'SELECTED', 'REJECTED', 'RATE_FIXED', 'RESCHEDULED', 'ASSIGNED', 'COMPLETED', 'CLOSED', 'CANCELLED'];
         const validPriorities = ['High', 'Medium', 'Low'];
 
         const errors = [];

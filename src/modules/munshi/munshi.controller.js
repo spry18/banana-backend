@@ -131,9 +131,6 @@ const assignPickupDriver = async (req, res) => {
         }
 
         assignment.pickupDriverId = pickupDriverId;
-        if (assignment.assignmentStatus === 'PENDING') {
-            assignment.assignmentStatus = 'IN_PROGRESS';
-        }
         await assignment.save();
 
         // Notify the pickup driver

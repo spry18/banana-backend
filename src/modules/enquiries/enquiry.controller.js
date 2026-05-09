@@ -519,7 +519,7 @@ const getFarmerEnquiryHistory = async (req, res) => {
         }
 
         // History includes: COMPLETED (successful harvest), REJECTED (selector rejected the plot)
-        const query = { status: { $in: ['COMPLETED', 'REJECTED', 'SELECTED', 'RATE_FIXED', 'IN_PROGRESS'] } };
+        const query = { status: { $in: ['COMPLETED', 'REJECTED', 'SELECTED', 'RATE_FIXED'] } };
 
         if (farmerMobile) {
             query.farmerMobile = farmerMobile.trim();

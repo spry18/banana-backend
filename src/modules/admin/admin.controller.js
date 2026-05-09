@@ -28,7 +28,7 @@ const getAdminStats = async (req, res) => {
             Enquiry.countDocuments({ status: 'SELECTED' }),
             Enquiry.countDocuments({ status: 'REJECTED' }),
             Enquiry.countDocuments({ status: 'RATE_FIXED' }),
-            Enquiry.countDocuments({ status: { $in: ['ASSIGNED', 'IN_PROGRESS'] } }),
+            Enquiry.countDocuments({ status: 'ASSIGNED' }),
             Enquiry.countDocuments({ status: 'COMPLETED' }),
             // Trips: locked trips = completed (Trip model has no status field)
             Trip.countDocuments({ isLocked: true }),
@@ -428,7 +428,6 @@ const getMonitoringDashboard = async (req, res) => {
                 ASSIGNED: 'View Details',
                 REJECTED: 'View Details',
                 RATE_FIXED: 'View Details',
-                IN_PROGRESS: 'View Details',
                 COMPLETED: 'View Details',
             };
 
@@ -614,7 +613,7 @@ const getFieldSelectionDashboard = async (req, res) => {
 
         // ── Enquiry Progress (recent SELECTED / RATE_FIXED enquiries) ─────
         const progressEnquiries = await Enquiry.find({
-            status: { $in: ['SELECTED', 'RATE_FIXED', 'ASSIGNED', 'IN_PROGRESS'] },
+            status: { $in: ['SELECTED', 'RATE_FIXED', 'ASSIGNED'] },
         })
             .sort({ updatedAt: -1 })
             .limit(50)

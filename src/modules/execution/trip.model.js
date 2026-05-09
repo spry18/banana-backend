@@ -105,6 +105,10 @@ const tripSchema = new mongoose.Schema(
             type: String,
             default: null,
         },
+        tollSlipUrl: {
+            type: String,
+            default: null,
+        },
         // Shared
         endKmPhotoUrl: {
             type: String,

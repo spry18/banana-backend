@@ -7,7 +7,6 @@ const {
     updateTripReport,
     getDriverReports,
     getDriverAssignments,
-    updateTransitStatus,
     getDriverProfile,
 } = require('./driver.controller');
 const { protect, authorize } = require('../../middlewares/auth.middleware');
@@ -35,6 +34,7 @@ router.post(
         // Pickup uploads
         { name: 'uploadSlipPhoto', maxCount: 1 },
         { name: 'meterPhoto', maxCount: 1 },
+        { name: 'tollSlipPhoto', maxCount: 1 },
     ]),
     submitTripReport
 );
@@ -48,6 +48,7 @@ router.patch(
         { name: 'endKmPhoto', maxCount: 1 },
         { name: 'uploadSlipPhoto', maxCount: 1 },
         { name: 'meterPhoto', maxCount: 1 },
+        { name: 'tollSlipPhoto', maxCount: 1 },
     ]),
     updateTripReport
 );
@@ -59,6 +60,6 @@ router.get('/profile', authorize(...roles), getDriverProfile);
 
 // Assignments
 router.get('/assignments', authorize(...roles), getDriverAssignments);
-router.patch('/assignments/:id/status', authorize(...roles), updateTransitStatus);
+
 
 module.exports = router;

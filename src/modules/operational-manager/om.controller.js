@@ -69,7 +69,7 @@ const getOmPlots = async (req, res) => {
         // purchaseRate is strictly excluded from all logistics objects.
         if (!stage || stage === 'All') {
             const query = {
-                status: { $in: ['RATE_FIXED', 'ASSIGNED', 'IN_PROGRESS'] },
+                status: { $in: ['RATE_FIXED', 'ASSIGNED'] },
             };
 
             if (search) {
@@ -161,7 +161,11 @@ const getOmPlots = async (req, res) => {
                 total,
                 page: Number(page),
                 pages: Math.ceil(total / Number(limit)),
-                data: enquiries,
+                data: enquiries.map(e => ({
+                    ...e,
+                    packingType: e.packingType ?? null,
+                    estimatedBoxes: e.estimatedBoxes ?? null,
+                })),
             });
         }
 

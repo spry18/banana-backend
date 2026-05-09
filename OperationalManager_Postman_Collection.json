@@ -2,7 +2,7 @@
     "info": {
         "name": "VaxTrack — Operational Manager Module",
         "_postman_id": "vaxtrack-om-v1-2026",
-        "description": "Complete Operational Manager API collection for VaxTrack. Login first (folder 0) to auto-capture {{omToken}}. Set {{baseUrl}} = http://localhost:5000.\n\n## End-to-end state flow (2026 refactor)\n1. OM Dispatch — POST /api/logistics/assign on a RATE_FIXED enquiry → Logistics.assignmentStatus = IN_PROGRESS; Enquiry.status = IN_PROGRESS (SLA cron only resets legacy ASSIGNED selector slots).\n2. Driver trip — Submitting a trip does NOT set Enquiry to COMPLETED; only Trip records (and optional PATCH /api/execution/:id/review for the trip) apply.\n3. Munshi packing — POST /api/munshi/packing/:assignmentId → Packing SUBMITTED, Logistics assignmentStatus COMPLETED until OM packing decision.\n4. OM Approve packing (terminal) — POST .../assignments/:assignmentId/approve → Packing APPROVED, Logistics APPROVED, Enquiry.status = COMPLETED.\n\n## Packing lifecycle\n1. Munshi submits → SUBMITTED + assignment COMPLETED\n2. OM reject (optional) → REJECTED + omRemark\n3. Munshi resubmit → SUBMITTED + assignment COMPLETED\n4. OM approve → APPROVED + Enquiry COMPLETED\n\n## Variables (cross-collection)\nPaste into this collection before dispatch: {{enquiryId}} (Mongo _id from Field Owner create response), {{companyId}}, {{munshiId}}, {{driverId}} from master-data dropdowns. POST Assign Logistics saves {{assignmentId}} automatically.",
+        "description": "Complete Operational Manager API collection for VaxTrack. Login first (folder 0) to auto-capture {{omToken}}. Set {{baseUrl}} = http://localhost:5000.\n\n## End-to-end state flow\n1. OM Dispatch — POST /api/logistics/assign on a RATE_FIXED enquiry → Logistics.assignmentStatus = PENDING; Enquiry.status = ASSIGNED.\n2. Driver trip — Submitting a trip does NOT set Enquiry to COMPLETED; only the OM packing approval does.\n3. Munshi packing — POST /api/munshi/packing/:assignmentId → Packing SUBMITTED, Logistics assignmentStatus COMPLETED until OM packing decision.\n4. OM Approve packing (terminal) — POST .../assignments/:assignmentId/approve → Packing APPROVED, Logistics APPROVED, Enquiry.status = COMPLETED.\n\n## Packing lifecycle\n1. Munshi submits → SUBMITTED + assignment COMPLETED\n2. OM reject (optional) → REJECTED + omRemark\n3. Munshi resubmit → SUBMITTED + assignment COMPLETED\n4. OM approve → APPROVED + Enquiry COMPLETED\n\n## Variables (cross-collection)\nPaste into this collection before dispatch: {{enquiryId}} (Mongo _id from Field Owner create response), {{companyId}}, {{munshiId}}, {{driverId}} from master-data dropdowns. POST Assign Logistics saves {{assignmentId}} automatically.",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "variable": [
@@ -259,7 +259,7 @@
                                 }
                             ]
                         },
-                        "description": "NEW — Returns the OM's full active workload in a single request.\n\nIncludes enquiries with status RATE_FIXED, ASSIGNED (legacy selector), or IN_PROGRESS (dispatched).\nEach record includes a `logistics` key containing the assigned team (munshi, driver, vehicle, schedule), or `null` if not yet assigned.\n\nSecurity: `purchaseRate` is NEVER returned in any logistics object.\nEnquiry object includes `farmerMobile` for direct farmer contact.\n\nThis is the DEFAULT view (no ?stage= param also returns stage=All)."
+                        "description": "NEW — Returns the OM's full active workload in a single request.\n\nIncludes enquiries with status RATE_FIXED or ASSIGNED.\nEach record includes a `logistics` key containing the assigned team (munshi, driver, vehicle, schedule), or `null` if not yet assigned.\n\nSecurity: `purchaseRate` is NEVER returned in any logistics object.\nEnquiry object includes `farmerMobile` for direct farmer contact.\n\nThis is the DEFAULT view (no ?stage= param also returns stage=All)."
                     }
                 },
                 {
@@ -297,7 +297,7 @@
                                 }
                             ]
                         },
-                        "description": "Returns Logistics assignments where assignmentStatus is PENDING or IN_PROGRESS. The team has been assigned and dispatch is either awaiting pickup driver assignment or in progress.\n\nEnquiry object now includes `farmerMobile` for direct farmer contact.\nSecurity: `purchaseRate` is excluded from all logistics objects."
+                        "description": "Returns Logistics assignments where assignmentStatus is PENDING. The team has been assigned and is awaiting completion.\n\nEnquiry object includes `farmerMobile` for direct farmer contact.\nSecurity: `purchaseRate` is excluded from all logistics objects."
                     }
                 },
                 {
