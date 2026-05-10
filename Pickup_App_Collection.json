@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "pickup-app-v2-2026",
     "name": "🛻 Pickup Driver App",
-    "description": "Complete API collection for the Pickup (small truck / multi-stop) Driver mobile app.\n\n**Role required:** `driver pickup`\n\n**E2E Flow:**\n1. Login → capture token\n2. Check Today Log → decide whether to show Start Shift screen\n3. POST Start Shift (once per day)\n4. GET Dashboard → note your {{assignmentId}}\n5. Update Transit Status through all 6 steps\n6. POST Submit Transport Report at ARRIVED_AT_DESTINATION\n7. PATCH End Shift (once per day)\n\n**Key difference from Eicher:**\n- Instead of a single flat `startRoute/midRoute/destination`, the Pickup driver submits a `routes[]` **array** of stops.\n- Files: `uploadSlipPhoto` + `meterPhoto` (no weightSlipPhoto / dieselSlipPhoto).\n\n**Status Flow (transitStatus):**\n`DISPATCHED` → `EN_ROUTE_TO_FARM` → `ARRIVED_AT_FARM` → `LOADING` → `IN_TRANSIT_TO_DESTINATION` → `ARRIVED_AT_DESTINATION`",
+    "description": "Complete API collection for the Pickup (small truck / multi-stop) Driver mobile app.\n\n**Role required:** `driver pickup`\n\n**E2E Flow:**\n1. Login → capture token\n2. Check Today Log → decide whether to show Start Shift screen\n3. POST Start Shift (once per day)\n4. GET Dashboard → note your {{assignmentId}}\n5. POST Submit Transport Report\n6. PATCH End Shift (once per day)\n\n**Key difference from Eicher:**\n- Instead of a single flat `startRoute/midRoute/destination`, the Pickup driver submits a `routes[]` **array** of stops.\n- Files: `uploadSlipPhoto` + `meterPhoto` (no weightSlipPhoto / dieselSlipPhoto).\n\n**Assignment Status Flow:**\n`PENDING` → `COMPLETED` (set by Munshi packing report) → `APPROVED` (set by OM)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -127,7 +127,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "driver", "dashboard"]
             },
-            "description": "Returns:\n- `kpis` — counts of active / completed / cancelled assignments scoped to **this pickup driver**\n- `activeAssignments[]` — Logistics records where `pickupDriverId` = this user AND `assignmentStatus` is `PENDING` or `IN_PROGRESS`\n\n👉 Save `activeAssignments[0]._id` into `{{assignmentId}}` to proceed."
+            "description": "Returns:\n- `kpis` — counts of active / completed / cancelled assignments scoped to **this pickup driver**\n- `activeAssignments[]` — Logistics records where `pickupDriverId` = this user AND `assignmentStatus` is `PENDING`\n\n👉 Save `activeAssignments[0]._id` into `{{assignmentId}}` to proceed."
           },
           "response": []
         },
@@ -141,115 +141,14 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "driver", "assignments"]
             },
-            "description": "Alternative to Dashboard — returns a flat array of active assignment documents (PENDING + IN_PROGRESS)."
+            "description": "Alternative to Dashboard — returns a flat array of active (PENDING) assignment documents."
           },
           "response": []
         }
       ]
     },
     {
-      "name": "3. Transit Status Updates",
-      "description": "Update the live position of the pickup truck in 5 steps.\n\n⚡ **Auto-promotion:** The first call away from `DISPATCHED` automatically changes `assignmentStatus` from `PENDING` → `IN_PROGRESS`.",
-      "item": [
-        {
-          "name": "Step 1 — EN_ROUTE_TO_FARM",
-          "request": {
-            "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"transitStatus\": \"EN_ROUTE_TO_FARM\"\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/driver/assignments/{{assignmentId}}/status",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "driver", "assignments", "{{assignmentId}}", "status"]
-            },
-            "description": "Pickup driver has left and is heading to the first farm stop.\n\n🔄 `assignmentStatus` auto-promoted: `PENDING` → `IN_PROGRESS`\n🔄 `transitStatus`: `DISPATCHED` → `EN_ROUTE_TO_FARM`"
-          },
-          "response": []
-        },
-        {
-          "name": "Step 2 — ARRIVED_AT_FARM",
-          "request": {
-            "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"transitStatus\": \"ARRIVED_AT_FARM\"\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/driver/assignments/{{assignmentId}}/status",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "driver", "assignments", "{{assignmentId}}", "status"]
-            },
-            "description": "Pickup truck has arrived at the farm pickup location.\n\n🔄 `transitStatus`: `EN_ROUTE_TO_FARM` → `ARRIVED_AT_FARM`"
-          },
-          "response": []
-        },
-        {
-          "name": "Step 3 — LOADING",
-          "request": {
-            "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"transitStatus\": \"LOADING\"\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/driver/assignments/{{assignmentId}}/status",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "driver", "assignments", "{{assignmentId}}", "status"]
-            },
-            "description": "Crates / boxes are being loaded onto the pickup truck.\n\n🔄 `transitStatus`: `ARRIVED_AT_FARM` → `LOADING`"
-          },
-          "response": []
-        },
-        {
-          "name": "Step 4 — IN_TRANSIT_TO_DESTINATION",
-          "request": {
-            "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"transitStatus\": \"IN_TRANSIT_TO_DESTINATION\"\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/driver/assignments/{{assignmentId}}/status",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "driver", "assignments", "{{assignmentId}}", "status"]
-            },
-            "description": "All stops done, truck is now en route to the weighbridge / handoff destination.\n\n🔄 `transitStatus`: `LOADING` → `IN_TRANSIT_TO_DESTINATION`"
-          },
-          "response": []
-        },
-        {
-          "name": "Step 5 — ARRIVED_AT_DESTINATION",
-          "request": {
-            "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"transitStatus\": \"ARRIVED_AT_DESTINATION\"\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/driver/assignments/{{assignmentId}}/status",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "driver", "assignments", "{{assignmentId}}", "status"]
-            },
-            "description": "Pickup truck has arrived at the handoff destination. Now submit the Transport Report (Step 4).\n\n🔄 `transitStatus`: `IN_TRANSIT_TO_DESTINATION` → `ARRIVED_AT_DESTINATION`"
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "4. Transport Report",
+      "name": "3. Transport Report",
       "item": [
         {
           "name": "POST Submit Transport Report",
@@ -321,7 +220,7 @@
       ]
     },
     {
-      "name": "5. History & Reports",
+      "name": "4. History & Reports",
       "item": [
         {
           "name": "GET Paginated Trip History",
@@ -380,7 +279,7 @@
       ]
     },
     {
-      "name": "6. Daily Log — Shift End",
+      "name": "5. Daily Log — Shift End",
       "item": [
         {
           "name": "PATCH End Shift",

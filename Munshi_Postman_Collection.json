@@ -273,7 +273,7 @@
                                 "dashboard"
                             ]
                         },
-                        "description": "Returns KPIs scoped to the logged-in Munshi: pickups (PENDING+IN_PROGRESS), completed, cancelled, total. Also returns activeAssignments[] populated with farmer, company, driver, vehicle, and light-in/out times."
+                        "description": "Returns KPIs scoped to the logged-in Munshi: pickups (PENDING), completed, cancelled, total. Also returns activeAssignments[] populated with farmer, company, driver, vehicle, and light-in/out times."
                     }
                 }
             ]
@@ -282,7 +282,7 @@
             "name": "2. Assignments List",
             "item": [
                 {
-                    "name": "GET Assignments — Pickups (PENDING + IN_PROGRESS)",
+                    "name": "GET Assignments — Pickups (PENDING)",
                     "request": {
                         "method": "GET",
                         "header": [
@@ -305,7 +305,7 @@
                                 {
                                     "key": "status",
                                     "value": "PENDING",
-                                    "description": "Options: PENDING, IN_PROGRESS, COMPLETED, CANCELLED. Omit for all."
+                                    "description": "Options: PENDING, COMPLETED, CANCELLED. Omit for all."
                                 },
                                 {
                                     "key": "page",
@@ -494,7 +494,7 @@
                                 "pickup"
                             ]
                         },
-                        "description": "Assigns a secondary pickup driver to the assignment.\n\nVALIDATION:\n- Assignment must belong to the logged-in Munshi\n- Assignment must not be COMPLETED or CANCELLED\n- pickupDriverId must be a user with a 'driver' role\n\nSide effects:\n- Transitions assignmentStatus from PENDING → IN_PROGRESS\n- Sends WhatsApp alert to the pickup driver"
+                        "description": "Assigns a secondary pickup driver to the assignment.\n\nVALIDATION:\n- Assignment must belong to the logged-in Munshi\n- Assignment must not be COMPLETED or CANCELLED\n- pickupDriverId must be a user with a 'driver' role\n\nSide effects:\n- Sends WhatsApp alert to the pickup driver"
                     }
                 },
                 {
@@ -695,7 +695,7 @@
                                 "{{assignmentId}}"
                             ]
                         },
-                        "description": "Submits a completed packing report for an assignment.\n\nSide effects:\n- Packing status → SUBMITTED\n- Logistics assignmentStatus → COMPLETED (awaiting OM packing approve/reject)\n- Enquiry stays IN_PROGRESS until OM **Approve Packing** (then Enquiry → COMPLETED)\n- WhatsApp packing summary sent to farmer\n\nVALIDATION:\n- totalBoxes must equal the sum of all box types\n- `wastageReason` is no longer required (removed 2026-05-05)\n- Prevents duplicate submissions"
+                        "description": "Submits a completed packing report for an assignment.\n\nSide effects:\n- Packing status → SUBMITTED\n- Logistics assignmentStatus → COMPLETED (awaiting OM packing approve/reject)\n- Enquiry stays ASSIGNED until OM **Approve Packing** (then Enquiry → COMPLETED)\n- WhatsApp packing summary sent to farmer\n\nVALIDATION:\n- totalBoxes must equal the sum of all box types\n- `wastageReason` is no longer required (removed 2026-05-05)\n- Prevents duplicate submissions"
                     }
                 },
                 {

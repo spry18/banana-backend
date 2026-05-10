@@ -518,7 +518,8 @@ const getFarmerEnquiryHistory = async (req, res) => {
             return res.status(400).json({ message: 'Provide at least farmerMobile or farmerName as a query param' });
         }
 
-        const query = { status: { $in: ['SELECTED', 'REJECTED'] } };
+        // History includes: COMPLETED (successful harvest), REJECTED (selector rejected the plot)
+        const query = { status: { $in: ['COMPLETED', 'REJECTED', 'SELECTED', 'RATE_FIXED'] } };
 
         if (farmerMobile) {
             query.farmerMobile = farmerMobile.trim();
@@ -535,7 +536,7 @@ const getFarmerEnquiryHistory = async (req, res) => {
                 .sort({ updatedAt: -1 })
                 .skip(skip)
                 .limit(Number(limit))
-                .select('enquiryId farmerFirstName farmerLastName farmerMobile status location updatedAt')
+                .select('enquiryId farmerFirstName farmerLastName farmerMobile status location updatedAt purchaseRate assignedSelectorId companyId')
                 .lean(),
             Enquiry.countDocuments(query),
         ]);
@@ -545,12 +546,14 @@ const getFarmerEnquiryHistory = async (req, res) => {
         const data = await Promise.all(
             enquiries.map(async (enq) => {
                 const entry = {
+                    _id: enq._id,             // MongoDB ObjectId — use this to call /api/enquiries/:id
                     enquiryId: enq.enquiryId,
                     date: enq.updatedAt,
                     farmerName: `${enq.farmerFirstName} ${enq.farmerLastName}`.trim(),
                     mobileNo: enq.farmerMobile,
                     location: enq.location,
-                    fieldStatus: enq.status,  // 'SELECTED' | 'REJECTED'
+                    fieldStatus: enq.status,  // 'COMPLETED' | 'REJECTED' | 'SELECTED' | etc
+                    purchaseRate: enq.purchaseRate || null,
                 };
 
                 if (enq.status === 'REJECTED') {

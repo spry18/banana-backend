@@ -19,7 +19,7 @@ const getDriverDashboard = async (req, res) => {
                 { driverId: userId },
                 { pickupDriverId: userId },
             ],
-            assignmentStatus: { $in: ['PENDING', 'IN_PROGRESS'] },
+            assignmentStatus: 'PENDING',
         })
             .sort({ createdAt: -1 })
             .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName farmerMobile location subLocation plantCount')
@@ -33,7 +33,7 @@ const getDriverDashboard = async (req, res) => {
         // KPI counts scoped to this driver
         const allMyAssignments = { $or: [{ driverId: userId }, { pickupDriverId: userId }] };
         const [totalPending, totalCompleted, totalCancelled] = await Promise.all([
-            Logistics.countDocuments({ ...allMyAssignments, assignmentStatus: { $in: ['PENDING', 'IN_PROGRESS'] } }),
+            Logistics.countDocuments({ ...allMyAssignments, assignmentStatus: 'PENDING' }),
             Logistics.countDocuments({ ...allMyAssignments, assignmentStatus: 'COMPLETED' }),
             Logistics.countDocuments({ ...allMyAssignments, assignmentStatus: 'CANCELLED' }),
         ]);
@@ -165,6 +165,7 @@ const submitTripReport = async (req, res) => {
         const endKmPhotoUrl = files.endKmPhoto?.[0] ? `/uploads/${files.endKmPhoto[0].filename}` : null;
         const uploadSlipUrl = files.uploadSlipPhoto?.[0] ? `/uploads/${files.uploadSlipPhoto[0].filename}` : null;
         const meterPhotoUrl = files.meterPhoto?.[0] ? `/uploads/${files.meterPhoto[0].filename}` : null;
+        const tollSlipUrl = files.tollSlipPhoto?.[0] ? `/uploads/${files.tollSlipPhoto[0].filename}` : null;
 
         const trip = await Trip.create({
             driverId: userId,
@@ -191,6 +192,7 @@ const submitTripReport = async (req, res) => {
             // Pickup files
             uploadSlipUrl,
             meterPhotoUrl,
+            tollSlipUrl,
             // Shared
             endKmPhotoUrl,
             isLocked: isLocked !== 'false' && isLocked !== false,
@@ -309,6 +311,9 @@ const updateTripReport = async (req, res) => {
         if (files.meterPhoto?.[0]) {
             trip.meterPhotoUrl = `/uploads/${files.meterPhoto[0].filename}`;
         }
+        if (files.tollSlipPhoto?.[0]) {
+            trip.tollSlipUrl = `/uploads/${files.tollSlipPhoto[0].filename}`;
+        }
 
         if (trip.reviewStatus === 'REJECTED') {
             trip.reviewStatus = 'PENDING';
@@ -415,6 +420,14 @@ const getDriverReports = async (req, res) => {
                 totalKm: t.totalKm,
                 tollExpense: t.tollExpense,
                 reviewStatus: t.reviewStatus,
+                // Photo URLs
+                weightSlipUrl: t.weightSlipUrl || null,
+                dieselSlipUrl: t.dieselSlipUrl || null,
+                unloadSlipUrl: t.unloadSlipUrl || null,
+                uploadSlipUrl: t.uploadSlipUrl || null,
+                meterPhotoUrl: t.meterPhotoUrl || null,
+                tollSlipUrl: t.tollSlipUrl || null,
+                endKmPhotoUrl: t.endKmPhotoUrl || null,
             });
             dailyLog[dayKey].dayKm += t.totalKm || 0;
             dailyLog[dayKey].dayToll += t.tollExpense || 0;
@@ -472,7 +485,7 @@ const getDriverAssignments = async (req, res) => {
         const userId = req.user._id;
         const assignments = await Logistics.find({
             $or: [{ driverId: userId }, { pickupDriverId: userId }],
-            assignmentStatus: { $in: ['PENDING', 'IN_PROGRESS'] },
+            assignmentStatus: 'PENDING',
         })
             .populate('enquiryId')
             .populate('companyId')
@@ -485,58 +498,6 @@ const getDriverAssignments = async (req, res) => {
     }
 };
 
-// @desc    Update transit status for a driver's assignment
-// @route   PATCH /api/driver/assignments/:id/status
-// @access  Protected (Driver roles)
-const updateTransitStatus = async (req, res) => {
-    try {
-        const { transitStatus } = req.body;
-        const assignmentId = req.params.id;
-        const driverId = req.user._id;
-
-        const allowedStatuses = [
-            'DISPATCHED',
-            'EN_ROUTE_TO_FARM',
-            'ARRIVED_AT_FARM',
-            'LOADING',
-            'IN_TRANSIT_TO_DESTINATION',
-            'ARRIVED_AT_DESTINATION',
-        ];
-
-        if (!transitStatus || !allowedStatuses.includes(transitStatus)) {
-            return res.status(400).json({ message: 'Invalid transit status provided.' });
-        }
-
-        const assignment = await Logistics.findById(assignmentId);
-
-        if (!assignment) {
-            return res.status(404).json({ message: 'Assignment not found.' });
-        }
-
-        // Security Check: Ensure the logged-in user is the assigned driver or pickup driver
-        if (
-            assignment.driverId.toString() !== driverId.toString() &&
-            (!assignment.pickupDriverId || assignment.pickupDriverId.toString() !== driverId.toString())
-        ) {
-            return res.status(403).json({ message: 'You are not authorized to update this assignment.' });
-        }
-
-        assignment.transitStatus = transitStatus;
-
-        // Auto-promote assignmentStatus: once a driver moves beyond DISPATCHED,
-        // flip PENDING → IN_PROGRESS so the OM dashboard reflects live activity.
-        if (transitStatus !== 'DISPATCHED' && assignment.assignmentStatus === 'PENDING') {
-            assignment.assignmentStatus = 'IN_PROGRESS';
-        }
-
-        await assignment.save();
-
-        res.status(200).json(assignment);
-    } catch (error) {
-        console.error('Error updating transit status:', error);
-        res.status(500).json({ message: 'Server error while updating transit status.' });
-    }
-};
 
 module.exports = {
     getDriverDashboard,
@@ -546,5 +507,4 @@ module.exports = {
     getDriverReports,
     getDriverProfile,
     getDriverAssignments,
-    updateTransitStatus
 };

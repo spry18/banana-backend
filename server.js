@@ -117,6 +117,9 @@ app.use('/api/analytics', require('./src/modules/analytics/analytics.routes'));
 // Phase 9: Audit logs — correct path is now /api/audit/logs (GET /)
 app.use('/api/audit/logs', require('./src/modules/auditing/systemAudit.routes'));
 
+// Data Import module (Admin only — CSV import for master data + historical enquiries)
+// app.use('/api/import', require('./src/modules/import/import.routes'));
+
 // Error Handling Middlewares
 app.use(notFound);
 app.use(errorHandler);

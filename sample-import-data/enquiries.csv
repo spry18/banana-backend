@@ -1,0 +1,13 @@
+farmerFirstName,farmerLastName,farmerMobile,location,subLocation,plantCount,generation,agentName,visitPriority,status,purchaseRate,packingType,estimatedBoxes,companyName,scheduledDate,remarks,fieldOwnerMobile,fieldSelectorMobile
+Suresh,Patil,9876543210,Nashik,Akkalkot,3500,G9,Ramesh Agency,High,COMPLETED,920,5H,312,Jain Exports,2026-04-04,Good quality G9 batch — recovery 85%,9100000001,9100000003
+Priya,Singh,2222222222,Pune,Parandwadi,50000,F1,Pune Central Agency,Medium,REJECTED,,,,,,High chelling — plot not viable,9100000001,9100000004
+Anil,Deshmukh,9111111111,Solapur,,2000,Robusta,Solapur Traders,Low,COMPLETED,850,4H,180,Nashik Fresh Co,2026-03-15,Decent quality,9100000001,9100000003
+Ramesh,Jadhav,8800000001,Nashik,Dindori,4200,G9,Ramesh Agency,High,COMPLETED,940,5H,350,Jain Exports,2026-04-10,,9100000002,9100000005
+Kavita,Shinde,8800000002,Sangli,,3000,Grand Nain,Sangli Fruit Mart,Medium,COMPLETED,880,6H,260,Sangli Agri Pvt Ltd,2026-02-20,Good pulpe and chelling,9100000001,9100000003
+Mohan,Wagh,8800000003,Ahmednagar,Sangamner,1800,Robusta,Ahmednagar Link,Low,REJECTED,,,,,,Low recovery — only 60%,9100000002,9100000004
+Sunita,More,8800000004,Jalgaon,Bhusawal,5000,G9,Jalgaon Network,High,COMPLETED,910,5H,420,Deccan Fruits Ltd,2026-03-01,,9100000001,9100000005
+Dilip,Kulkarni,8800000005,Nashik,Niphad,2800,F1,Ramesh Agency,Medium,COMPLETED,900,5H,240,Fresh Valley Exports,2026-04-18,Standard quality,9100000002,9100000003
+Archana,Pawar,8800000006,Pune,Baramati,3200,Nendran,,Low,CANCELLED,,,,,,Farmer changed mind — crop sold locally,9100000001,
+Vijay,Gaikwad,8800000007,Kolhapur,,4500,G9,Kolhapur Associates,High,COMPLETED,950,5H,390,Mumbai Cold Chain Co,2026-03-25,Premium lot — QC passed,9100000002,9100000006
+Sanjay,Bhosale,8800000008,Latur,Udgir,2200,Robusta,Latur Banana Hub,Medium,REJECTED,,,,,,Spikling too high — rejected at site,9100000001,9100000004
+Rekha,Salunkhe,8800000009,Satara,Phaltan,3700,Grand Nain,Satara Fresh,High,COMPLETED,870,6H,310,Nashik Fresh Co,2026-02-10,,9100000002,9100000005
