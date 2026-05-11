@@ -3,6 +3,7 @@ const Logistics = require('../logistics/logistics.model');
 const Trip = require('../execution/trip.model');
 const DieselAdvance = require('../diesel-advance/dieselAdvance.model');
 const Packing = require('../execution/packing.model');
+const { createNotification } = require('../../utils/notificationHelper');
 
 // @desc    Get OM Dashboard KPIs and recent activity
 // @route   GET /api/operational-manager/dashboard
@@ -390,6 +391,17 @@ const rejectPackingReport = async (req, res) => {
             await assignment.save();
         }
 
+        // Flow 2 — In-app: notify the Munshi to resubmit with the rejection reason
+        if (packing.munshiId) {
+            await createNotification(
+                packing.munshiId,
+                'PACKING_REJECTED',
+                `Your packing report was rejected by the Operations Manager. Reason: ${remark}. Please resubmit.`,
+                packing._id,
+                'Packing'
+            );
+        }
+
         res.status(200).json({
             message: 'Packing report rejected successfully. Munshi has been notified to resubmit.',
             packing,
@@ -427,12 +439,49 @@ const approvePackingReport = async (req, res) => {
         await packing.save();
 
         // Update parent logistics assignment status to APPROVED
-        const assignment = await Logistics.findById(assignmentId);
+        const assignment = await Logistics.findById(assignmentId)
+            .populate('enquiryId', 'fieldOwnerId farmerFirstName enquiryId location')
+            .populate('driverId', '_id firstName lastName')
+            .populate('munshiId', '_id firstName lastName');
+
         if (assignment) {
             assignment.assignmentStatus = 'APPROVED';
             await assignment.save();
             if (assignment.enquiryId) {
-                await Enquiry.findByIdAndUpdate(assignment.enquiryId, { status: 'COMPLETED' });
+                await Enquiry.findByIdAndUpdate(assignment.enquiryId._id || assignment.enquiryId, { status: 'COMPLETED' });
+            }
+
+            // Flow 2 — In-app: notify Munshi (their report was approved)
+            if (assignment.munshiId) {
+                await createNotification(
+                    assignment.munshiId._id || assignment.munshiId,
+                    'PACKING_APPROVED',
+                    `Your packing report for enquiry ${assignment.enquiryId?.enquiryId || ''} has been approved by the Operations Manager.`,
+                    packing._id,
+                    'Packing'
+                );
+            }
+
+            // Flow 2 — In-app: notify Driver (their assignment is now complete)
+            if (assignment.driverId) {
+                await createNotification(
+                    assignment.driverId._id || assignment.driverId,
+                    'PACKING_APPROVED',
+                    `Your assignment for enquiry ${assignment.enquiryId?.enquiryId || ''} at ${assignment.enquiryId?.location || ''} has been completed and approved.`,
+                    assignment._id,
+                    'Logistics'
+                );
+            }
+
+            // Flow 2 — In-app: notify Field Owner (their plot harvest is fully done)
+            if (assignment.enquiryId?.fieldOwnerId) {
+                await createNotification(
+                    assignment.enquiryId.fieldOwnerId,
+                    'TRIP_COMPLETED',
+                    `Harvest for farmer ${assignment.enquiryId?.farmerFirstName || ''} at ${assignment.enquiryId?.location || ''} has been completed and approved. Enquiry: ${assignment.enquiryId?.enquiryId || ''}.`,
+                    assignment.enquiryId._id || assignment.enquiryId,
+                    'Enquiry'
+                );
             }
         }
 

@@ -1,6 +1,8 @@
 const Packing = require('./packing.model');
 const Logistics = require('../logistics/logistics.model');
 const NotificationService = require('../../services/notification.service');
+const { createNotification } = require('../../utils/notificationHelper');
+const { broadcastToRole } = require('../../utils/broadcastToRole');
 
 // @desc    Create new packing record
 // @route   POST /api/execution/packing
@@ -71,9 +73,21 @@ const createPacking = async (req, res) => {
             wastageReason
         });
 
+        // Flow 1 — WhatsApp: notify farmer with packing summary (console stub)
         if (logistics.enquiryId) {
             NotificationService.sendPackingSummary(logistics.enquiryId.farmerMobile, logistics.enquiryId.farmerFirstName, totalBoxes, wastageKg);
         }
+
+        // Flow 2 — In-app: notify all Operational Managers and Admins that packing report needs review
+        const enquiryRef = logistics.enquiryId?.enquiryId || 'N/A';
+        const munshiName = `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim();
+        await broadcastToRole(
+            ['Operational Manager', 'Admin'],
+            'PACKING_SUBMITTED',
+            `Munshi ${munshiName} submitted a packing report for enquiry ${enquiryRef}. Awaiting your review.`,
+            packing._id,
+            'Packing'
+        );
 
         res.status(201).json(packing);
     } catch (error) {

@@ -776,6 +776,51 @@
                     "response": []
                 }
             ]
+        },
+        {
+            "name": "Notifications",
+            "description": "In-app notification feed — Field Selector sees only their own notifications (scoped by recipientId). Auto-triggered by: You are assigned to a new plot inspection (FIELD_SELECTOR_ASSIGNED).",
+            "item": [
+                {
+                    "name": "GET My Notifications (Paginated Feed)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{selectorToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/notifications?page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "notifications"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                },
+                                {
+                                    "key": "unreadOnly",
+                                    "value": "true",
+                                    "disabled": true,
+                                    "description": "Pass true to return only unread notifications"
+                                }
+                            ]
+                        },
+                        "description": "Returns paginated in-app notifications for the logged-in Field Selector. Response: { total, unreadCount, page, pages, data[] }"
+                    }
+                }
+            ]
         }
     ]
 }

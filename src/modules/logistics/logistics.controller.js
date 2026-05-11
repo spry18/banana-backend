@@ -2,6 +2,7 @@ const Logistics = require('./logistics.model');
 const Enquiry = require('../enquiries/enquiry.model');
 const User = require('../users/user.model');
 const NotificationService = require('../../services/notification.service');
+const { createNotification } = require('../../utils/notificationHelper');
 
 // @desc    Create new logistics assignment
 // @route   POST /api/logistics/assign
@@ -87,7 +88,7 @@ const createAssignment = async (req, res) => {
         enquiry.status = 'ASSIGNED';
         await enquiry.save();
 
-        // === NOTIFICATIONS ===
+        // Flow 1 — WhatsApp: notify Munshi and Farmer (console stub)
         if (munshiId) {
             const munshi = await User.findById(munshiId);
             if (munshi?.mobileNo) {
@@ -100,11 +101,41 @@ const createAssignment = async (req, res) => {
                     munshi.firstName,
                     munshi.mobileNo
                 );
+
+                // Flow 2 — In-app: notify Munshi
+                const timeWindow2 = lightInTime && lightOutTime ? `${lightInTime} – ${lightOutTime}` : 'TBD';
+                await createNotification(
+                    munshiId,
+                    'LOGISTICS_ASSIGNED',
+                    `You have a new packing assignment at ${enquiry.location} for farmer ${enquiry.farmerFirstName}. Time window: ${timeWindow2}.`,
+                    assignment._id,
+                    'Logistics'
+                );
             }
         }
 
         if (driver?.mobileNo) {
             NotificationService.sendLogisticsAlert(driver.mobileNo, 'Driver', 'You have a new route assigned.');
+        }
+
+        // Flow 2 — In-app: notify Driver
+        await createNotification(
+            driverId,
+            'LOGISTICS_ASSIGNED',
+            `You have a new route assignment for farmer ${enquiry.farmerFirstName} at ${enquiry.location}. Time: ${lightInTime && lightOutTime ? `${lightInTime} – ${lightOutTime}` : 'TBD'}.`,
+            assignment._id,
+            'Logistics'
+        );
+
+        // Flow 2 — In-app: notify the Field Owner who raised the enquiry
+        if (enquiry.fieldOwnerId) {
+            await createNotification(
+                enquiry.fieldOwnerId,
+                'TEAM_ASSIGNED',
+                `A harvest team has been assigned for farmer ${enquiry.farmerFirstName} at ${enquiry.location}. Enquiry: ${enquiry.enquiryId}.`,
+                assignment._id,
+                'Logistics'
+            );
         }
 
         res.status(201).json(assignment);
@@ -264,11 +295,10 @@ const addExtraVehicle = async (req, res) => {
             parentAssignmentId: original._id,
         });
 
-        // 6. WhatsApp Notifications
+        // Flow 1 — WhatsApp: notify extra driver, munshi, original driver (console stubs)
         const farmLocation = original.enquiryId?.location || 'the farm';
         const extraVehicleNumber = driver.vehicleId.vehicleNumber;
 
-        // Notify the new extra driver
         if (driver.mobileNo) {
             NotificationService.sendExtraVehicleAlert(
                 driver.mobileNo,
@@ -278,7 +308,6 @@ const addExtraVehicle = async (req, res) => {
             );
         }
 
-        // Notify the assigned Munshi (could be different from original)
         if (resolvedMunshi?.mobileNo) {
             NotificationService.sendExtraVehicleNotifyMunshi(
                 resolvedMunshi.mobileNo,
@@ -288,12 +317,31 @@ const addExtraVehicle = async (req, res) => {
             );
         }
 
-        // Notify the original driver
         if (original.driverId?.mobileNo) {
             NotificationService.sendExtraVehicleNotifyOriginalDriver(
                 original.driverId.mobileNo,
                 `${original.driverId.firstName} ${original.driverId.lastName}`,
                 extraVehicleNumber
+            );
+        }
+
+        // Flow 2 — In-app: notify the extra (new) driver
+        await createNotification(
+            driverId,
+            'EXTRA_VEHICLE_ADDED',
+            `You have been added as an extra vehicle (${extraVehicleNumber}) for pickup at ${farmLocation}.`,
+            overflow._id,
+            'Logistics'
+        );
+
+        // Flow 2 — In-app: notify the Munshi
+        if (resolvedMunshiId) {
+            await createNotification(
+                resolvedMunshiId,
+                'EXTRA_VEHICLE_ADDED',
+                `Extra vehicle ${extraVehicleNumber} (${driver.firstName} ${driver.lastName}) has been added to your assignment at ${farmLocation}.`,
+                overflow._id,
+                'Logistics'
             );
         }
 

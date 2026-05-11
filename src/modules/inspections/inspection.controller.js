@@ -2,6 +2,8 @@ const Inspection = require('./inspection.model');
 const Enquiry = require('../enquiries/enquiry.model');
 const NotificationService = require('../../services/notification.service');
 const { logSystemAction } = require('../../utils/auditLogger');
+const { createNotification } = require('../../utils/notificationHelper');
+const { broadcastToRole } = require('../../utils/broadcastToRole');
 
 // @desc    Create new inspection
 // @route   POST /api/inspections
@@ -117,10 +119,24 @@ const createInspection = async (req, res) => {
         }
         await enquiry.save();
 
-        // ── 7. Fire notification on rejection ────────────────────────────────
+        // Flow 1 — WhatsApp: notify farmer on rejection (console stub)
         if (dbDecision === 'REJECTED') {
             NotificationService.sendInspectionRejected(enquiry.farmerMobile, enquiry.farmerFirstName);
         }
+
+        // Flow 2 — In-app: notify Field Owner and all Admins about inspection result
+        const notifType    = dbDecision === 'APPROVED' ? 'VISIT_SCHEDULED'  : 'ENQUIRY_REJECTED';
+        const notifMessage = dbDecision === 'APPROVED'
+            ? `Plot for farmer ${enquiry.farmerFirstName} ${enquiry.farmerLastName} at ${enquiry.location} has been SELECTED. Ready for rate fixing. Ref: ${enquiry.enquiryId}`
+            : `Plot for farmer ${enquiry.farmerFirstName} ${enquiry.farmerLastName} at ${enquiry.location} was REJECTED. Ref: ${enquiry.enquiryId}`;
+
+        // Notify the Field Owner who raised this enquiry
+        if (enquiry.fieldOwnerId) {
+            await createNotification(enquiry.fieldOwnerId, notifType, notifMessage, enquiry._id, 'Enquiry');
+        }
+
+        // Broadcast to all Admins
+        await broadcastToRole('Admin', notifType, notifMessage, enquiry._id, 'Enquiry');
 
         // ── 8. Audit log ──────────────────────────────────────────────────────
         await logSystemAction(

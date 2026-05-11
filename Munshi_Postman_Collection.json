@@ -962,6 +962,51 @@
                     }
                 }
             ]
+        },
+        {
+            "name": "Notifications",
+            "description": "In-app notification feed — Munshi sees only their own notifications (scoped by recipientId). Auto-triggered by: Logistics assignment (LOGISTICS_ASSIGNED), extra vehicle added, packing approved or rejected.",
+            "item": [
+                {
+                    "name": "GET My Notifications (Paginated Feed)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/notifications?page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "notifications"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                },
+                                {
+                                    "key": "unreadOnly",
+                                    "value": "true",
+                                    "disabled": true,
+                                    "description": "Pass true to return only unread notifications"
+                                }
+                            ]
+                        },
+                        "description": "Returns paginated in-app notifications for the logged-in Munshi. Response: { total, unreadCount, page, pages, data[] }"
+                    }
+                }
+            ]
         }
     ]
 }

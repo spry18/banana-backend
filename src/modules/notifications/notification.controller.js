@@ -2,29 +2,31 @@ const Notification = require('./notification.model');
 const NotificationService = require('../../services/notification.service');
 const { logSystemAction } = require('../../utils/auditLogger');
 
-// @desc    Get notification feed for the logged-in Admin
+// ─────────────────────────────────────────────────────────────────────────────
+// @desc    Get in-app notification feed for the logged-in user (all roles)
 // @route   GET /api/notifications
-// @access  Private (Admin)
+// @access  Private (all authenticated users)
+// @query   ?page=1  ?limit=20
+// ─────────────────────────────────────────────────────────────────────────────
 const getNotifications = async (req, res) => {
     try {
-        const { page = 1, limit = 20, unreadOnly } = req.query;
+        const { page = 1, limit = 20 } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
 
+        // Scope strictly to the logged-in user
         const filter = { recipientId: req.user._id };
-        if (unreadOnly === 'true') filter.isRead = false;
 
-        const [notifications, total, unreadCount] = await Promise.all([
+        const [notifications, total] = await Promise.all([
             Notification.find(filter)
                 .sort({ createdAt: -1 })
                 .skip(skip)
-                .limit(Number(limit)),
+                .limit(Number(limit))
+                .lean(),
             Notification.countDocuments(filter),
-            Notification.countDocuments({ recipientId: req.user._id, isRead: false }),
         ]);
 
         res.json({
             total,
-            unreadCount,
             page: Number(page),
             pages: Math.ceil(total / Number(limit)),
             data: notifications,
@@ -34,62 +36,28 @@ const getNotifications = async (req, res) => {
     }
 };
 
-// @desc    Mark a notification as read
-// @route   PATCH /api/notifications/:id/read
-// @access  Private (Admin)
-const markAsRead = async (req, res) => {
-    try {
-        const notification = await Notification.findOneAndUpdate(
-            { _id: req.params.id, recipientId: req.user._id },
-            { isRead: true },
-            { new: true }
-        );
-
-        if (!notification) {
-            return res.status(404).json({ message: 'Notification not found' });
-        }
-
-        res.json({ message: 'Marked as read', notification });
-    } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
-    }
-};
-
-// @desc    Mark all notifications as read
-// @route   PATCH /api/notifications/mark-all-read
-// @access  Private (Admin)
-const markAllAsRead = async (req, res) => {
-    try {
-        await Notification.updateMany(
-            { recipientId: req.user._id, isRead: false },
-            { isRead: true }
-        );
-        res.json({ message: 'All notifications marked as read' });
-    } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
-    }
-};
-
-// @desc    Send a WhatsApp notification to a farmer (HTTP trigger)
+// ─────────────────────────────────────────────────────────────────────────────
+// @desc    Manually send a WhatsApp alert (Admin only)
 // @route   POST /api/notifications/whatsapp
 // @access  Private (Admin)
+// ─────────────────────────────────────────────────────────────────────────────
 const sendWhatsApp = async (req, res) => {
     try {
-        const { mobile, farmerName, message, enquiryId, type = 'WHATSAPP_SENT' } = req.body;
+        const { mobile, farmerName, message, enquiryId } = req.body;
 
         if (!mobile || !farmerName || !message) {
             return res.status(400).json({ message: 'mobile, farmerName, and message are required' });
         }
 
-        // Fire the WhatsApp mock/service
+        // Fire the WhatsApp console stub (will be real API in future)
         NotificationService.sendLogisticsAlert(mobile, 'Farmer', message);
 
-        // Persist a notification record for the Admin feed
+        // Persist a record in the Admin's own notification feed
         await Notification.create({
-            recipientId: req.user._id,
-            type,
-            message: `WhatsApp sent to ${farmerName} (${mobile}): ${message}`,
-            referenceId: enquiryId || null,
+            recipientId:    req.user._id,
+            type:           'WHATSAPP_SENT',
+            message:        `WhatsApp sent to ${farmerName} (${mobile}): ${message}`,
+            referenceId:    enquiryId || null,
             referenceModel: enquiryId ? 'Enquiry' : undefined,
         });
 
@@ -109,7 +77,5 @@ const sendWhatsApp = async (req, res) => {
 
 module.exports = {
     getNotifications,
-    markAsRead,
-    markAllAsRead,
     sendWhatsApp,
 };

@@ -1,9 +1,11 @@
 const Enquiry = require('./enquiry.model');
 const User = require('../users/user.model');
-const Agent = require('../master-data/agent.model'); // Ensure Agent model exists and is imported correctly, will verify after
+const Agent = require('../master-data/agent.model');
 const { logSystemAction } = require('../../utils/auditLogger');
 const NotificationService = require('../../services/notification.service');
 const { checkAndResetExpiredEnquiries } = require('../../utils/enquiryService');
+const { createNotification } = require('../../utils/notificationHelper');
+const { broadcastToRole } = require('../../utils/broadcastToRole');
 
 // @desc    Create new enquiry
 // @route   POST /api/enquiries
@@ -66,7 +68,26 @@ const createEnquiry = async (req, res) => {
             editableUntil,
         });
 
+        // Flow 1 — WhatsApp: notify farmer (console stub, real API in future)
         NotificationService.sendEnquiryReceived(enquiry.farmerMobile, enquiry.farmerFirstName, enquiry.enquiryId);
+
+        // Flow 2 — In-app: notify the assigned Field Selector
+        await createNotification(
+            assignedSelectorId,
+            'FIELD_SELECTOR_ASSIGNED',
+            `You have been assigned to inspect a plot for farmer ${farmerFirstName} ${farmerLastName} at ${location}. Ref: ${enquiry.enquiryId}`,
+            enquiry._id,
+            'Enquiry'
+        );
+
+        // Flow 2 — In-app: notify all Admins
+        await broadcastToRole(
+            'Admin',
+            'ENQUIRY_CREATED',
+            `New enquiry ${enquiry.enquiryId} created for farmer ${farmerFirstName} ${farmerLastName} at ${location}.`,
+            enquiry._id,
+            'Enquiry'
+        );
 
         await logSystemAction(req.user._id, 'CREATE', 'Enquiries', enquiry._id, 'Created a new farmer enquiry');
 
@@ -183,7 +204,11 @@ const updateEnquiry = async (req, res) => {
         delete updateData.fieldOwnerId; // Usually shouldn't change the creator implicitly
 
         // If a new selector is being assigned, automatically set the status to 'ASSIGNED'
-        if (updateData.assignedSelectorId && updateData.assignedSelectorId !== enquiry.assignedSelectorId?.toString()) {
+        const newSelectorId = updateData.assignedSelectorId;
+        const oldSelectorId = enquiry.assignedSelectorId?.toString();
+        const selectorChanged = newSelectorId && newSelectorId !== oldSelectorId;
+
+        if (selectorChanged) {
             updateData.status = 'ASSIGNED';
         }
 
@@ -194,9 +219,20 @@ const updateEnquiry = async (req, res) => {
             { new: true, runValidators: true }
         );
 
-        // Commercial Rejection Notification
+        // Flow 1 — WhatsApp: commercial rejection
         if (req.body.status && (req.body.status === 'CLOSED' || req.body.status === 'CANCELLED') && enquiry.status !== req.body.status) {
             NotificationService.sendDealCancelled(updatedEnquiry.farmerMobile, updatedEnquiry.farmerFirstName);
+        }
+
+        // Flow 2 — In-app: notify new Field Selector when selector changes
+        if (selectorChanged) {
+            await createNotification(
+                newSelectorId,
+                'FIELD_SELECTOR_ASSIGNED',
+                `You have been assigned to inspect a plot for farmer ${updatedEnquiry.farmerFirstName} ${updatedEnquiry.farmerLastName} at ${updatedEnquiry.location}. Ref: ${updatedEnquiry.enquiryId}`,
+                updatedEnquiry._id,
+                'Enquiry'
+            );
         }
 
         res.status(200).json(updatedEnquiry);
@@ -384,6 +420,10 @@ const fixRate = async (req, res) => {
         if (estimatedBoxes) enquiry.estimatedBoxes = estimatedBoxes;
 
         await enquiry.save();
+
+        // Flow 2 — In-app: notify all Operational Managers and Admins that this plot is ready for logistics
+        const rateMsg = `Rate fixed at ₹${purchaseRate} for enquiry ${enquiry.enquiryId} (${enquiry.farmerFirstName} ${enquiry.farmerLastName}, ${enquiry.location}). Ready for logistics assignment.`;
+        await broadcastToRole(['Operational Manager', 'Admin'], 'RATE_FIXED', rateMsg, enquiry._id, 'Enquiry');
 
         await logSystemAction(
             req.user._id,
