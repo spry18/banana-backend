@@ -436,6 +436,9 @@ const getMonitoringDashboard = async (req, res) => {
             return {
                 id: e._id,
                 enquiryId: e.enquiryId,
+                farmerFirstName: e.farmerFirstName,
+                farmerLastName: e.farmerLastName,
+                farmerMobile: e.farmerMobile,
                 farmerName: `${e.farmerFirstName} ${e.farmerLastName}`,
                 location: e.location,
                 fieldOwner: e.fieldOwnerId
