@@ -9,7 +9,7 @@ const https = require('https');
 // Body    : { to, type:"template", template: { name, language, components } }
 // ─────────────────────────────────────────────────────────────────────────────
 
-const PINNACLE_API_KEY         = process.env.PINNACLE_API_KEY         || '';
+const PINNACLE_API_KEY = process.env.PINNACLE_API_KEY || '';
 const PINNACLE_PHONE_NUMBER_ID = process.env.PINNACLE_PHONE_NUMBER_ID || '';
 
 /**
@@ -61,12 +61,12 @@ function _sendWhatsAppTemplate({ templateName, language = 'mr', phone, variables
 
     const options = {
         hostname: 'partnersv1.pinbot.ai',
-        path:     `/v3/${PINNACLE_PHONE_NUMBER_ID}/messages`,
-        method:   'POST',
-        headers:  {
-            'Content-Type':   'application/json',
+        path: `/v3/${PINNACLE_PHONE_NUMBER_ID}/messages`,
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
             'Content-Length': Buffer.byteLength(payloadString),
-            'apikey':         PINNACLE_API_KEY,
+            'apikey': PINNACLE_API_KEY,
         },
     };
 
