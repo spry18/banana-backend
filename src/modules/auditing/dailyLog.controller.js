@@ -33,12 +33,12 @@ const startDay = async (req, res) => {
         const dailyLog = await DailyLog.create({
             userId: req.user._id,
             startKm,
-            startMeterPhotoUrl: `/uploads/${startKmPhotoFile.filename}`,
+            startMeterPhotoUrl: startKmPhotoFile.location,
             vehicleNumber: vehicleNumber || null,
             // Petrol advance fields (optional — only submitted by Field Selectors)
             petrolAdvance: petrolAdvance ? Number(petrolAdvance) : null,
             petrolReceiptPhoto: petrolReceiptPhotoFile
-                ? `/uploads/${petrolReceiptPhotoFile.filename}`
+                ? petrolReceiptPhotoFile.location
                 : null,
         });
 
@@ -82,7 +82,7 @@ const endDay = async (req, res) => {
         }
 
         log.endKm = endKm;
-        log.endMeterPhotoUrl = `/uploads/${req.file.filename}`;
+        log.endMeterPhotoUrl = req.file.location;
         log.endTime = Date.now();
         log.status = 'COMPLETED';
 

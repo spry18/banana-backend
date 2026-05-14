@@ -27,7 +27,7 @@ const createAdvance = async (req, res) => {
         }
 
         // Handle optional receipt photo upload
-        const receiptPhotoUrl = req.file ? `/uploads/${req.file.filename}` : null;
+        const receiptPhotoUrl = req.file ? req.file.location : null;
 
         const advance = await PetrolAdvance.create({
             omId: req.user._id,

@@ -159,13 +159,13 @@ const submitTripReport = async (req, res) => {
 
         // Handle file uploads (flexible — Eicher and Pickup fields coexist)
         const files = req.files || {};
-        const weightSlipUrl = files.weightSlipPhoto?.[0] ? `/uploads/${files.weightSlipPhoto[0].filename}` : null;
-        const dieselSlipUrl = files.dieselSlipPhoto?.[0] ? `/uploads/${files.dieselSlipPhoto[0].filename}` : null;
-        const unloadSlipUrl = files.unloadSlipPhoto?.[0] ? `/uploads/${files.unloadSlipPhoto[0].filename}` : null;
-        const endKmPhotoUrl = files.endKmPhoto?.[0] ? `/uploads/${files.endKmPhoto[0].filename}` : null;
-        const uploadSlipUrl = files.uploadSlipPhoto?.[0] ? `/uploads/${files.uploadSlipPhoto[0].filename}` : null;
-        const meterPhotoUrl = files.meterPhoto?.[0] ? `/uploads/${files.meterPhoto[0].filename}` : null;
-        const tollSlipUrl = files.tollSlipPhoto?.[0] ? `/uploads/${files.tollSlipPhoto[0].filename}` : null;
+        const weightSlipUrl = files.weightSlipPhoto?.[0] ? files.weightSlipPhoto[0].location : null;
+        const dieselSlipUrl = files.dieselSlipPhoto?.[0] ? files.dieselSlipPhoto[0].location : null;
+        const unloadSlipUrl = files.unloadSlipPhoto?.[0] ? files.unloadSlipPhoto[0].location : null;
+        const endKmPhotoUrl = files.endKmPhoto?.[0] ? files.endKmPhoto[0].location : null;
+        const uploadSlipUrl = files.uploadSlipPhoto?.[0] ? files.uploadSlipPhoto[0].location : null;
+        const meterPhotoUrl = files.meterPhoto?.[0] ? files.meterPhoto[0].location : null;
+        const tollSlipUrl = files.tollSlipPhoto?.[0] ? files.tollSlipPhoto[0].location : null;
 
         const trip = await Trip.create({
             driverId: userId,
@@ -294,25 +294,25 @@ const updateTripReport = async (req, res) => {
 
         const files = req.files || {};
         if (files.weightSlipPhoto?.[0]) {
-            trip.weightSlipUrl = `/uploads/${files.weightSlipPhoto[0].filename}`;
+            trip.weightSlipUrl = files.weightSlipPhoto[0].location;
         }
         if (files.dieselSlipPhoto?.[0]) {
-            trip.dieselSlipUrl = `/uploads/${files.dieselSlipPhoto[0].filename}`;
+            trip.dieselSlipUrl = files.dieselSlipPhoto[0].location;
         }
         if (files.unloadSlipPhoto?.[0]) {
-            trip.unloadSlipUrl = `/uploads/${files.unloadSlipPhoto[0].filename}`;
+            trip.unloadSlipUrl = files.unloadSlipPhoto[0].location;
         }
         if (files.endKmPhoto?.[0]) {
-            trip.endKmPhotoUrl = `/uploads/${files.endKmPhoto[0].filename}`;
+            trip.endKmPhotoUrl = files.endKmPhoto[0].location;
         }
         if (files.uploadSlipPhoto?.[0]) {
-            trip.uploadSlipUrl = `/uploads/${files.uploadSlipPhoto[0].filename}`;
+            trip.uploadSlipUrl = files.uploadSlipPhoto[0].location;
         }
         if (files.meterPhoto?.[0]) {
-            trip.meterPhotoUrl = `/uploads/${files.meterPhoto[0].filename}`;
+            trip.meterPhotoUrl = files.meterPhoto[0].location;
         }
         if (files.tollSlipPhoto?.[0]) {
-            trip.tollSlipUrl = `/uploads/${files.tollSlipPhoto[0].filename}`;
+            trip.tollSlipUrl = files.tollSlipPhoto[0].location;
         }
 
         if (trip.reviewStatus === 'REJECTED') {

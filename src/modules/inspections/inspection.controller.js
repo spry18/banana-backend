@@ -58,7 +58,7 @@ const createInspection = async (req, res) => {
         } = req.body;
 
         // ── 2. Build photo URL array from uploaded files ──────────────────────
-        const photos = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
+        const photos = req.files ? req.files.map(file => file.location) : [];
 
         // ── 3. Map UI decision value → DB enum value ──────────────────────────
         // DB enum is ['APPROVED', 'REJECTED']. UI sends 'SELECTED' or 'REJECTED'.
