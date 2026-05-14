@@ -36,6 +36,7 @@ connectDB();
 require('./src/cron/slaCron');
 
 const app = express();
+app.set("trust proxy", 1);
 
 // Apply Global Middlewares
 app.use(express.json());
@@ -130,4 +131,5 @@ const PORT = process.env.PORT || 5000;
 // Start the server
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+    console.log("Backend Auto Deploy Working");
 });
