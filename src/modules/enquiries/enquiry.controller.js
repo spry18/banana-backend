@@ -35,6 +35,10 @@ const createEnquiry = async (req, res) => {
             return res.status(404).json({ message: 'Assigned Selector not found with the provided ID' });
         }
 
+        if (selector.role !== 'Field Selector') {
+            return res.status(400).json({ message: 'Invalid Role: Assigned user must be a Field Selector' });
+        }
+
         if (agentId && agentId.trim() !== "") {
             const agent = await Agent.findById(agentId);
             if (!agent) {
@@ -183,6 +187,9 @@ const updateEnquiry = async (req, res) => {
             const selector = await User.findById(req.body.assignedSelectorId);
             if (!selector) {
                 return res.status(404).json({ message: 'Assigned Selector not found with the provided ID' });
+            }
+            if (selector.role !== 'Field Selector') {
+                return res.status(400).json({ message: 'Invalid Role: Assigned user must be a Field Selector' });
             }
         } else if (req.body.assignedSelectorId === "") {
             req.body.assignedSelectorId = null;

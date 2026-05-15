@@ -23,7 +23,7 @@ const s3 = new S3Client(s3Config);
 const storage = multerS3({
     s3: s3,
     bucket: function (req, file, cb) {
-        cb(null, process.env.AWS_S3_BUCKET_NAME || 'fallback-bucket-name');
+        cb(null, process.env.AWS_BUCKET_NAME || process.env.AWS_S3_BUCKET_NAME || 'fallback-bucket-name');
     },
     metadata: function (req, file, cb) {
         cb(null, { fieldName: file.fieldname });
