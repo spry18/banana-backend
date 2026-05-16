@@ -16,9 +16,17 @@ const inspectionSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
-        volumeBoxRange: {
-            type: String,
+        minVolume: {
+            type: Number,
             required: true,
+            min: [1000, 'minVolume must be at least 1000.'],
+            max: [10000, 'minVolume must not exceed 10000.'],
+        },
+        maxVolume: {
+            type: Number,
+            required: true,
+            min: [1000, 'maxVolume must be at least 1000.'],
+            max: [10000, 'maxVolume must not exceed 10000.'],
         },
         recoveryPercent: {
             type: String,

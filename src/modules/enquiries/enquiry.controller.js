@@ -26,17 +26,17 @@ const createEnquiry = async (req, res) => {
             assignedSelectorId,
         } = req.body;
 
-        if (!assignedSelectorId) {
-            return res.status(400).json({ message: 'assignedSelectorId is required' });
-        }
-
-        const selector = await User.findById(assignedSelectorId);
-        if (!selector) {
-            return res.status(404).json({ message: 'Assigned Selector not found with the provided ID' });
-        }
-
-        if (selector.role !== 'Field Selector') {
-            return res.status(400).json({ message: 'Invalid Role: Assigned user must be a Field Selector' });
+        // ── Assignment Card is OPTIONAL ──────────────────────────────────────
+        // Validate selector only if provided
+        let selector = null;
+        if (assignedSelectorId && assignedSelectorId.trim() !== '') {
+            selector = await User.findById(assignedSelectorId);
+            if (!selector) {
+                return res.status(404).json({ message: 'Assigned Selector not found with the provided ID' });
+            }
+            if (selector.role !== 'Field Selector') {
+                return res.status(400).json({ message: 'Invalid Role: Assigned user must be a Field Selector' });
+            }
         }
 
         if (agentId && agentId.trim() !== "") {
@@ -68,21 +68,32 @@ const createEnquiry = async (req, res) => {
             agentAttached: agentAttached ?? false,
             visitPriority: visitPriority || 'Medium',
             fieldOwnerId,
-            assignedSelectorId,
+            assignedSelectorId: selector ? assignedSelectorId : null,
             editableUntil,
         });
 
-        // Flow 1 — WhatsApp: notify farmer (console stub, real API in future)
+        // Flow 1 — WhatsApp: notify farmer that enquiry is received
         NotificationService.sendEnquiryReceived(enquiry.farmerMobile, enquiry.farmerFirstName, enquiry.enquiryId);
 
-        // Flow 2 — In-app: notify the assigned Field Selector
-        await createNotification(
-            assignedSelectorId,
-            'FIELD_SELECTOR_ASSIGNED',
-            `You have been assigned to inspect a plot for farmer ${farmerFirstName} ${farmerLastName} at ${location}. Ref: ${enquiry.enquiryId}`,
-            enquiry._id,
-            'Enquiry'
-        );
+        // Flow 1b — WhatsApp: if selector assigned, notify farmer + selector
+        if (selector) {
+            const selectorFullName = `${selector.firstName} ${selector.lastName}`;
+            // Notify farmer: visit will be scheduled by the selector
+            NotificationService.sendVisitScheduled(enquiry.farmerMobile, selectorFullName, selector.mobileNo);
+            // Notify selector: they have been assigned to this plot
+            NotificationService.sendSelectorAssigned(selector.mobileNo, enquiry.farmerFirstName, enquiry.farmerLastName, enquiry.location, enquiry.enquiryId);
+        }
+
+        // Flow 2 — In-app: notify the assigned Field Selector (only if assigned)
+        if (selector) {
+            await createNotification(
+                assignedSelectorId,
+                'FIELD_SELECTOR_ASSIGNED',
+                `You have been assigned to inspect a plot for farmer ${farmerFirstName} ${farmerLastName} at ${location}. Ref: ${enquiry.enquiryId}`,
+                enquiry._id,
+                'Enquiry'
+            );
+        }
 
         // Flow 2 — In-app: notify all Admins
         await broadcastToRole(
@@ -229,6 +240,18 @@ const updateEnquiry = async (req, res) => {
         // Flow 1 — WhatsApp: commercial rejection
         if (req.body.status && (req.body.status === 'CLOSED' || req.body.status === 'CANCELLED') && enquiry.status !== req.body.status) {
             NotificationService.sendDealCancelled(updatedEnquiry.farmerMobile, updatedEnquiry.farmerFirstName);
+        }
+
+        // Flow 1b — WhatsApp: notify farmer + new selector when selector changes
+        if (selectorChanged) {
+            const newSelector = await User.findById(newSelectorId).select('firstName lastName mobileNo');
+            if (newSelector) {
+                const selectorFullName = `${newSelector.firstName} ${newSelector.lastName}`;
+                // Notify farmer that a visit will be scheduled
+                NotificationService.sendVisitScheduled(updatedEnquiry.farmerMobile, selectorFullName, newSelector.mobileNo);
+                // Notify the newly assigned selector
+                NotificationService.sendSelectorAssigned(newSelector.mobileNo, updatedEnquiry.farmerFirstName, updatedEnquiry.farmerLastName, updatedEnquiry.location, updatedEnquiry.enquiryId);
+            }
         }
 
         // Flow 2 — In-app: notify new Field Selector when selector changes

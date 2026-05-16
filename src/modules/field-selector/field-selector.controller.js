@@ -170,7 +170,8 @@ const getFieldDetails = async (req, res) => {
             inspectionData = {
                 _id:               inspection._id,
                 harvestingStage:   inspection.harvestingStage,
-                volumeBox:         inspection.volumeBoxRange,   // DB → UI name
+                minVolume:         inspection.minVolume,         // separate integer fields
+                maxVolume:         inspection.maxVolume,         // separate integer fields
                 recoveryPercent:   inspection.recoveryPercent,
                 packingSize:       inspection.packingSize,
                 chellingPercent:   inspection.chelling,         // DB → UI name
@@ -191,9 +192,15 @@ const getFieldDetails = async (req, res) => {
             };
         }
 
+        // Explicitly surface generation so the frontend can read it in the Field Visit Form
+        const generationData = enquiry.generation
+            ? { _id: enquiry.generation._id, name: enquiry.generation.name }
+            : null;
+
         res.status(200).json({
             ...enquiry,
-            inspection: inspectionData,  // null when not yet submitted, full object after submission
+            generation: generationData,      // explicitly exposed for Field Visit Form
+            inspection: inspectionData,      // null when not yet submitted, full object after submission
         });
     } catch (error) {
         console.error('Error fetching field details:', error);

@@ -387,7 +387,7 @@
                                 "REPLACE_WITH_ENQUIRY_OBJECT_ID"
                             ]
                         },
-                        "description": "Fetches full details of one specific enquiry, plus the linked inspection report if one has already been submitted.\n\n**Security:** Returns 404 if the enquiry exists but is NOT assigned to the logged-in selector.\n\n**Updated 2026-05-07:** Response now embeds an `inspection` key. If no inspection has been submitted yet, `inspection` is `null`. After the Field Selector submits a report, `inspection` will contain all saved visit fields using the same frontend field names used during submission.\n\nResponse shape (SELECTED, inspection already submitted):\n```json\n{\n  \"_id\": \"69fb70c65f36d6f318f8e66b\",\n  \"enquiryId\": \"ENQ-1778086086332\",\n  \"status\": \"SELECTED\",\n  \"farmerFirstName\": \"Om\",\n  \"farmerLastName\": \"Shinde\",\n  \"farmerMobile\": \"9876543210\",\n  \"location\": \"Nashik\",\n  \"subLocation\": \"Sinnar\",\n  \"generation\": { \"_id\": \"...\", \"name\": \"F2\" },\n  \"companyId\": { \"_id\": \"...\", \"name\": \"ABC Exports\" },\n  \"fieldOwnerId\": { \"firstName\": \"Vaibhav\", \"lastName\": \"Katkar\", \"mobileNo\": \"9999999999\" },\n  \"inspection\": {\n    \"_id\": \"...\",\n    \"harvestingStage\": \"1st\",\n    \"volumeBox\": \"800-1000\",\n    \"recoveryPercent\": \"82\",\n    \"packingSize\": \"13kg\",\n    \"chellingPercent\": \"5\",\n    \"spiklingPercent\": \"3\",\n    \"pulpePercent\": \"2\",\n    \"phreepsPercent\": \"1\",\n    \"harvestingTime\": \"After 3-4 days\",\n    \"generalNotes\": \"Good quality plot.\",\n    \"isThroughPartner\": false,\n    \"partnerName\": null,\n    \"photos\": [\"/uploads/photo1.jpg\"],\n    \"caliper\": \"42/44/46\",\n    \"length\": \"7+\",\n    \"plotType\": \"NFC\",\n    \"greenLeaf\": \"7 to 9\",\n    \"decision\": \"APPROVED\",\n    \"submittedAt\": \"2026-05-07T09:00:00.000Z\"\n  }\n}\n```\n\n⚠️ Replace `REPLACE_WITH_ENQUIRY_OBJECT_ID` with a real MongoDB ObjectId from the fields list.\n\n**Field name mapping reminder:** The `inspection` object uses the same UI field names (`volumeBox`, `chellingPercent`, `spiklingPercent`, `pulpePercent`, `phreepsPercent`) that are sent during submission — the backend reverse-maps from the stored DB names automatically."
+                        "description": "Fetches full details of one specific enquiry, plus the linked inspection report if one has already been submitted.\n\n**Security:** Returns 404 if the enquiry exists but is NOT assigned to the logged-in selector.\n\n**Updated 2026-05-07:** Response now embeds an `inspection` key. If no inspection has been submitted yet, `inspection` is `null`. After the Field Selector submits a report, `inspection` will contain all saved visit fields using the same frontend field names used during submission.\n\nResponse shape (SELECTED, inspection already submitted):\n```json\n{\n  \"_id\": \"69fb70c65f36d6f318f8e66b\",\n  \"enquiryId\": \"ENQ-1778086086332\",\n  \"status\": \"SELECTED\",\n  \"farmerFirstName\": \"Om\",\n  \"farmerLastName\": \"Shinde\",\n  \"farmerMobile\": \"9876543210\",\n  \"location\": \"Nashik\",\n  \"subLocation\": \"Sinnar\",\n  \"generation\": { \"_id\": \"...\", \"name\": \"F2\" },\n  \"companyId\": { \"_id\": \"...\", \"name\": \"ABC Exports\" },\n  \"fieldOwnerId\": { \"firstName\": \"Vaibhav\", \"lastName\": \"Katkar\", \"mobileNo\": \"9999999999\" },\n  \"inspection\": {\n    \"_id\": \"...\",\n    \"harvestingStage\": \"1st\",\n    \"minVolume\": 800,\n    \"maxVolume\": 1000,\n    \"recoveryPercent\": \"82\",\n    \"packingSize\": \"13kg\",\n    \"chellingPercent\": \"5\",\n    \"spiklingPercent\": \"3\",\n    \"pulpePercent\": \"2\",\n    \"phreepsPercent\": \"1\",\n    \"harvestingTime\": \"After 3-4 days\",\n    \"generalNotes\": \"Good quality plot.\",\n    \"isThroughPartner\": false,\n    \"partnerName\": null,\n    \"photos\": [\"/uploads/photo1.jpg\"],\n    \"caliper\": \"42/44/46\",\n    \"length\": \"7+\",\n    \"plotType\": \"NFC\",\n    \"greenLeaf\": \"7 to 9\",\n    \"decision\": \"APPROVED\",\n    \"submittedAt\": \"2026-05-07T09:00:00.000Z\"\n  }\n}\n```\n\n⚠️ Replace `REPLACE_WITH_ENQUIRY_OBJECT_ID` with a real MongoDB ObjectId from the fields list.\n\n**Field name mapping reminder:** The `inspection` object uses the same UI field names (`minVolume`, `maxVolume`, `chellingPercent`, `spiklingPercent`, `pulpePercent`, `phreepsPercent`) that are sent during submission — the backend reverse-maps from the stored DB names automatically."
                     },
                     "response": []
                 },
@@ -487,9 +487,15 @@
                                     "type": "text"
                                 },
                                 {
-                                    "key": "volumeBox",
-                                    "value": "800-1000",
-                                    "description": "Volume box range (UI name). Backend maps this → DB field 'volumeBoxRange' — REQUIRED",
+                                    "key": "minVolume",
+                                    "value": "800",
+                                    "description": "Minimum volume integer (1000-10000) — REQUIRED",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "maxVolume",
+                                    "value": "1000",
+                                    "description": "Maximum volume integer (1000-10000) — REQUIRED",
                                     "type": "text"
                                 },
                                 {
@@ -634,8 +640,13 @@
                                     "type": "text"
                                 },
                                 {
-                                    "key": "volumeBox",
-                                    "value": "400-600",
+                                    "key": "minVolume",
+                                    "value": "400",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "maxVolume",
+                                    "value": "600",
                                     "type": "text"
                                 },
                                 {
@@ -821,6 +832,26 @@
                     }
                 }
             ]
+        },
+        {
+            "name": "Get App Config",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "{{baseUrl}}/api/master-data/app-config",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "master-data",
+                        "app-config"
+                    ]
+                },
+                "description": "Fetches dynamic app configuration (e.g. screenshot restrictions)."
+            },
+            "response": []
         }
     ]
 }

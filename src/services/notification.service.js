@@ -144,7 +144,17 @@ class NotificationService {
         });
     }
 
-    // 5. Field Selector Rescheduled
+    // 5. Field Selector Assigned — sent to the selector's own mobile when they are assigned to a plot
+    static sendSelectorAssigned(mobile, farmerFirstName, farmerLastName, location, enquiryId) {
+        _sendWhatsAppTemplate({
+            templateName: 'selector_field_assigned',
+            language: 'mr',
+            phone: mobile,
+            variables: [farmerFirstName, farmerLastName, location, enquiryId]
+        });
+    }
+
+    // 6. Field Selector Rescheduled
     static sendSelectorRescheduled(mobile, supervisorName, supervisorMobile) {
         _sendWhatsAppTemplate({
             templateName: 'farmer_selector_rescheduled',

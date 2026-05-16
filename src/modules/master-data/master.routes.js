@@ -28,6 +28,7 @@ const {
     toggleGenerationStatus,
     getFormDropdowns,
     getDrivers,
+    getAppConfig,
 } = require('./master.controller');
 
 // Apply protection to all routes
@@ -39,6 +40,10 @@ router.get('/drivers', authorize('Admin', 'Operational Manager', 'Munshi'), getD
 // GET /api/master-data/dropdowns
 // Open to any authenticated role that needs to populate UI forms
 router.get('/dropdowns', authorize('Admin', 'Field Owner', 'Operational Manager', 'Munshi'), getFormDropdowns);
+
+// GET /api/master-data/app-config
+// Open to any authenticated role to read dynamic app configurations
+router.get('/app-config', getAppConfig);
 
 // Companies — Admin only
 router.route('/companies').post(authorize('Admin'), createCompany).get(authorize('Admin', 'Field Owner', 'Field Selector'), getCompanies);

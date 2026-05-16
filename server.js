@@ -34,6 +34,7 @@ connectDB();
 
 // Initialize background cron jobs
 require('./src/cron/slaCron');
+require('./src/cron/missedPlotsCron'); // Daily 6 PM: mark missed plots + clear selector
 
 const app = express();
 app.set("trust proxy", 1);

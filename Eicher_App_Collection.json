@@ -580,6 +580,26 @@
                     }
                 }
             ]
+        },
+        {
+            "name": "Get App Config",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "{{baseUrl}}/api/master-data/app-config",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "master-data",
+                        "app-config"
+                    ]
+                },
+                "description": "Fetches dynamic app configuration (e.g. screenshot restrictions)."
+            },
+            "response": []
         }
     ]
 }
