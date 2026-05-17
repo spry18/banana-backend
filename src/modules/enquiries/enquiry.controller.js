@@ -160,7 +160,28 @@ const getEnquiries = async (req, res) => {
             .sort({ createdAt: -1 })
             .populate('assignedSelectorId', 'firstName lastName mobileNo')
             .populate('agentId', 'name')
-            .populate('generation', 'name');
+            .populate('generation', 'name')
+            .lean();
+
+        // Fetch related inspections to map rejectReason
+        const enquiryIds = enquiries.map((e) => e._id);
+        const Inspection = require('../inspections/inspection.model');
+        const inspections = await Inspection.find({ enquiryId: { $in: enquiryIds } })
+            .select('enquiryId generalNotes')
+            .lean();
+            
+        const inspectionMap = {};
+        inspections.forEach((insp) => {
+            inspectionMap[insp.enquiryId.toString()] = insp;
+        });
+
+        const data = enquiries.map(enq => {
+            const insp = inspectionMap[enq._id.toString()] || null;
+            return {
+                ...enq,
+                rejectReason: (enq.status === 'REJECTED' && insp) ? (insp.generalNotes || null) : null
+            };
+        });
 
         const total = await Enquiry.countDocuments(query);
 
@@ -168,7 +189,7 @@ const getEnquiries = async (req, res) => {
             total,
             page: Number(page),
             pages: Math.ceil(total / Number(limit)),
-            data: enquiries
+            data
         });
     } catch (error) {
         console.error('Error fetching enquiries:', error);
@@ -341,6 +362,7 @@ const getEnquiryById = async (req, res) => {
             } : null,
             logistics: logisticsData,
             inspection: inspection || null,
+            rejectReason: (e.status === 'REJECTED' && inspection) ? (inspection.generalNotes || null) : null,
         });
     } catch (error) {
         console.error('Error fetching enquiry by ID:', error);

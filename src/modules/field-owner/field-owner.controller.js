@@ -2,6 +2,7 @@ const Enquiry = require('../enquiries/enquiry.model');
 const Inspection = require('../inspections/inspection.model');
 const DailyLog = require('../auditing/dailyLog.model');
 const User = require('../users/user.model');
+const { getFullUrl } = require('../../utils/urlHelper');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Global Shared Pool: all FOs see all enquiries — no per-FO scoping
@@ -157,7 +158,7 @@ const getFOPlots = async (req, res) => {
         // ── Bulk fetch linked inspections (single query, avoids N+1) ──────────────────────
         const enquiryIds = enquiries.map((e) => e._id);
         const inspections = await Inspection.find({ enquiryId: { $in: enquiryIds } })
-            .select('enquiryId minVolume maxVolume recoveryPercent packingSize')
+            .select('enquiryId minVolume maxVolume recoveryPercent packingSize generalNotes')
             .lean();
         const inspectionMap = {};
         inspections.forEach((insp) => {
@@ -176,6 +177,7 @@ const getFOPlots = async (req, res) => {
                 minVolume:    insp               ? (insp.minVolume ?? null)    : null,
                 maxVolume:    insp               ? (insp.maxVolume ?? null)    : null,
                 recovery:     insp               ? (insp.recoveryPercent ?? null) : null,
+                rejectReason: (enq.status === 'REJECTED' && insp) ? (insp.generalNotes ?? null) : null,
                 location:     enq.location,
                 mobileNumber: enq.farmerMobile,
             };
@@ -346,8 +348,8 @@ const getSelectorMileage = async (req, res) => {
             startTime: log.startTime,
             endTime: log.endTime || null,
             status: log.status,
-            startMeterPhotoUrl: log.startMeterPhotoUrl,
-            endMeterPhotoUrl: log.endMeterPhotoUrl || null,
+            startMeterPhotoUrl: log.startMeterPhotoUrl ? getFullUrl(req, log.startMeterPhotoUrl) : null,
+            endMeterPhotoUrl: log.endMeterPhotoUrl ? getFullUrl(req, log.endMeterPhotoUrl) : null,
         });
     } catch (error) {
         if (error.name === 'CastError') {

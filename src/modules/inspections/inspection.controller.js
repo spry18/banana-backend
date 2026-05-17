@@ -1,5 +1,6 @@
 const Inspection = require('./inspection.model');
 const Enquiry = require('../enquiries/enquiry.model');
+const { getFullUrl } = require('../../utils/urlHelper');
 const NotificationService = require('../../services/notification.service');
 const { logSystemAction } = require('../../utils/auditLogger');
 const { createNotification } = require('../../utils/notificationHelper');
@@ -243,9 +244,17 @@ const getInspections = async (req, res) => {
     try {
         const inspections = await Inspection.find()
             .populate('enquiryId')
-            .populate('selectorId', 'firstName lastName mobileNo');
+            .populate('selectorId', 'firstName lastName mobileNo')
+            .lean();
 
-        res.status(200).json(inspections);
+        const data = inspections.map(insp => {
+            if (insp.photos && insp.photos.length > 0) {
+                insp.photos = insp.photos.map(p => getFullUrl(req, p));
+            }
+            return insp;
+        });
+
+        res.status(200).json(data);
     } catch (error) {
         console.error('Error fetching inspections:', error);
         res.status(500).json({ message: 'Server error while fetching inspections' });
@@ -261,7 +270,13 @@ const getInspectionById = async (req, res) => {
         if (!inspection) {
             return res.status(404).json({ message: 'Inspection not found' });
         }
-        res.status(200).json(inspection);
+        
+        const data = inspection.toObject();
+        if (data.photos && data.photos.length > 0) {
+            data.photos = data.photos.map(p => getFullUrl(req, p));
+        }
+        
+        res.status(200).json(data);
     } catch (error) {
         console.error('Error fetching inspection by ID:', error);
         if (error.name === 'CastError') {

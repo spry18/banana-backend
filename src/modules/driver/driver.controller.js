@@ -2,6 +2,7 @@ const Trip = require('../execution/trip.model');
 const Logistics = require('../logistics/logistics.model');
 const DieselAdvance = require('../diesel-advance/dieselAdvance.model');
 const PdfService = require('../../services/pdf.service');
+const { getFullUrl } = require('../../utils/urlHelper');
 
 // ============================================================
 //  PHASE 2: Dashboard & History
@@ -421,13 +422,13 @@ const getDriverReports = async (req, res) => {
                 tollExpense: t.tollExpense,
                 reviewStatus: t.reviewStatus,
                 // Photo URLs
-                weightSlipUrl: t.weightSlipUrl || null,
-                dieselSlipUrl: t.dieselSlipUrl || null,
-                unloadSlipUrl: t.unloadSlipUrl || null,
-                uploadSlipUrl: t.uploadSlipUrl || null,
-                meterPhotoUrl: t.meterPhotoUrl || null,
-                tollSlipUrl: t.tollSlipUrl || null,
-                endKmPhotoUrl: t.endKmPhotoUrl || null,
+                weightSlipUrl: t.weightSlipUrl ? getFullUrl(req, t.weightSlipUrl) : null,
+                dieselSlipUrl: t.dieselSlipUrl ? getFullUrl(req, t.dieselSlipUrl) : null,
+                unloadSlipUrl: t.unloadSlipUrl ? getFullUrl(req, t.unloadSlipUrl) : null,
+                uploadSlipUrl: t.uploadSlipUrl ? getFullUrl(req, t.uploadSlipUrl) : null,
+                meterPhotoUrl: t.meterPhotoUrl ? getFullUrl(req, t.meterPhotoUrl) : null,
+                tollSlipUrl: t.tollSlipUrl ? getFullUrl(req, t.tollSlipUrl) : null,
+                endKmPhotoUrl: t.endKmPhotoUrl ? getFullUrl(req, t.endKmPhotoUrl) : null,
             });
             dailyLog[dayKey].dayKm += t.totalKm || 0;
             dailyLog[dayKey].dayToll += t.tollExpense || 0;

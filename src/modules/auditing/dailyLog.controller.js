@@ -1,4 +1,5 @@
 const DailyLog = require('./dailyLog.model');
+const { getFullUrl } = require('../../utils/urlHelper');
 
 // @desc    Start day log
 // @route   POST /api/daily-logs/start
@@ -11,8 +12,8 @@ const startDay = async (req, res) => {
         const startKmPhotoFile = req.files?.startKmPhoto?.[0];
         const petrolReceiptPhotoFile = req.files?.petrolReceiptPhoto?.[0];
 
-        if (!startKm || !startKmPhotoFile) {
-            return res.status(400).json({ message: 'startKm and startKmPhoto are required' });
+        if (!startKm) {
+            return res.status(400).json({ message: 'startKm is required' });
         }
 
         const startOfToday = new Date();
@@ -33,7 +34,7 @@ const startDay = async (req, res) => {
         const dailyLog = await DailyLog.create({
             userId: req.user._id,
             startKm,
-            startMeterPhotoUrl: startKmPhotoFile.location,
+            startMeterPhotoUrl: startKmPhotoFile ? startKmPhotoFile.location : null,
             vehicleNumber: vehicleNumber || null,
             // Petrol advance fields (optional — only submitted by Field Selectors)
             petrolAdvance: petrolAdvance ? Number(petrolAdvance) : null,
@@ -142,16 +143,24 @@ const getLogs = async (req, res) => {
                     .skip(skip)
                     .limit(Number(limit))
                     .sort({ createdAt: -1 })
-                    .populate('userId', 'firstName lastName role'),
+                    .populate('userId', 'firstName lastName role')
+                    .lean(),
                 DailyLog.countDocuments(match),
             ]);
         }
+
+        const data = logs.map(log => {
+            if (log.startMeterPhotoUrl) log.startMeterPhotoUrl = getFullUrl(req, log.startMeterPhotoUrl);
+            if (log.endMeterPhotoUrl) log.endMeterPhotoUrl = getFullUrl(req, log.endMeterPhotoUrl);
+            if (log.petrolReceiptPhoto) log.petrolReceiptPhoto = getFullUrl(req, log.petrolReceiptPhoto);
+            return log;
+        });
 
         res.status(200).json({
             total,
             page: Number(page),
             pages: Math.ceil(total / Number(limit)),
-            data: logs,
+            data,
         });
     } catch (error) {
         console.error('Error fetching logs:', error);
