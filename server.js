@@ -34,8 +34,10 @@ connectDB();
 
 // Initialize background cron jobs
 require('./src/cron/slaCron');
+require('./src/cron/missedPlotsCron'); // Daily 6 PM: mark missed plots + clear selector
 
 const app = express();
+app.set("trust proxy", 1);
 
 // Apply Global Middlewares
 app.use(express.json());
@@ -130,4 +132,5 @@ const PORT = process.env.PORT || 5000;
 // Start the server
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+    console.log("Backend Auto Deploy Working");
 });

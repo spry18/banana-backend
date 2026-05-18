@@ -1,23 +1,31 @@
 const PDFDocument = require('pdfkit');
-const fs = require('fs');
-const path = require('path');
+const { PassThrough } = require('stream');
+const { S3Client } = require('@aws-sdk/client-s3');
+const { Upload } = require('@aws-sdk/lib-storage');
+require('dotenv').config();
+
+// Initialize S3 Client safely
+const s3Config = {
+    region: process.env.AWS_REGION || 'ap-south-1',
+};
+if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+    s3Config.credentials = {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    };
+}
+const s3 = new S3Client(s3Config);
 
 class PdfService {
     static generateTripReport(trip) {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             try {
-                // Ensure directory exists
-                const reportsDir = path.join(__dirname, '../../uploads/reports');
-                if (!fs.existsSync(reportsDir)) {
-                    fs.mkdirSync(reportsDir, { recursive: true });
-                }
-
                 const doc = new PDFDocument({ margin: 50 });
-                const filename = `trip-report-${trip._id}.pdf`;
-                const filePath = path.join(reportsDir, filename);
-
-                const stream = fs.createWriteStream(filePath);
-                doc.pipe(stream);
+                const filename = `uploads/reports/trip-report-${trip._id}-${Date.now()}.pdf`;
+                
+                // Use a PassThrough stream instead of generating a file locally
+                const passThrough = new PassThrough();
+                doc.pipe(passThrough);
 
                 // Add content
                 doc.fontSize(20).font('Helvetica-Bold').text('VaxTrack - Official Trip Report', { align: 'center' });
@@ -30,15 +38,27 @@ class PdfService {
                 doc.moveDown();
                 doc.text(`Generated On: ${new Date().toLocaleString()}`);
 
+                // Finish creating the PDF document
                 doc.end();
 
-                stream.on('finish', () => {
-                    resolve(`/uploads/reports/${filename}`);
+                // Stream the PDF directly to AWS S3
+                const upload = new Upload({
+                    client: s3,
+                    params: {
+                        Bucket: process.env.AWS_S3_BUCKET_NAME || 'fallback-bucket-name',
+                        Key: filename,
+                        Body: passThrough,
+                        ContentType: 'application/pdf',
+                    },
                 });
 
-                stream.on('error', (err) => {
-                    reject(err);
-                });
+                upload.done()
+                    .then((response) => {
+                        resolve(response.Location);
+                    })
+                    .catch((err) => {
+                        reject(err);
+                    });
             } catch (error) {
                 reject(error);
             }

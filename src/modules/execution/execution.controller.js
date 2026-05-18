@@ -8,8 +8,9 @@ const { logSystemAction } = require('../../utils/auditLogger');
 // @access  Protected (Admin, Operational Manager)
 const getExecutionById = async (req, res) => {
     try {
+        const assignmentId = req.params.id.trim();
         // 1. Fetch the base logistics assignment
-        const assignment = await Logistics.findById(req.params.id)
+        const assignment = await Logistics.findById(assignmentId)
             .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName farmerMobile location subLocation plantCount')
             .populate('companyId', 'companyName legalName')
             .populate('munshiId', 'firstName lastName mobileNo')
@@ -21,11 +22,14 @@ const getExecutionById = async (req, res) => {
             return res.status(404).json({ message: 'Logistics assignment not found' });
         }
 
-        // 2. Fetch the associated Trip report (Driver's submission)
-        const trip = await Trip.findOne({ assignmentId: assignment._id })
+        // 2. Fetch the associated Trip reports (Both Eicher and Pickup trips)
+        const trips = await Trip.find({ assignmentId: assignment._id })
             .populate('driverId', 'firstName lastName mobileNo')
             .populate('reviewedBy', 'firstName lastName')
             .lean();
+
+        const eicherTrip = trips.find(t => t.driverType === 'Eicher') || null;
+        const pickupTrip = trips.find(t => t.driverType === 'Pickup') || null;
 
         // 3. Fetch the associated Packing report (Munshi's submission)
         const packing = await Packing.findOne({ assignmentId: assignment._id })
@@ -36,12 +40,14 @@ const getExecutionById = async (req, res) => {
         // 4. Merge into unified response
         res.status(200).json({
             assignment: assignment.toObject(),
-            trip: trip || null,      // null if Driver hasn't submitted yet
+            trip: eicherTrip,         // kept for backward compatibility if FE relies on this name
+            pickupTrip: pickupTrip,  // added the pickup trip explicitly
+            trips: trips,            // you can optionally send the entire array
             packing: packing || null, // null if Munshi hasn't submitted yet
             executionStatus: {
                 packingSubmitted: !!packing,
-                tripSubmitted: !!trip,
-                reviewStatus: trip?.reviewStatus || 'PENDING',
+                tripSubmitted: trips.length > 0,
+                reviewStatus: trips[0]?.reviewStatus || 'PENDING',
             },
         });
     } catch (error) {

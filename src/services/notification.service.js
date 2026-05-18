@@ -9,7 +9,7 @@ const https = require('https');
 // Body    : { to, type:"template", template: { name, language, components } }
 // ─────────────────────────────────────────────────────────────────────────────
 
-const PINNACLE_API_KEY         = process.env.PINNACLE_API_KEY         || '';
+const PINNACLE_API_KEY = process.env.PINNACLE_API_KEY || '';
 const PINNACLE_PHONE_NUMBER_ID = process.env.PINNACLE_PHONE_NUMBER_ID || '';
 
 /**
@@ -61,12 +61,12 @@ function _sendWhatsAppTemplate({ templateName, language = 'mr', phone, variables
 
     const options = {
         hostname: 'partnersv1.pinbot.ai',
-        path:     `/v3/${PINNACLE_PHONE_NUMBER_ID}/messages`,
-        method:   'POST',
-        headers:  {
-            'Content-Type':   'application/json',
+        path: `/v3/${PINNACLE_PHONE_NUMBER_ID}/messages`,
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
             'Content-Length': Buffer.byteLength(payloadString),
-            'apikey':         PINNACLE_API_KEY,
+            'apikey': PINNACLE_API_KEY,
         },
     };
 
@@ -144,7 +144,17 @@ class NotificationService {
         });
     }
 
-    // 5. Field Selector Rescheduled
+    // 5. Field Selector Assigned — sent to the selector's own mobile when they are assigned to a plot
+    static sendSelectorAssigned(mobile, farmerFirstName, farmerLastName, location, enquiryId) {
+        _sendWhatsAppTemplate({
+            templateName: 'selector_field_assigned',
+            language: 'mr',
+            phone: mobile,
+            variables: [farmerFirstName, farmerLastName, location, enquiryId]
+        });
+    }
+
+    // 6. Field Selector Rescheduled
     static sendSelectorRescheduled(mobile, supervisorName, supervisorMobile) {
         _sendWhatsAppTemplate({
             templateName: 'farmer_selector_rescheduled',

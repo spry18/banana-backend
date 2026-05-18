@@ -1,5 +1,6 @@
 const Inspection = require('./inspection.model');
 const Enquiry = require('../enquiries/enquiry.model');
+const { getFullUrl } = require('../../utils/urlHelper');
 const NotificationService = require('../../services/notification.service');
 const { logSystemAction } = require('../../utils/auditLogger');
 const { createNotification } = require('../../utils/notificationHelper');
@@ -22,8 +23,9 @@ const { broadcastToRole } = require('../../utils/broadcastToRole');
 // We map here in the controller so neither schema nor frontend needs to change.
 //
 //   UI field name        →   DB schema field
-//   ─────────────────────────────────────────
-//   volumeBox            →   volumeBoxRange
+//   ────────────────────────────────────────────
+//   minVolume            →   minVolume          (Number, 1000–10000)
+//   maxVolume            →   maxVolume          (Number, 1000–10000)
 //   chellingPercent      →   chelling
 //   spiklingPercent      →   spikling
 //   pulpePercent         →   pulpe
@@ -33,11 +35,12 @@ const { broadcastToRole } = require('../../utils/broadcastToRole');
 // ─────────────────────────────────────────────────────────────────────────────
 const createInspection = async (req, res) => {
     try {
-        // ── 1. Destructure using UI field names ───────────────────────────────
+        // ── 1. Destructure using UI field names ──────────────────────────────────────
         const {
             enquiryId,
             harvestingStage,
-            volumeBox,            // UI name → maps to DB field 'volumeBoxRange'
+            minVolume,            // separate integer field (1000–10000)
+            maxVolume,            // separate integer field (1000–10000)
             recoveryPercent,
             packingSize,
             chellingPercent,      // UI name → maps to DB field 'chelling'
@@ -49,7 +52,7 @@ const createInspection = async (req, res) => {
             isThroughPartner,
             partnerName,
             decision,             // UI sends 'SELECTED' or 'REJECTED'
-            
+
             // ── NEW FIELDS (Optional) ──
             caliper,
             length,
@@ -57,8 +60,81 @@ const createInspection = async (req, res) => {
             greenLeaf,
         } = req.body;
 
+        // ── 2. Backend Validations ──────────────────────────────────────────────────────
+        // Backend is the final validation gate — invalid data MUST NOT reach DB
+        // even if frontend validation is bypassed.
+
+        const _isInt = (v) => Number.isInteger(Number(v)) && !isNaN(Number(v)) && !/[a-zA-Z]/.test(String(v));
+
+        // Green Leaf: 1–9 (single digit, numeric only)
+        if (greenLeaf !== undefined && greenLeaf !== null && greenLeaf !== '') {
+            const gl = Number(greenLeaf);
+            if (!_isInt(greenLeaf) || gl < 1 || gl > 9) {
+                return res.status(400).json({ message: 'greenLeaf must be a numeric value between 1 and 9.' });
+            }
+        }
+
+        // Recovery: 10–99 (2-digit, numeric only)
+        if (recoveryPercent !== undefined) {
+            const rp = Number(recoveryPercent);
+            if (!_isInt(recoveryPercent) || rp < 10 || rp > 99) {
+                return res.status(400).json({ message: 'recoveryPercent must be a numeric value between 10 and 99.' });
+            }
+        }
+
+        // Chelling: 2-digit numeric only (10–99)
+        if (chellingPercent !== undefined) {
+            const cp = Number(chellingPercent);
+            if (!_isInt(chellingPercent) || cp < 10 || cp > 99) {
+                return res.status(400).json({ message: 'chellingPercent must be a 2-digit numeric value (10–99). Letters are not allowed.' });
+            }
+        }
+
+        // Spikling: 2-digit numeric only (10–99)
+        if (spiklingPercent !== undefined) {
+            const sp = Number(spiklingPercent);
+            if (!_isInt(spiklingPercent) || sp < 10 || sp > 99) {
+                return res.status(400).json({ message: 'spiklingPercent must be a 2-digit numeric value (10–99). Letters are not allowed.' });
+            }
+        }
+
+        // Pulpe: 2-digit numeric only (10–99)
+        if (pulpePercent !== undefined) {
+            const pp = Number(pulpePercent);
+            if (!_isInt(pulpePercent) || pp < 10 || pp > 99) {
+                return res.status(400).json({ message: 'pulpePercent must be a 2-digit numeric value (10–99). Letters are not allowed.' });
+            }
+        }
+
+        // Phreeps (Threeps): 2-digit numeric only (10–99)
+        if (phreepsPercent !== undefined) {
+            const php = Number(phreepsPercent);
+            if (!_isInt(phreepsPercent) || php < 10 || php > 99) {
+                return res.status(400).json({ message: 'phreepsPercent must be a 2-digit numeric value (10–99). Letters are not allowed.' });
+            }
+        }
+
+        // Min Volume: numeric, 1000–10000
+        if (minVolume !== undefined) {
+            const minV = Number(minVolume);
+            if (isNaN(minV) || minV < 1000 || minV > 10000) {
+                return res.status(400).json({ message: 'minVolume must be a numeric value between 1000 and 10000.' });
+            }
+        }
+
+        // Max Volume: numeric, 1000–10000, and must be >= minVolume
+        if (maxVolume !== undefined) {
+            const maxV = Number(maxVolume);
+            if (isNaN(maxV) || maxV < 1000 || maxV > 10000) {
+                return res.status(400).json({ message: 'maxVolume must be a numeric value between 1000 and 10000.' });
+            }
+            if (minVolume !== undefined && Number(maxVolume) < Number(minVolume)) {
+                return res.status(400).json({ message: 'maxVolume must be greater than or equal to minVolume.' });
+            }
+        }
+
         // ── 2. Build photo URL array from uploaded files ──────────────────────
-        const photos = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
+        const photos = req.files ? req.files.map(file => file.location) : [];
 
         // ── 3. Map UI decision value → DB enum value ──────────────────────────
         // DB enum is ['APPROVED', 'REJECTED']. UI sends 'SELECTED' or 'REJECTED'.
@@ -84,12 +160,13 @@ const createInspection = async (req, res) => {
             return res.status(400).json({ message: 'An inspection has already been submitted for this enquiry' });
         }
 
-        // ── 5. Save inspection using mapped DB field names ────────────────────
+        // ── 5. Save inspection using mapped DB field names ──────────────────────────────
         const inspection = await Inspection.create({
             enquiryId,
             selectorId,
             harvestingStage,
-            volumeBoxRange: volumeBox,           // UI → DB mapping
+            minVolume: Number(minVolume),     // separate integer field
+            maxVolume: Number(maxVolume),     // separate integer field
             recoveryPercent,
             packingSize,
             chelling: chellingPercent,      // UI → DB mapping
@@ -119,11 +196,14 @@ const createInspection = async (req, res) => {
         }
         await enquiry.save();
 
-        // Flow 1 — WhatsApp: notify farmer on rejection (console stub)
+        // Flow 1 — WhatsApp: notify farmer on result
         if (dbDecision === 'REJECTED') {
-            NotificationService.sendInspectionRejected(enquiry.farmerMobile, enquiry.farmerFirstName);
+            const contactName = `${req.user.firstName} ${req.user.lastName}`;
+            NotificationService.sendInspectionRejected(enquiry.farmerMobile, contactName);
+        } else if (dbDecision === 'APPROVED') {
+            const contactName = `${req.user.firstName} ${req.user.lastName}`;
+            NotificationService.sendFieldSelected(enquiry.farmerMobile, contactName);
         }
-
         // Flow 2 — In-app: notify Field Owner and all Admins about inspection result
         const notifType    = dbDecision === 'APPROVED' ? 'VISIT_SCHEDULED'  : 'ENQUIRY_REJECTED';
         const notifMessage = dbDecision === 'APPROVED'
@@ -164,9 +244,17 @@ const getInspections = async (req, res) => {
     try {
         const inspections = await Inspection.find()
             .populate('enquiryId')
-            .populate('selectorId', 'firstName lastName mobileNo');
+            .populate('selectorId', 'firstName lastName mobileNo')
+            .lean();
 
-        res.status(200).json(inspections);
+        const data = inspections.map(insp => {
+            if (insp.photos && insp.photos.length > 0) {
+                insp.photos = insp.photos.map(p => getFullUrl(req, p));
+            }
+            return insp;
+        });
+
+        res.status(200).json(data);
     } catch (error) {
         console.error('Error fetching inspections:', error);
         res.status(500).json({ message: 'Server error while fetching inspections' });
@@ -182,7 +270,13 @@ const getInspectionById = async (req, res) => {
         if (!inspection) {
             return res.status(404).json({ message: 'Inspection not found' });
         }
-        res.status(200).json(inspection);
+        
+        const data = inspection.toObject();
+        if (data.photos && data.photos.length > 0) {
+            data.photos = data.photos.map(p => getFullUrl(req, p));
+        }
+        
+        res.status(200).json(data);
     } catch (error) {
         console.error('Error fetching inspection by ID:', error);
         if (error.name === 'CastError') {

@@ -2,6 +2,7 @@ const Enquiry = require('../enquiries/enquiry.model');
 const Inspection = require('../inspections/inspection.model');
 const DailyLog = require('../auditing/dailyLog.model');
 const User = require('../users/user.model');
+const { getFullUrl } = require('../../utils/urlHelper');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Global Shared Pool: all FOs see all enquiries — no per-FO scoping
@@ -149,15 +150,44 @@ const getFOPlots = async (req, res) => {
                 .limit(Number(limit))
                 .populate('assignedSelectorId', 'firstName lastName mobileNo')
                 .populate('companyId', 'companyName')
-                .populate('generation', 'name'),
+                .populate('generation', 'name')
+                .lean(),
             Enquiry.countDocuments(query),
         ]);
+
+        // ── Bulk fetch linked inspections (single query, avoids N+1) ──────────────────────
+        const enquiryIds = enquiries.map((e) => e._id);
+        const inspections = await Inspection.find({ enquiryId: { $in: enquiryIds } })
+            .select('enquiryId minVolume maxVolume recoveryPercent packingSize generalNotes')
+            .lean();
+        const inspectionMap = {};
+        inspections.forEach((insp) => {
+            inspectionMap[insp.enquiryId.toString()] = insp;
+        });
+
+        // Shape response with all required plot card fields
+        const data = enquiries.map((enq) => {
+            const insp = inspectionMap[enq._id.toString()] || null;
+            return {
+                ...enq,
+                // Extra fields required by the updated plot card
+                fixRate:      enq.purchaseRate    ?? null,
+                companyName:  enq.companyId       ? enq.companyId.companyName : null,
+                packing:      enq.packingType     ?? null,
+                minVolume:    insp               ? (insp.minVolume ?? null)    : null,
+                maxVolume:    insp               ? (insp.maxVolume ?? null)    : null,
+                recovery:     insp               ? (insp.recoveryPercent ?? null) : null,
+                rejectReason: (enq.status === 'REJECTED' && insp) ? (insp.generalNotes ?? null) : null,
+                location:     enq.location,
+                mobileNumber: enq.farmerMobile,
+            };
+        });
 
         res.json({
             total,
             page: Number(page),
             pages: Math.ceil(total / Number(limit)),
-            data: enquiries,
+            data,
         });
     } catch (error) {
         console.error('FO Plots error:', error);
@@ -318,8 +348,8 @@ const getSelectorMileage = async (req, res) => {
             startTime: log.startTime,
             endTime: log.endTime || null,
             status: log.status,
-            startMeterPhotoUrl: log.startMeterPhotoUrl,
-            endMeterPhotoUrl: log.endMeterPhotoUrl || null,
+            startMeterPhotoUrl: log.startMeterPhotoUrl ? getFullUrl(req, log.startMeterPhotoUrl) : null,
+            endMeterPhotoUrl: log.endMeterPhotoUrl ? getFullUrl(req, log.endMeterPhotoUrl) : null,
         });
     } catch (error) {
         if (error.name === 'CastError') {
@@ -346,9 +376,56 @@ const getFOSelectors = async (req, res) => {
     }
 };
 
+// @desc    Get all plots where no Field Selector has been assigned (Unassigned Tab)
+// @route   GET /api/field-owner/plots/unassigned
+// @access  Private (Field Owner, Admin)
+const getUnassignedPlots = async (req, res) => {
+    try {
+        const { search, page = 1, limit = 20 } = req.query;
+        const skip = (Number(page) - 1) * Number(limit);
+
+        // Unassigned = PENDING plots with no selector assigned yet
+        const query = {
+            assignedSelectorId: null,
+            status: 'PENDING',
+        };
+
+        if (search) {
+            query.$or = [
+                { farmerFirstName: { $regex: search, $options: 'i' } },
+                { farmerLastName:  { $regex: search, $options: 'i' } },
+                { farmerMobile:    { $regex: search, $options: 'i' } },
+                { enquiryId:       { $regex: search, $options: 'i' } },
+            ];
+        }
+
+        const [enquiries, total] = await Promise.all([
+            Enquiry.find(query)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(Number(limit))
+                .populate('fieldOwnerId', 'firstName lastName mobileNo')
+                .populate('generation', 'name')
+                .lean(),
+            Enquiry.countDocuments(query),
+        ]);
+
+        res.json({
+            total,
+            page: Number(page),
+            pages: Math.ceil(total / Number(limit)),
+            data: enquiries,
+        });
+    } catch (error) {
+        console.error('FO Unassigned Plots error:', error);
+        res.status(500).json({ message: 'Server error fetching unassigned plots', error: error.message });
+    }
+};
+
 module.exports = {
     getFODashboard,
     getFOPlots,
+    getUnassignedPlots,
     getSelectorsPerformance,
     getSelectorsPerformanceWeekly,
     getSelectorsPerformanceMonthly,

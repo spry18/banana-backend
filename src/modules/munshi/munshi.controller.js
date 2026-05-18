@@ -250,7 +250,7 @@ const submitPackingReport = async (req, res) => {
 
         // Wastage validation removed — wastageReason no longer required
         // Handle uploaded photos
-        const photos = req.files ? req.files.map(f => `/uploads/${f.filename}`) : [];
+        const photos = req.files ? req.files.map(f => f.location) : [];
 
         const packing = await Packing.create({
             assignmentId,
@@ -534,7 +534,7 @@ const updatePackingReport = async (req, res) => {
         // Handle new photos (replace old ones if provided)
         let photos = packing.photos;
         if (req.files && req.files.length > 0) {
-            photos = req.files.map(f => `/uploads/${f.filename}`);
+            photos = req.files.map(f => f.location);
         }
 
         // Update packing record

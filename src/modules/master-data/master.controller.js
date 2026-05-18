@@ -336,6 +336,35 @@ const getFormDropdowns = async (req, res) => {
     }
 };
 
+// --- App Configuration ---
+// @desc    Get dynamic app configurations (e.g., screenshot restrictions)
+// @route   GET /api/master-data/app-config
+// @access  Protected (All authenticated users)
+const getAppConfig = async (req, res) => {
+    try {
+        // This can be moved to a DB collection later if frequent changes are needed.
+        // For now, it provides the required dynamic enable/disable and role/screen-based control.
+        const appConfig = {
+            screenshotRestriction: {
+                enabled: true,
+                restrictedRoles: [
+                    'Munshi', 
+                    'driver eicher', 
+                    'driver pickup', 
+                    'Operational Manager'
+                ],
+                restrictedScreens: [
+                    'ALL' // or specific screens like ['field-visit', 'packing-summary']
+                ]
+            }
+        };
+        res.status(200).json(appConfig);
+    } catch (error) {
+        console.error('Error fetching app config:', error);
+        res.status(500).json({ message: 'Server error while fetching app config' });
+    }
+};
+
 module.exports = {
     createCompany,
     getCompanies,
@@ -363,4 +392,5 @@ module.exports = {
     toggleGenerationStatus,
     getFormDropdowns,
     getDrivers,
+    getAppConfig,
 };

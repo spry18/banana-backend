@@ -17,7 +17,7 @@ const dailyLogSchema = new mongoose.Schema(
         },
         startMeterPhotoUrl: {
             type: String,
-            required: true,
+            required: false,
         },
         startTime: {
             type: Date,

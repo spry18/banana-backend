@@ -26,10 +26,16 @@ const createEnquiry = async (req, res) => {
             assignedSelectorId,
         } = req.body;
 
-        if (assignedSelectorId && assignedSelectorId.trim() !== "") {
-            const selector = await User.findById(assignedSelectorId);
+        // ── Assignment Card is OPTIONAL ──────────────────────────────────────
+        // Validate selector only if provided
+        let selector = null;
+        if (assignedSelectorId && assignedSelectorId.trim() !== '') {
+            selector = await User.findById(assignedSelectorId);
             if (!selector) {
                 return res.status(404).json({ message: 'Assigned Selector not found with the provided ID' });
+            }
+            if (selector.role !== 'Field Selector') {
+                return res.status(400).json({ message: 'Invalid Role: Assigned user must be a Field Selector' });
             }
         }
 
@@ -62,15 +68,24 @@ const createEnquiry = async (req, res) => {
             agentAttached: agentAttached ?? false,
             visitPriority: visitPriority || 'Medium',
             fieldOwnerId,
-            assignedSelectorId: (assignedSelectorId && assignedSelectorId.trim() !== "") ? assignedSelectorId : null,
+            assignedSelectorId: selector ? assignedSelectorId : null,
             editableUntil,
         });
 
-        // Flow 1 — WhatsApp: notify farmer (console stub, real API in future)
+        // Flow 1 — WhatsApp: notify farmer that enquiry is received
         NotificationService.sendEnquiryReceived(enquiry.farmerMobile, enquiry.farmerFirstName, enquiry.enquiryId);
 
-        // Flow 2 — In-app: notify the assigned Field Selector (if assigned)
-        if (assignedSelectorId && assignedSelectorId.trim() !== "") {
+        // Flow 1b — WhatsApp: if selector assigned, notify farmer + selector
+        if (selector) {
+            const selectorFullName = `${selector.firstName} ${selector.lastName}`;
+            // Notify farmer: visit will be scheduled by the selector
+            NotificationService.sendVisitScheduled(enquiry.farmerMobile, selectorFullName, selector.mobileNo);
+            // Notify selector: they have been assigned to this plot
+            NotificationService.sendSelectorAssigned(selector.mobileNo, enquiry.farmerFirstName, enquiry.farmerLastName, enquiry.location, enquiry.enquiryId);
+        }
+
+        // Flow 2 — In-app: notify the assigned Field Selector (only if assigned)
+        if (selector) {
             await createNotification(
                 assignedSelectorId,
                 'FIELD_SELECTOR_ASSIGNED',
@@ -121,6 +136,8 @@ const getEnquiries = async (req, res) => {
                 // 'Missed' = past scheduledDate but still PENDING (never visited)
                 query.scheduledDate = { $lt: new Date() };
                 query.status = 'PENDING';
+            } else if (status === 'Unassigned') {
+                query.assignedSelectorId = null;
             } else {
                 query.status = status;
             }
@@ -145,7 +162,28 @@ const getEnquiries = async (req, res) => {
             .sort({ createdAt: -1 })
             .populate('assignedSelectorId', 'firstName lastName mobileNo')
             .populate('agentId', 'name')
-            .populate('generation', 'name');
+            .populate('generation', 'name')
+            .lean();
+
+        // Fetch related inspections to map rejectReason
+        const enquiryIds = enquiries.map((e) => e._id);
+        const Inspection = require('../inspections/inspection.model');
+        const inspections = await Inspection.find({ enquiryId: { $in: enquiryIds } })
+            .select('enquiryId generalNotes')
+            .lean();
+            
+        const inspectionMap = {};
+        inspections.forEach((insp) => {
+            inspectionMap[insp.enquiryId.toString()] = insp;
+        });
+
+        const data = enquiries.map(enq => {
+            const insp = inspectionMap[enq._id.toString()] || null;
+            return {
+                ...enq,
+                rejectReason: (enq.status === 'REJECTED' && insp) ? (insp.generalNotes || null) : null
+            };
+        });
 
         const total = await Enquiry.countDocuments(query);
 
@@ -153,7 +191,7 @@ const getEnquiries = async (req, res) => {
             total,
             page: Number(page),
             pages: Math.ceil(total / Number(limit)),
-            data: enquiries
+            data
         });
     } catch (error) {
         console.error('Error fetching enquiries:', error);
@@ -183,6 +221,9 @@ const updateEnquiry = async (req, res) => {
             const selector = await User.findById(req.body.assignedSelectorId);
             if (!selector) {
                 return res.status(404).json({ message: 'Assigned Selector not found with the provided ID' });
+            }
+            if (selector.role !== 'Field Selector') {
+                return res.status(400).json({ message: 'Invalid Role: Assigned user must be a Field Selector' });
             }
         } else if (req.body.assignedSelectorId === "") {
             req.body.assignedSelectorId = null;
@@ -222,6 +263,18 @@ const updateEnquiry = async (req, res) => {
         // Flow 1 — WhatsApp: commercial rejection
         if (req.body.status && (req.body.status === 'CLOSED' || req.body.status === 'CANCELLED') && enquiry.status !== req.body.status) {
             NotificationService.sendDealCancelled(updatedEnquiry.farmerMobile, updatedEnquiry.farmerFirstName);
+        }
+
+        // Flow 1b — WhatsApp: notify farmer + new selector when selector changes
+        if (selectorChanged) {
+            const newSelector = await User.findById(newSelectorId).select('firstName lastName mobileNo');
+            if (newSelector) {
+                const selectorFullName = `${newSelector.firstName} ${newSelector.lastName}`;
+                // Notify farmer that a visit will be scheduled
+                NotificationService.sendVisitScheduled(updatedEnquiry.farmerMobile, selectorFullName, newSelector.mobileNo);
+                // Notify the newly assigned selector
+                NotificationService.sendSelectorAssigned(newSelector.mobileNo, updatedEnquiry.farmerFirstName, updatedEnquiry.farmerLastName, updatedEnquiry.location, updatedEnquiry.enquiryId);
+            }
         }
 
         // Flow 2 — In-app: notify new Field Selector when selector changes
@@ -311,6 +364,7 @@ const getEnquiryById = async (req, res) => {
             } : null,
             logistics: logisticsData,
             inspection: inspection || null,
+            rejectReason: (e.status === 'REJECTED' && inspection) ? (inspection.generalNotes || null) : null,
         });
     } catch (error) {
         console.error('Error fetching enquiry by ID:', error);

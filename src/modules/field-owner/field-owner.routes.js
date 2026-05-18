@@ -4,6 +4,7 @@ const { protect, authorize } = require('../../middlewares/auth.middleware');
 const {
     getFODashboard,
     getFOPlots,
+    getUnassignedPlots,
     getSelectorsPerformance,
     getSelectorsPerformanceWeekly,
     getSelectorsPerformanceMonthly,
@@ -16,6 +17,9 @@ router.use(authorize('Field Owner', 'Admin'));
 
 // GET /api/field-owner/dashboard
 router.get('/dashboard', getFODashboard);
+
+// GET /api/field-owner/plots/unassigned  ← must be BEFORE /plots to avoid shadowing
+router.get('/plots/unassigned', getUnassignedPlots);
 
 // GET /api/field-owner/plots?status=Missed|Rescheduled|SELECTED|REJECTED&location=&search=&page=&limit=
 router.get('/plots', getFOPlots);
