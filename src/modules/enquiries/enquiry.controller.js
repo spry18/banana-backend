@@ -26,13 +26,11 @@ const createEnquiry = async (req, res) => {
             assignedSelectorId,
         } = req.body;
 
-        if (!assignedSelectorId) {
-            return res.status(400).json({ message: 'assignedSelectorId is required' });
-        }
-
-        const selector = await User.findById(assignedSelectorId);
-        if (!selector) {
-            return res.status(404).json({ message: 'Assigned Selector not found with the provided ID' });
+        if (assignedSelectorId && assignedSelectorId.trim() !== "") {
+            const selector = await User.findById(assignedSelectorId);
+            if (!selector) {
+                return res.status(404).json({ message: 'Assigned Selector not found with the provided ID' });
+            }
         }
 
         if (agentId && agentId.trim() !== "") {
@@ -64,21 +62,23 @@ const createEnquiry = async (req, res) => {
             agentAttached: agentAttached ?? false,
             visitPriority: visitPriority || 'Medium',
             fieldOwnerId,
-            assignedSelectorId,
+            assignedSelectorId: (assignedSelectorId && assignedSelectorId.trim() !== "") ? assignedSelectorId : null,
             editableUntil,
         });
 
         // Flow 1 — WhatsApp: notify farmer (console stub, real API in future)
         NotificationService.sendEnquiryReceived(enquiry.farmerMobile, enquiry.farmerFirstName, enquiry.enquiryId);
 
-        // Flow 2 — In-app: notify the assigned Field Selector
-        await createNotification(
-            assignedSelectorId,
-            'FIELD_SELECTOR_ASSIGNED',
-            `You have been assigned to inspect a plot for farmer ${farmerFirstName} ${farmerLastName} at ${location}. Ref: ${enquiry.enquiryId}`,
-            enquiry._id,
-            'Enquiry'
-        );
+        // Flow 2 — In-app: notify the assigned Field Selector (if assigned)
+        if (assignedSelectorId && assignedSelectorId.trim() !== "") {
+            await createNotification(
+                assignedSelectorId,
+                'FIELD_SELECTOR_ASSIGNED',
+                `You have been assigned to inspect a plot for farmer ${farmerFirstName} ${farmerLastName} at ${location}. Ref: ${enquiry.enquiryId}`,
+                enquiry._id,
+                'Enquiry'
+            );
+        }
 
         // Flow 2 — In-app: notify all Admins
         await broadcastToRole(

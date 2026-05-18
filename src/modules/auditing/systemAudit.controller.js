@@ -1,4 +1,5 @@
 const SystemAudit = require('./systemAudit.model');
+const User = require('../users/user.model');
 
 // @desc    Get all system audit logs with pagination and filtering
 // @route   GET /api/audit/logs
@@ -13,12 +14,44 @@ const getSystemAudits = async (req, res) => {
             action,
             startDate,
             endDate,
+            search,
+            role,
         } = req.query;
 
         const filter = {};
         if (userId) filter.userId = userId;
+        
+        // If role is provided, find all users with that role
+        if (role && role !== 'ALL') {
+            const usersWithRole = await User.find({ role }).select('_id');
+            const userIds = usersWithRole.map(u => u._id);
+            filter.userId = { $in: userIds };
+        }
+
         if (moduleName) filter.moduleName = new RegExp(moduleName, 'i');
         if (action) filter.action = action;
+        
+        if (search) {
+            const searchRegex = new RegExp(search, 'i');
+            
+            // Also search for users matching the name
+            const matchingUsers = await User.find({
+                $or: [
+                    { firstName: searchRegex },
+                    { lastName: searchRegex },
+                    { mobileNo: searchRegex }
+                ]
+            }).select('_id');
+            const matchingUserIds = matchingUsers.map(u => u._id);
+
+            filter.$or = [
+                { moduleName: searchRegex },
+                { action: searchRegex },
+                { details: searchRegex },
+                { userId: { $in: matchingUserIds } }
+            ];
+        }
+
         if (startDate || endDate) {
             filter.createdAt = {};
             if (startDate) filter.createdAt.$gte = new Date(startDate);
