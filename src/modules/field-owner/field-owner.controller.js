@@ -16,6 +16,15 @@ const getFODashboard = async (req, res) => {
         const base = {}; // Global Shared Pool: all enquiries regardless of role
         const now = new Date();
 
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const startOfWeek = new Date();
+        startOfWeek.setDate(startOfWeek.getDate() - 7);
+
+        const startOfMonth = new Date();
+        startOfMonth.setMonth(startOfMonth.getMonth() - 1);
+
         const [
             total,
             selected,
@@ -24,6 +33,9 @@ const getFODashboard = async (req, res) => {
             missed,
             futureSelection,
             rescheduled,
+            daily,
+            weekly,
+            monthly,
             recentEnquiries,
         ] = await Promise.all([
             Enquiry.countDocuments(base),
@@ -43,6 +55,9 @@ const getFODashboard = async (req, res) => {
             // Future Selection: scheduledDate in the future, still PENDING
             Enquiry.countDocuments({ ...base, status: 'PENDING', scheduledDate: { $gt: now } }),
             Enquiry.countDocuments({ ...base, status: 'RESCHEDULED' }),
+            Enquiry.countDocuments({ ...base, createdAt: { $gte: startOfDay } }),
+            Enquiry.countDocuments({ ...base, createdAt: { $gte: startOfWeek } }),
+            Enquiry.countDocuments({ ...base, createdAt: { $gte: startOfMonth } }),
             // Recent Activity: all strictly SELECTED or RESCHEDULED enquiries for this FO (To-Do list)
             Enquiry.find({ ...base, status: { $in: ['SELECTED', 'RESCHEDULED', 'ASSIGNED'] } })
                 .sort({ updatedAt: -1 })
@@ -76,9 +91,14 @@ const getFODashboard = async (req, res) => {
                     recovery: inspection ? inspection.recoveryPercent : '-',
                     updatedAt: enq.updatedAt,
                 };
-                // Show edit window state for all enquiries (FO can edit within 24h of creation/reschedule)
-                activity.editableUntil = enq.editableUntil || null;
-                activity.isEditable = enq.editableUntil ? new Date() < new Date(enq.editableUntil) : true;
+                // Show edit window state only for ASSIGNED enquiries
+                if (enq.status === 'ASSIGNED') {
+                    activity.editableUntil = enq.editableUntil || null;
+                    activity.isEditable = enq.editableUntil ? new Date() < new Date(enq.editableUntil) : true;
+                } else {
+                    activity.editableUntil = null;
+                    activity.isEditable = false;
+                }
                 return activity;
             })
         );
@@ -99,6 +119,9 @@ const getFODashboard = async (req, res) => {
                 missed,
                 futureSelection,
                 rescheduled,
+                daily,
+                weekly,
+                monthly,
             },
             recentActivity,
         });
@@ -161,7 +184,7 @@ const getFOPlots = async (req, res) => {
         // ── Bulk fetch linked inspections (single query, avoids N+1) ──────────────────────
         const enquiryIds = enquiries.map((e) => e._id);
         const inspections = await Inspection.find({ enquiryId: { $in: enquiryIds } })
-            .select('enquiryId minVolume maxVolume recoveryPercent packingSize generalNotes')
+            .select('enquiryId minVolume maxVolume recoveryPercent packingSize generalNotes volumeBoxRange')
             .lean();
         const inspectionMap = {};
         inspections.forEach((insp) => {
@@ -183,6 +206,7 @@ const getFOPlots = async (req, res) => {
                 rejectReason: (enq.status === 'REJECTED' && insp) ? (insp.generalNotes ?? null) : null,
                 location:     enq.location,
                 mobileNumber: enq.farmerMobile,
+                inspection:   insp                || null,
             };
         });
 
