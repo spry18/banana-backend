@@ -128,6 +128,9 @@ const getFOPlots = async (req, res) => {
             // Rescheduled = PENDING with a scheduledDate in the future (was previously changed)
             query.status = 'PENDING';
             query.scheduledDate = { $gt: now };
+        } else if (status === 'Unassigned' || status === 'UNASSIGNED') {
+            query.status = 'PENDING';
+            query.assignedSelectorId = null;
         } else if (status) {
             query.status = status;
         }
