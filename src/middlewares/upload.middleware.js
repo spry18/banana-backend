@@ -34,16 +34,27 @@ const storage = multerS3({
     }
 });
 
-// File filter for images (jpeg, jpg, png)
+// File filter for images (jpeg, jpg, png, heic, heif, webp)
 const fileFilter = (req, file, cb) => {
+    const allowedMimeTypes = [
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'image/heic',
+        'image/heif',
+        'image/webp',
+        'application/octet-stream'
+    ];
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.heic', '.heif', '.webp'];
+    const ext = path.extname(file.originalname).toLowerCase();
+
     if (
-        file.mimetype === 'image/jpeg' ||
-        file.mimetype === 'image/jpg' ||
-        file.mimetype === 'image/png'
+        allowedMimeTypes.includes(file.mimetype) ||
+        allowedExtensions.includes(ext)
     ) {
         cb(null, true);
     } else {
-        cb(new Error('Only allowed image formats are jpeg, jpg, png'), false);
+        cb(new Error('Only allowed image formats are jpeg, jpg, png, heic, heif, webp'), false);
     }
 };
 
