@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Enquiry = require('./enquiry.model');
 const User = require('../users/user.model');
 const Agent = require('../master-data/agent.model');
@@ -29,13 +30,28 @@ const createEnquiry = async (req, res) => {
         // ── Assignment Card is OPTIONAL ──────────────────────────────────────
         // Validate selector only if provided
         let selector = null;
-        if (assignedSelectorId && assignedSelectorId.trim() !== '') {
-            selector = await User.findById(assignedSelectorId);
-            if (!selector) {
-                return res.status(404).json({ message: 'Assigned Selector not found with the provided ID' });
-            }
-            if (selector.role !== 'Field Selector') {
-                return res.status(400).json({ message: 'Invalid Role: Assigned user must be a Field Selector' });
+        let sanitizedSelectorId = assignedSelectorId;
+        
+        if (
+            assignedSelectorId === null ||
+            assignedSelectorId === 'null' ||
+            assignedSelectorId === 'undefined' ||
+            (typeof assignedSelectorId === 'string' && assignedSelectorId.trim() === '')
+        ) {
+            sanitizedSelectorId = null;
+        }
+
+        if (sanitizedSelectorId) {
+            if (typeof sanitizedSelectorId === 'string' && mongoose.Types.ObjectId.isValid(sanitizedSelectorId)) {
+                selector = await User.findById(sanitizedSelectorId);
+                if (!selector) {
+                    return res.status(404).json({ message: 'Assigned Selector not found with the provided ID' });
+                }
+                if (selector.role !== 'Field Selector') {
+                    return res.status(400).json({ message: 'Invalid Role: Assigned user must be a Field Selector' });
+                }
+            } else {
+                return res.status(400).json({ message: 'Invalid ID format for Assigned Selector' });
             }
         }
 
@@ -68,7 +84,7 @@ const createEnquiry = async (req, res) => {
             agentAttached: agentAttached ?? false,
             visitPriority: visitPriority || 'Medium',
             fieldOwnerId,
-            assignedSelectorId: selector ? assignedSelectorId : null,
+            assignedSelectorId: selector ? sanitizedSelectorId : null,
             editableUntil,
         });
 
@@ -87,7 +103,7 @@ const createEnquiry = async (req, res) => {
         // Flow 2 — In-app: notify the assigned Field Selector (only if assigned)
         if (selector) {
             await createNotification(
-                assignedSelectorId,
+                sanitizedSelectorId,
                 'FIELD_SELECTOR_ASSIGNED',
                 `You have been assigned to inspect a plot for farmer ${farmerFirstName} ${farmerLastName} at ${location}. Ref: ${enquiry.enquiryId}`,
                 enquiry._id,
@@ -217,16 +233,26 @@ const updateEnquiry = async (req, res) => {
         }
 
         // If updating selector or agent, validate their existence
-        if (req.body.assignedSelectorId && req.body.assignedSelectorId.trim() !== "") {
-            const selector = await User.findById(req.body.assignedSelectorId);
-            if (!selector) {
-                return res.status(404).json({ message: 'Assigned Selector not found with the provided ID' });
-            }
-            if (selector.role !== 'Field Selector') {
-                return res.status(400).json({ message: 'Invalid Role: Assigned user must be a Field Selector' });
-            }
-        } else if (req.body.assignedSelectorId === "") {
+        let assignedSelectorId = req.body.assignedSelectorId;
+        if (
+            assignedSelectorId === null ||
+            assignedSelectorId === 'null' ||
+            assignedSelectorId === 'undefined' ||
+            (typeof assignedSelectorId === 'string' && assignedSelectorId.trim() === '')
+        ) {
             req.body.assignedSelectorId = null;
+        } else if (assignedSelectorId) {
+            if (typeof assignedSelectorId === 'string' && mongoose.Types.ObjectId.isValid(assignedSelectorId)) {
+                const selector = await User.findById(assignedSelectorId);
+                if (!selector) {
+                    return res.status(404).json({ message: 'Assigned Selector not found with the provided ID' });
+                }
+                if (selector.role !== 'Field Selector') {
+                    return res.status(400).json({ message: 'Invalid Role: Assigned user must be a Field Selector' });
+                }
+            } else {
+                return res.status(400).json({ message: 'Invalid ID format for Assigned Selector' });
+            }
         }
 
         if (req.body.agentId && req.body.agentId.trim() !== "") {
