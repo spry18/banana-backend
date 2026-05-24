@@ -13,6 +13,8 @@ const { broadcastToRole } = require('../../utils/broadcastToRole');
 // @access  Protected
 const createEnquiry = async (req, res) => {
     try {
+        console.log("=== CREATE ENQUIRY CONTROLLER HIT ===");
+        console.log(req.body);
         const {
             farmerFirstName,
             farmerLastName,
