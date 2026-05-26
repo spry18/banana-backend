@@ -60,7 +60,7 @@ const enquirySchema = new mongoose.Schema(
         assignedSelectorId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
-            required: false,
+            default: null,
         },
         scheduledDate: {
             type: Date,
