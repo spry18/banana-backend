@@ -208,7 +208,7 @@
                                 "dashboard-stats"
                             ]
                         },
-                        "description": "Returns: totalEnquiries, pendingVisits, selectedPlots, rejectedPlots, tripsCompleted, alertsCount.\n\n**Updated (Apr 2026):** The `enquiries` object now also includes:\n- `missedPlots` — enquiries whose scheduledDate is in the past and status is still PENDING\n- `rescheduled` — enquiries with status RESCHEDULED"
+                        "description": "Returns: totalEnquiries, pendingVisits, selectedPlots, rejectedPlots, tripsCompleted, alertsCount for today's 24-hour cycle (12:00 AM to 12:00 AM tomorrow), along with the all-time unassigned pending enquiries count.\n\n**Updated (Apr/May 2026):** The `enquiries` object now also includes:\n- `missedPlots` — enquiries whose scheduledDate is in the past and status is still PENDING (for today's created plots)\n- `rescheduled` — enquiries with status RESCHEDULED (for today's created plots)\n- `unassigned` — total cumulative all-time unassigned pending enquiries count (status PENDING, no selector assigned)"
                     }
                 },
                 {

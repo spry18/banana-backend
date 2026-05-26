@@ -7,10 +7,18 @@ const Trip = require('../execution/trip.model');
 // @access  Protected (Admin, Operational Manager)
 const getAdminStats = async (req, res) => {
     try {
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(startOfDay);
+        endOfDay.setDate(endOfDay.getDate() + 1);
+
+        const todayFilter = { createdAt: { $gte: startOfDay, $lt: endOfDay } };
+
         // Enquiries Stats
-        const totalEnquiries = await Enquiry.countDocuments();
-        const pendingEnquiries = await Enquiry.countDocuments({ status: { $in: ['PENDING', 'SELECTED'] } });
-        const completedEnquiries = await Enquiry.countDocuments({ status: 'DELIVERED' }); // Or whatever constitutes completed
+        const totalEnquiries = await Enquiry.countDocuments(todayFilter);
+        const pendingEnquiries = await Enquiry.countDocuments({ status: { $in: ['PENDING', 'SELECTED'] }, ...todayFilter });
+        const completedEnquiries = await Enquiry.countDocuments({ status: 'DELIVERED', ...todayFilter }); // Or whatever constitutes completed
+        const unassignedEnquiries = await Enquiry.countDocuments({ status: 'PENDING', assignedSelectorId: null });
 
         // Packing Stats
         const packingStats = await Packing.aggregate([
@@ -38,7 +46,8 @@ const getAdminStats = async (req, res) => {
             enquiries: {
                 total: totalEnquiries,
                 pending: pendingEnquiries,
-                completed: completedEnquiries
+                completed: completedEnquiries,
+                unassigned: unassignedEnquiries
             },
             packing: {
                 totalBoxes: packingStats.length > 0 ? packingStats[0].totalBoxes : 0,

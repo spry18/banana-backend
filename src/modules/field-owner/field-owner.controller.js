@@ -19,6 +19,11 @@ const getFODashboard = async (req, res) => {
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
 
+        const endOfDay = new Date(startOfDay);
+        endOfDay.setDate(endOfDay.getDate() + 1);
+
+        const todayFilter = { ...base, createdAt: { $gte: startOfDay, $lt: endOfDay } };
+
         const startOfWeek = new Date();
         startOfWeek.setDate(startOfWeek.getDate() - 7);
 
@@ -36,15 +41,16 @@ const getFODashboard = async (req, res) => {
             daily,
             weekly,
             monthly,
+            unassigned,
             recentEnquiries,
         ] = await Promise.all([
-            Enquiry.countDocuments(base),
-            Enquiry.countDocuments({ ...base, status: 'SELECTED' }),
-            Enquiry.countDocuments({ ...base, status: 'REJECTED' }),
-            Enquiry.countDocuments({ ...base, status: { $in: ['RATE_FIXED', 'ASSIGNED', 'COMPLETED'] } }),
-            // Missed: PENDING and either past scheduledDate OR completely missing a scheduledDate
+            Enquiry.countDocuments(todayFilter),
+            Enquiry.countDocuments({ ...todayFilter, status: 'SELECTED' }),
+            Enquiry.countDocuments({ ...todayFilter, status: 'REJECTED' }),
+            Enquiry.countDocuments({ ...todayFilter, status: { $in: ['RATE_FIXED', 'ASSIGNED', 'COMPLETED'] } }),
+            // Missed: PENDING and either past scheduledDate OR completely missing a scheduledDate (for today's created plots)
             Enquiry.countDocuments({
-                ...base,
+                ...todayFilter,
                 status: 'PENDING',
                 $or: [
                     { scheduledDate: { $lt: now } },
@@ -52,13 +58,15 @@ const getFODashboard = async (req, res) => {
                     { scheduledDate: { $exists: false } },
                 ],
             }),
-            // Future Selection: scheduledDate in the future, still PENDING
-            Enquiry.countDocuments({ ...base, status: 'PENDING', scheduledDate: { $gt: now } }),
-            Enquiry.countDocuments({ ...base, status: 'RESCHEDULED' }),
+            // Future Selection: scheduledDate in the future, still PENDING (for today's created plots)
+            Enquiry.countDocuments({ ...todayFilter, status: 'PENDING', scheduledDate: { $gt: now } }),
+            Enquiry.countDocuments({ ...todayFilter, status: 'RESCHEDULED' }),
             Enquiry.countDocuments({ ...base, createdAt: { $gte: startOfDay } }),
             Enquiry.countDocuments({ ...base, createdAt: { $gte: startOfWeek } }),
             Enquiry.countDocuments({ ...base, createdAt: { $gte: startOfMonth } }),
-            // Recent Activity: all strictly SELECTED or RESCHEDULED enquiries for this FO (To-Do list)
+            // Unassigned: total unassigned enquiries count (all-time / cumulative)
+            Enquiry.countDocuments({ status: 'PENDING', assignedSelectorId: null }),
+            // Recent Activity: all strictly SELECTED or RESCHEDULED enquiries for this FO (To-Do list) - lifetime
             Enquiry.find({ ...base, status: { $in: ['SELECTED', 'RESCHEDULED', 'ASSIGNED'] } })
                 .sort({ updatedAt: -1 })
                 .select('enquiryId farmerFirstName farmerLastName farmerMobile status location updatedAt generation companyId scheduledDate rescheduleDate editableUntil')
@@ -122,6 +130,7 @@ const getFODashboard = async (req, res) => {
                 daily,
                 weekly,
                 monthly,
+                unassigned,
             },
             recentActivity,
         });

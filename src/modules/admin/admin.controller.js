@@ -10,6 +10,13 @@ const Logistics = require('../logistics/logistics.model');
 // @access  Private (Admin, Operational Manager)
 const getAdminStats = async (req, res) => {
     try {
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(startOfDay);
+        endOfDay.setDate(endOfDay.getDate() + 1);
+
+        const todayFilter = { createdAt: { $gte: startOfDay, $lt: endOfDay } };
+
         const [
             totalEnquiries,
             pendingVisits,
@@ -22,20 +29,22 @@ const getAdminStats = async (req, res) => {
             missedFieldsCount,
             eodIssuesCount,
             rescheduledPlots,
+            unassignedEnquiries,
         ] = await Promise.all([
-            Enquiry.countDocuments(),
-            Enquiry.countDocuments({ status: 'PENDING' }),
-            Enquiry.countDocuments({ status: 'SELECTED' }),
-            Enquiry.countDocuments({ status: 'REJECTED' }),
-            Enquiry.countDocuments({ status: 'RATE_FIXED' }),
-            Enquiry.countDocuments({ status: 'ASSIGNED' }),
-            Enquiry.countDocuments({ status: 'COMPLETED' }),
+            Enquiry.countDocuments(todayFilter),
+            Enquiry.countDocuments({ status: 'PENDING', ...todayFilter }),
+            Enquiry.countDocuments({ status: 'SELECTED', ...todayFilter }),
+            Enquiry.countDocuments({ status: 'REJECTED', ...todayFilter }),
+            Enquiry.countDocuments({ status: 'RATE_FIXED', ...todayFilter }),
+            Enquiry.countDocuments({ status: 'ASSIGNED', ...todayFilter }),
+            Enquiry.countDocuments({ status: 'COMPLETED', ...todayFilter }),
             // Trips: locked trips = completed (Trip model has no status field)
             Trip.countDocuments({ isLocked: true }),
-            // Missed Fields: scheduledDate passed AND no inspection yet
+            // Missed Fields: scheduledDate passed AND no inspection yet (alert for today's created plots)
             Enquiry.countDocuments({
                 scheduledDate: { $lt: new Date() },
                 status: 'PENDING',
+                ...todayFilter,
             }),
             // EOD Issues: DailyLogs started but no endMeterPhotoUrl (past today's start)
             DailyLog.countDocuments({
@@ -43,7 +52,9 @@ const getAdminStats = async (req, res) => {
                 endMeterPhotoUrl: { $exists: false },
                 startTime: { $lt: new Date(Date.now() - 12 * 60 * 60 * 1000) }, // >12h ago
             }),
-            Enquiry.countDocuments({ status: 'RESCHEDULED' }),
+            Enquiry.countDocuments({ status: 'RESCHEDULED', ...todayFilter }),
+            // Unassigned: total unassigned enquiries count (all-time / cumulative)
+            Enquiry.countDocuments({ status: 'PENDING', assignedSelectorId: null }),
         ]);
 
         const alertsCount = missedFieldsCount + eodIssuesCount;
@@ -59,6 +70,7 @@ const getAdminStats = async (req, res) => {
                 completed: completedPlots,
                 missedPlots: missedFieldsCount,
                 rescheduled: rescheduledPlots,
+                unassigned: unassignedEnquiries,
             },
             tripsCompleted,
             alertsCount,
