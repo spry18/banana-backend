@@ -10,10 +10,13 @@ const Logistics = require('../logistics/logistics.model');
 // @access  Private (Admin, Operational Manager)
 const getAdminStats = async (req, res) => {
     try {
-        const startOfDay = new Date();
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(startOfDay);
-        endOfDay.setDate(endOfDay.getDate() + 1);
+        const now = new Date();
+        const istOffset = 5.5 * 60 * 60 * 1000;
+        const istTime = new Date(now.getTime() + istOffset);
+        const istStart = new Date(istTime);
+        istStart.setUTCHours(0, 0, 0, 0);
+        const startOfDay = new Date(istStart.getTime() - istOffset);
+        const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
         const todayFilter = { createdAt: { $gte: startOfDay, $lt: endOfDay } };
 
@@ -32,7 +35,7 @@ const getAdminStats = async (req, res) => {
             unassignedEnquiries,
         ] = await Promise.all([
             Enquiry.countDocuments(todayFilter),
-            Enquiry.countDocuments({ status: 'PENDING', ...todayFilter }),
+            Enquiry.countDocuments({ status: 'PENDING' }),
             Enquiry.countDocuments({ status: 'SELECTED', ...todayFilter }),
             Enquiry.countDocuments({ status: 'REJECTED', ...todayFilter }),
             Enquiry.countDocuments({ status: 'RATE_FIXED', ...todayFilter }),

@@ -9,6 +9,7 @@ const {
     rolloverAssignment,
     getPackingByAssignmentId,
     updatePackingReport,
+    startHarvesting,
 } = require('./munshi.controller');
 const { protect, authorize } = require('../../middlewares/auth.middleware');
 const upload = require('../../middlewares/upload.middleware');
@@ -45,6 +46,7 @@ router.put(
     updatePackingReport
 );
 router.get('/reports', authorize(...roles), getMunshiReports);
+router.patch('/assignments/:id/start-harvest', authorize(...roles), startHarvesting);
 router.get('/packing/:id', authorize(...roles), getPackingByAssignmentId);
 
 module.exports = router;

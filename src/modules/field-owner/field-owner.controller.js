@@ -2,6 +2,7 @@ const Enquiry = require('../enquiries/enquiry.model');
 const Inspection = require('../inspections/inspection.model');
 const DailyLog = require('../auditing/dailyLog.model');
 const User = require('../users/user.model');
+const Logistics = require('../logistics/logistics.model');
 const { getFullUrl } = require('../../utils/urlHelper');
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -16,19 +17,18 @@ const getFODashboard = async (req, res) => {
         const base = {}; // Global Shared Pool: all enquiries regardless of role
         const now = new Date();
 
-        const startOfDay = new Date();
-        startOfDay.setHours(0, 0, 0, 0);
-
-        const endOfDay = new Date(startOfDay);
-        endOfDay.setDate(endOfDay.getDate() + 1);
+        // IST timezone range calculation
+        const istOffset = 5.5 * 60 * 60 * 1000;
+        const istTime = new Date(now.getTime() + istOffset);
+        const istStart = new Date(istTime);
+        istStart.setUTCHours(0, 0, 0, 0);
+        const startOfDay = new Date(istStart.getTime() - istOffset);
+        const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
         const todayFilter = { ...base, createdAt: { $gte: startOfDay, $lt: endOfDay } };
 
-        const startOfWeek = new Date();
-        startOfWeek.setDate(startOfWeek.getDate() - 7);
-
-        const startOfMonth = new Date();
-        startOfMonth.setMonth(startOfMonth.getMonth() - 1);
+        const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const startOfMonth = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
         const [
             total,
@@ -42,6 +42,12 @@ const getFODashboard = async (req, res) => {
             weekly,
             monthly,
             unassigned,
+            dailySelected,
+            weeklySelected,
+            monthlySelected,
+            dailyRejected,
+            weeklyRejected,
+            monthlyRejected,
             recentEnquiries,
         ] = await Promise.all([
             Enquiry.countDocuments(todayFilter),
@@ -66,6 +72,14 @@ const getFODashboard = async (req, res) => {
             Enquiry.countDocuments({ ...base, createdAt: { $gte: startOfMonth } }),
             // Unassigned: total unassigned enquiries count (all-time / cumulative)
             Enquiry.countDocuments({ status: 'PENDING', assignedSelectorId: null }),
+            // Selected breakdown
+            Enquiry.countDocuments({ ...base, status: 'SELECTED', createdAt: { $gte: startOfDay } }),
+            Enquiry.countDocuments({ ...base, status: 'SELECTED', createdAt: { $gte: startOfWeek } }),
+            Enquiry.countDocuments({ ...base, status: 'SELECTED', createdAt: { $gte: startOfMonth } }),
+            // Rejected breakdown
+            Enquiry.countDocuments({ ...base, status: 'REJECTED', createdAt: { $gte: startOfDay } }),
+            Enquiry.countDocuments({ ...base, status: 'REJECTED', createdAt: { $gte: startOfWeek } }),
+            Enquiry.countDocuments({ ...base, status: 'REJECTED', createdAt: { $gte: startOfMonth } }),
             // Recent Activity: all strictly SELECTED or RESCHEDULED enquiries for this FO (To-Do list) - lifetime
             Enquiry.find({ ...base, status: { $in: ['SELECTED', 'RESCHEDULED', 'ASSIGNED'] } })
                 .sort({ updatedAt: -1 })
@@ -131,6 +145,12 @@ const getFODashboard = async (req, res) => {
                 weekly,
                 monthly,
                 unassigned,
+                dailySelected,
+                weeklySelected,
+                monthlySelected,
+                dailyRejected,
+                weeklyRejected,
+                monthlyRejected,
             },
             recentActivity,
         });
@@ -458,6 +478,57 @@ const getUnassignedPlots = async (req, res) => {
     }
 };
 
+// @desc    Get OMs metrics (unassigned, assigned, completed counts) for Field Owners
+// @route   GET /api/field-owner/oms-metrics
+// @access  Private (Field Owner, Admin)
+const getOmMetricsForFO = async (req, res) => {
+    try {
+        // Fetch all OMs
+        const oms = await User.find({ role: 'Operational Manager', isActive: true }).select('firstName lastName mobileNo').lean();
+
+        // Calculate counts for each OM
+        const data = await Promise.all(oms.map(async (om) => {
+            // Find all logistics enquiries assigned to this OM
+            const assignedEnquiryIds = await Logistics.distinct('enquiryId');
+
+            const [unassignedCount, assignedCount, completedCount] = await Promise.all([
+                // Unassigned: Enquiries that are rate fixed by this OM but have no logistics assignment
+                Enquiry.countDocuments({
+                    status: 'RATE_FIXED',
+                    rateFixedBy: om._id,
+                    _id: { $nin: assignedEnquiryIds },
+                }),
+                // Assigned: Logistics records managed by this OM that are PENDING
+                Logistics.countDocuments({
+                    omId: om._id,
+                    assignmentStatus: 'PENDING',
+                }),
+                // Completed: Logistics records managed by this OM that are COMPLETED or APPROVED
+                Logistics.countDocuments({
+                    omId: om._id,
+                    assignmentStatus: { $in: ['COMPLETED', 'APPROVED'] },
+                }),
+            ]);
+
+            return {
+                _id: om._id,
+                firstName: om.firstName,
+                lastName: om.lastName,
+                mobileNo: om.mobileNo,
+                unassigned: unassignedCount,
+                assigned: assignedCount,
+                completed: completedCount,
+                total: unassignedCount + assignedCount + completedCount,
+            };
+        }));
+
+        res.status(200).json(data);
+    } catch (error) {
+        console.error('Error fetching OM metrics for FO:', error);
+        res.status(500).json({ message: 'Server error while fetching OM metrics' });
+    }
+};
+
 module.exports = {
     getFODashboard,
     getFOPlots,
@@ -467,4 +538,5 @@ module.exports = {
     getSelectorsPerformanceMonthly,
     getSelectorMileage,
     getFOSelectors,
+    getOmMetricsForFO,
 };

@@ -500,6 +500,40 @@
                         },
                         "description": "Returns a single logistics assignment with all references fully populated.\n\n## Populated Fields:\n- **enquiryId** — Full enquiry record including:\n  - **fieldOwnerId** → { firstName, lastName, mobileNo, role }\n  - **assignedSelectorId** → { firstName, lastName, mobileNo, role }\n- **companyId** — Full company record (companyName, legalName, taxId, headquarters)\n- **munshiId** → { firstName, lastName, mobileNo }\n- **driverId** → { firstName, lastName, mobileNo, vehicleId: { vehicleNumber, vehicleType } }\n- **vehicleId** — Full vehicle record (vehicleNumber, vehicleType, isActive)\n\n## Access:\nRestricted to Admin and Operational Manager roles only."
                     }
+                },
+                {
+                    "name": "PUT Change Assigned Team",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"teamName\": \"Corrected Crew-02\",\n  \"munshiId\": \"{{munshiId}}\",\n  \"driverId\": \"{{driverId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/logistics/{{assignmentId}}/change-team",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "logistics",
+                                "{{assignmentId}}",
+                                "change-team"
+                            ]
+                        },
+                        "description": "Allows Operational Manager or Admin to modify the assigned teamName, munshiId, or driverId. If driverId is changed, vehicleId is auto-resolved from their driver profile. If munshiId changes, a WhatsApp alert is sent to the new Munshi."
+                    },
+                    "response": []
                 }
             ]
         },

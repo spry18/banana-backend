@@ -78,6 +78,10 @@ const logisticsSchema = new mongoose.Schema(
             type: String,
             default: null,
         },
+        isHarvesting: {
+            type: Boolean,
+            default: false,
+        },
         assignmentStatus: {
             type: String,
             enum: ['PENDING', 'COMPLETED', 'CANCELLED', 'REJECTED', 'APPROVED'],

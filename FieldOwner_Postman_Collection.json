@@ -169,6 +169,30 @@
                         },
                         "description": "Returns 11 KPIs (total, selected, rejected, fixedRate, missed, futureSelection, rescheduled, daily, weekly, monthly, unassigned) where total, selected, rejected, fixedRate, missed, futureSelection, rescheduled are restricted to enquiries created during today's 24-hour cycle (12:00 AM today to 12:00 AM tomorrow), and unassigned is the total cumulative all-time unassigned pending enquiries.\n\n## recentActivity (last 5 items)\nNow includes SELECTED, RESCHEDULED, and ASSIGNED enquiries.\n\n**New fields per activity item:**\n- `isRescheduled` (bool) — highlight in orange on the frontend\n- `scheduledDate` — original visit date\n- `rescheduleDate` — new date (only when isRescheduled = true)\n- `editableUntil` + `isEditable` — **only present when status = ASSIGNED** (24h edit window from creation)\n\n**Sort order:** RESCHEDULED items appear first, then by updatedAt descending."
                     }
+                },
+                {
+                    "name": "GET OM Metrics",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/oms-metrics",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "oms-metrics"
+                            ]
+                        },
+                        "description": "Returns all active Operational Managers along with counts of their unassigned, assigned, and completed enquiries."
+                    }
                 }
             ]
         },

@@ -22,6 +22,7 @@ const notificationSchema = new mongoose.Schema(
                 'TEAM_ASSIGNED',            // Field Owner: logistics team assigned to their plot
                 'LOGISTICS_ASSIGNED',       // Driver / Munshi: assigned to a new route or packing task
                 'EXTRA_VEHICLE_ADDED',      // Driver / Munshi: an overflow vehicle has been added
+                'HARVESTING_STARTED',       // OM & Field Owner: Munshi started harvesting
 
                 // ── Packing & Approval Flow ───────────────────
                 'PACKING_SUBMITTED',        // Operational Manager / Admin: Munshi submitted packing report

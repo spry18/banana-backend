@@ -6,6 +6,7 @@ const {
     getAssignmentById,
     addExtraVehicle,
     getRelatedAssignments,
+    changeAssignedTeam,
 } = require('./logistics.controller');
 const { protect, authorize } = require('../../middlewares/auth.middleware');
 
@@ -29,6 +30,11 @@ router
 router
     .route('/:id/related')
     .get(authorize('Admin', 'Operational Manager', 'Munshi'), getRelatedAssignments);
+
+// Change assigned team
+router
+    .route('/:id/change-team')
+    .put(authorize('Admin', 'Operational Manager'), changeAssignedTeam);
 
 router
     .route('/:id')

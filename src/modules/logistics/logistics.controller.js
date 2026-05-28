@@ -432,10 +432,82 @@ const getRelatedAssignments = async (req, res) => {
     }
 };
 
+// @desc    Change assigned team for a logistics assignment
+// @route   PUT /api/logistics/:id/change-team
+// @access  Protected (Admin, Operational Manager)
+const changeAssignedTeam = async (req, res) => {
+    try {
+        const assignmentId = req.params.id;
+        const { teamName, munshiId, driverId } = req.body;
+
+        const assignment = await Logistics.findById(assignmentId).populate('enquiryId');
+        if (!assignment) {
+            return res.status(404).json({ message: 'Assignment not found' });
+        }
+
+        if (['COMPLETED', 'CANCELLED', 'APPROVED'].includes(assignment.assignmentStatus)) {
+            return res.status(400).json({
+                message: `Cannot change team for a ${assignment.assignmentStatus} assignment`,
+            });
+        }
+
+        const oldMunshiId = assignment.munshiId ? assignment.munshiId.toString() : null;
+
+        if (teamName !== undefined) {
+            assignment.teamName = teamName;
+        }
+
+        if (munshiId !== undefined && munshiId) {
+            const munshi = await User.findById(munshiId);
+            if (!munshi) {
+                return res.status(404).json({ message: 'Munshi not found' });
+            }
+            assignment.munshiId = munshiId;
+        }
+
+        if (driverId !== undefined && driverId) {
+            const driver = await User.findById(driverId).populate('vehicleId', 'vehicleNumber vehicleType');
+            if (!driver) {
+                return res.status(404).json({ message: 'Driver not found' });
+            }
+            if (!driver.vehicleId) {
+                return res.status(400).json({
+                    message: `Driver "${driver.firstName} ${driver.lastName}" has no vehicle linked to their profile. Please link a vehicle first.`,
+                });
+            }
+            assignment.driverId = driverId;
+            assignment.vehicleId = driver.vehicleId._id;
+        }
+
+        await assignment.save();
+
+        // If Munshi changed, notify the new Munshi via WhatsApp
+        if (munshiId && munshiId.toString() !== oldMunshiId) {
+            const munshi = await User.findById(munshiId);
+            if (munshi?.mobileNo) {
+                const timeWindow = assignment.lightInTime && assignment.lightOutTime ? `${assignment.lightInTime} – ${assignment.lightOutTime}` : 'TBD';
+                NotificationService.sendLogisticsAlert(munshi.mobileNo, 'Munshi', `You have been assigned a reassigned packing task. Time window: ${timeWindow}.`);
+            }
+        }
+
+        res.status(200).json({
+            message: 'Team reassigned successfully',
+            assignment,
+        });
+    } catch (error) {
+        console.error('Error changing assigned team:', error);
+        if (error.name === 'CastError') {
+            return res.status(400).json({ message: `Invalid ID format for field: ${error.path}` });
+        }
+        res.status(500).json({ message: 'Server error while changing assigned team' });
+    }
+};
+
 module.exports = {
     createAssignment,
     getAssignments,
     getAssignmentById,
     addExtraVehicle,
     getRelatedAssignments,
+    changeAssignedTeam,
 };

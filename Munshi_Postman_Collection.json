@@ -602,6 +602,41 @@
                         "description": "Returns the full chain for any assignment: the root original assignment, all rollovers (extra days), and all overflows (extra vehicles). Walks up parentAssignmentId to find the root, then fetches all descendants.\n\nResponse: { original, rollovers[], overflows[], totalRelated }\n\nUseful for seeing all vehicles and days associated with one enquiry."
                     },
                     "response": []
+                },
+                {
+                    "name": "PATCH Start Harvesting (Toggle)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"isHarvesting\": true\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/munshi/assignments/{{assignmentId}}/start-harvest",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "munshi",
+                                "assignments",
+                                "{{assignmentId}}",
+                                "start-harvest"
+                            ]
+                        },
+                        "description": "Toggles or sets the harvesting status to true/false. If starting, it automatically triggers in-app notifications to the OM and Field Owner."
+                    },
+                    "response": []
                 }
             ]
         },

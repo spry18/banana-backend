@@ -10,6 +10,7 @@ const {
     getSelectorsPerformanceMonthly,
     getSelectorMileage,
     getFOSelectors,
+    getOmMetricsForFO,
 } = require('./field-owner.controller');
 
 router.use(protect);
@@ -38,5 +39,8 @@ router.get('/selector-mileage/:logId', getSelectorMileage);
 
 // GET /api/field-owner/selectors
 router.get('/selectors', getFOSelectors);
+
+// GET /api/field-owner/oms-metrics
+router.get('/oms-metrics', getOmMetricsForFO);
 
 module.exports = router;

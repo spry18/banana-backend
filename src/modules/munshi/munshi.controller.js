@@ -3,6 +3,7 @@ const Packing = require('../execution/packing.model');
 const User = require('../users/user.model');
 const Enquiry = require('../enquiries/enquiry.model');
 const NotificationService = require('../../services/notification.service');
+const { createNotification } = require('../../utils/notificationHelper');
 
 // ============================================================
 //  PHASE 2: Dashboard & Pickup Driver
@@ -578,6 +579,64 @@ const updatePackingReport = async (req, res) => {
     }
 };
 
+// @desc    Toggle/Start harvesting for an assignment and notify OM & Field Owner
+// @route   PATCH /api/munshi/assignments/:id/start-harvest
+// @access  Protected (Munshi, Admin, Operational Manager)
+const startHarvesting = async (req, res) => {
+    try {
+        const assignmentId = req.params.id;
+        const assignment = await Logistics.findById(assignmentId).populate('enquiryId');
+        if (!assignment) {
+            return res.status(404).json({ message: 'Assignment not found' });
+        }
+
+        // Toggle or set
+        const nextState = req.body.isHarvesting !== undefined ? !!req.body.isHarvesting : !assignment.isHarvesting;
+        assignment.isHarvesting = nextState;
+        await assignment.save();
+
+        if (nextState) {
+            // Trigger in-app notifications to OM and Field Owner
+            const enquiry = assignment.enquiryId;
+            const farmerName = enquiry ? `${enquiry.farmerFirstName} ${enquiry.farmerLastName}`.trim() : 'Unknown';
+            const location = enquiry ? enquiry.location : 'Unknown';
+
+            // 1. Notify Operational Manager (omId)
+            if (assignment.omId) {
+                await createNotification(
+                    assignment.omId,
+                    'HARVESTING_STARTED',
+                    `Munshi has started harvesting at ${farmerName}'s farm in ${location}.`,
+                    assignment._id,
+                    'Logistics'
+                );
+            }
+
+            // 2. Notify Field Owner (fieldOwnerId on Enquiry)
+            if (enquiry && enquiry.fieldOwnerId) {
+                await createNotification(
+                    enquiry.fieldOwnerId,
+                    'HARVESTING_STARTED',
+                    `Munshi has started harvesting at ${farmerName}'s farm in ${location}.`,
+                    enquiry._id,
+                    'Enquiry'
+                );
+            }
+        }
+
+        res.status(200).json({
+            message: `Harvesting status updated to ${nextState ? 'Started' : 'Stopped'}.`,
+            isHarvesting: assignment.isHarvesting,
+        });
+    } catch (error) {
+        console.error('Error toggling harvest status:', error);
+        if (error.name === 'CastError') {
+            return res.status(400).json({ message: `Invalid ID format for field: ${error.path}` });
+        }
+        res.status(500).json({ message: 'Server error while toggling harvest status' });
+    }
+};
+
 module.exports = {
     getMunshiDashboard,
     getMunshiAssignments,
@@ -587,4 +646,5 @@ module.exports = {
     getPackingByAssignmentId,
     rolloverAssignment,
     updatePackingReport,
+    startHarvesting,
 };
