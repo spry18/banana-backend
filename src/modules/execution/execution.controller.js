@@ -117,70 +117,63 @@ const reviewExecution = async (req, res) => {
         }
 
         // --- 2. HANDLING REJECTION (Targeted Component Rollbacks) ---
-        if (reviewStatus === 'REJECTED') {
-            if (!rejectedComponents) {
-                return res.status(400).json({ 
-                    message: 'rejectedComponents object is required when status is REJECTED.' 
-                });
-            }
-
-            const { packing, trip, pickupTrip } = rejectedComponents;
-            let targetLogs = [];
-
-            // Case A: Reject Munshi's packing summary
-            if (packing === true) {
-                const packingDoc = await Packing.findOneAndUpdate(
-                    { assignmentId },
-                    { status: 'REJECTED', reviewNote: reviewNote }, // Unlocks editing for Munshi app
-                    { new: true }
-                );
-                if (packingDoc) targetLogs.push('Packing Summary');
-            }
-
-            // Case B: Reject Eicher Driver's trip logs
-            if (trip === true) {
-                const eicherDoc = await Trip.findOneAndUpdate(
-                    { assignmentId, driverType: 'Eicher' },
-                    { reviewStatus: 'REJECTED', reviewNote: reviewNote, reviewedBy: req.user._id }, // Unlocks Eicher App
-                    { new: true }
-                );
-                if (eicherDoc) targetLogs.push('Eicher Trip');
-            }
-
-            // Case C: Reject Pickup Driver's trip logs
-            if (pickupTrip === true) {
-                const pickupDoc = await Trip.findOneAndUpdate(
-                    { assignmentId, driverType: 'Pickup' },
-                    { reviewStatus: 'REJECTED', reviewNote: reviewNote, reviewedBy: req.user._id }, // Unlocks Pickup App
-                    { new: true }
-                );
-                if (pickupDoc) targetLogs.push('Pickup Trip');
-            }
-
-            // Fallback safety check if they sent all booleans as false
-            if (targetLogs.length === 0) {
-                return res.status(400).json({ 
-                    message: 'At least one component (packing, trip, or pickupTrip) must be set to true for rejection.' 
-                });
-            }
-
-            // Update main assignment status back to a processing state if needed
-            await Logistics.findByIdAndUpdate(assignmentId, { assignmentStatus: 'REJECTED' });
-
-            await logSystemAction(
-                req.user._id,
-                'UPDATE',
-                'Execution',
-                assignmentId,
-                `OM REJECTED components (${targetLogs.join(', ')}) for assignment ${assignmentId}`,
-                { rejectedComponents },
-                { reviewStatus, reviewNote }
-            );
-
-            return res.status(200).json({
-                message: `Rejected components (${targetLogs.join(', ')}) updated successfully.`,
-                rejectedComponents
+        if (reviewStatus === "REJECTED") {
+          if (!rejectedComponents) {
+            return res.status(400).json({
+              message:
+                "rejectedComponents object is required when status is REJECTED.",
             });
+          }
+        }
+
+        const isPackingRejected =
+          rejectedComponents.packing === true ||
+          rejectedComponents.packing === "true";
+        const isTripRejected =
+          rejectedComponents.trip === true ||
+          rejectedComponents.trip === "true";
+        const isPickupTripRejected =
+          rejectedComponents.pickupTrip === true ||
+          rejectedComponents.pickupTrip === "true";
+
+        let targetLogs = [];
+
+        // Case A: Reject Munshi's packing summary
+        if (isPackingRejected === true) {
+          const packingDoc = await Packing.findOneAndUpdate(
+            { assignmentId },
+            { status: "REJECTED", reviewNote: reviewNote }, // Unlocks editing for Munshi app
+            { new: true },
+          );
+          if (packingDoc) targetLogs.push("Packing Summary");
+        }
+
+        // Case B: Reject Eicher Driver's trip logs
+        if (isTripRejected === true) {
+          const eicherDoc = await Trip.findOneAndUpdate(
+            { assignmentId, driverType: "Eicher" },
+            {
+              reviewStatus: "REJECTED",
+              reviewNote: reviewNote,
+              reviewedBy: req.user._id,
+            }, // Unlocks Eicher App
+            { new: true },
+          );
+          if (eicherDoc) targetLogs.push("Eicher Trip");
+        }
+
+        // Case C: Reject Pickup Driver's trip logs
+        if (isPickupTripRejected === true) {
+          const pickupDoc = await Trip.findOneAndUpdate(
+            { assignmentId, driverType: "Pickup" },
+            {
+              reviewStatus: "REJECTED",
+              reviewNote: reviewNote,
+              reviewedBy: req.user._id,
+            }, // Unlocks Pickup App
+            { new: true },
+          );
+          if (pickupDoc) targetLogs.push("Pickup Trip");
         }
 
     } catch (error) {
