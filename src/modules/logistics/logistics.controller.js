@@ -438,7 +438,7 @@ const getRelatedAssignments = async (req, res) => {
 const changeAssignedTeam = async (req, res) => {
     try {
         const assignmentId = req.params.id;
-        const { date, companyId, munshiId, driverId } = req.body;
+        const { date, companyId, munshiId, driverId, totalBoxes } = req.body;
 
         const assignment = await Logistics.findById(assignmentId).populate('enquiryId');
         if (!assignment) {
@@ -459,6 +459,10 @@ const changeAssignedTeam = async (req, res) => {
 
         if (companyId !== undefined && companyId) {
             assignment.companyId = companyId;
+        }
+
+        if (totalBoxes !== undefined && totalBoxes !== null) {
+            assignment.totalBoxes = Number(totalBoxes);
         }
 
         if (munshiId !== undefined && munshiId) {
