@@ -229,8 +229,8 @@ const updateEnquiry = async (req, res) => {
         }
 
         // 24-hour edit guard: enquiry is locked after editableUntil expires
-        // The clock is reset every time the enquiry is rescheduled
-        if (enquiry.editableUntil && new Date() > enquiry.editableUntil) {
+        // The clock is reset every time the enquiry is rescheduled (except when status is PENDING)
+        if (enquiry.status !== 'PENDING' && enquiry.editableUntil && new Date() > enquiry.editableUntil) {
             return res.status(403).json({ message: 'Edit window of 24 hours has expired. Reschedule the enquiry to unlock editing.' });
         }
 
