@@ -16,6 +16,9 @@ const getExecutionById = async (req, res) => {
             .populate('munshiId', 'firstName lastName mobileNo')
             .populate('driverId', 'firstName lastName mobileNo')
             .populate('vehicleId', 'vehicleNumber vehicleType')
+            .populate('omId', 'firstName lastName')
+            .populate('pickupDriverId', 'firstName lastName mobileNo') 
+            .populate('vehicleId', 'vehicleNumber vehicleType')
             .populate('omId', 'firstName lastName');
 
         if (!assignment) {
