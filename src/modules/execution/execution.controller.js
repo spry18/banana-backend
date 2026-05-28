@@ -14,7 +14,16 @@ const getExecutionById = async (req, res) => {
             .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName farmerMobile location subLocation plantCount')
             .populate('companyId', 'companyName legalName')
             .populate('munshiId', 'firstName lastName mobileNo')
-            .populate('driverId', 'firstName lastName mobileNo')
+            .populate({
+                path: 'driverId',
+                select: 'firstName lastName mobileNo vehicleId',
+                populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' }
+            })
+            .populate({
+                path: 'pickupDriverId',
+                select: 'firstName lastName mobileNo vehicleId',
+                populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' }
+            })
             .populate('vehicleId', 'vehicleNumber vehicleType')
             .populate('omId', 'firstName lastName')
             .populate('pickupDriverId', 'firstName lastName mobileNo') 
@@ -27,7 +36,11 @@ const getExecutionById = async (req, res) => {
 
         // 2. Fetch the associated Trip reports (Both Eicher and Pickup trips)
         const trips = await Trip.find({ assignmentId: assignment._id })
-            .populate('driverId', 'firstName lastName mobileNo')
+            .populate({
+                path: 'driverId',
+                select: 'firstName lastName mobileNo vehicleId',
+                populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' }
+            })
             .populate('reviewedBy', 'firstName lastName')
             .lean();
 
