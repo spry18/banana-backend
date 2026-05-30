@@ -15,12 +15,19 @@ const getDriverDashboard = async (req, res) => {
     try {
         const userId = req.user._id;
 
+        // Retrieve assignment IDs where a trip report has already been submitted by this driver and is not rejected
+        const myTrips = await Trip.find({ driverId: userId }).select('assignmentId reviewStatus').lean();
+        const submittedAndNotRejectedIds = myTrips
+            .filter(t => t.reviewStatus !== 'REJECTED')
+            .map(t => t.assignmentId.toString());
+
         const activeAssignments = await Logistics.find({
             $or: [
                 { driverId: userId },
                 { pickupDriverId: userId },
             ],
-            assignmentStatus: 'PENDING',
+            assignmentStatus: { $in: ['PENDING', 'COMPLETED', 'REJECTED'] },
+            _id: { $nin: submittedAndNotRejectedIds },
         })
             .sort({ createdAt: -1 })
             .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName farmerMobile location subLocation plantCount')
@@ -33,11 +40,26 @@ const getDriverDashboard = async (req, res) => {
 
         // KPI counts scoped to this driver
         const allMyAssignments = { $or: [{ driverId: userId }, { pickupDriverId: userId }] };
-        const [totalPending, totalCompleted, totalCancelled] = await Promise.all([
-            Logistics.countDocuments({ ...allMyAssignments, assignmentStatus: 'PENDING' }),
-            Logistics.countDocuments({ ...allMyAssignments, assignmentStatus: 'COMPLETED' }),
-            Logistics.countDocuments({ ...allMyAssignments, assignmentStatus: 'CANCELLED' }),
-        ]);
+        
+        const totalPending = await Logistics.countDocuments({
+            ...allMyAssignments,
+            assignmentStatus: { $in: ['PENDING', 'COMPLETED', 'REJECTED'] },
+            _id: { $nin: submittedAndNotRejectedIds },
+        });
+        const totalCompleted = myTrips.filter(t => t.reviewStatus !== 'REJECTED').length;
+        const totalCancelled = await Logistics.countDocuments({ ...allMyAssignments, assignmentStatus: 'CANCELLED' });
+
+        // Attach rejected trip details if any
+        for (let a of activeAssignments) {
+            if (a.assignmentStatus === 'REJECTED') {
+                const rejTrip = await Trip.findOne({ assignmentId: a._id, driverId: userId, reviewStatus: 'REJECTED' })
+                    .select('_id reviewNote reviewStatus')
+                    .lean();
+                if (rejTrip) {
+                    a.rejectedTrip = rejTrip;
+                }
+            }
+        }
 
         res.status(200).json({
             kpis: {
@@ -227,7 +249,11 @@ const updateTripReport = async (req, res) => {
         const { id } = req.params;
         const userId = req.user._id;
 
-        const trip = await Trip.findById(id);
+        let trip = await Trip.findById(id);
+        if (!trip) {
+            // Fallback: try to find by assignmentId and driverId
+            trip = await Trip.findOne({ assignmentId: id, driverId: userId });
+        }
         if (!trip) {
             return res.status(404).json({ message: 'Trip not found' });
         }
@@ -318,6 +344,10 @@ const updateTripReport = async (req, res) => {
 
         if (trip.reviewStatus === 'REJECTED') {
             trip.reviewStatus = 'PENDING';
+            // Transition logistics status back to COMPLETED
+            await Logistics.findByIdAndUpdate(trip.assignmentId, {
+                assignmentStatus: 'COMPLETED',
+            });
         }
 
         await trip.save();
@@ -484,13 +514,33 @@ const getDriverProfile = async (req, res) => {
 const getDriverAssignments = async (req, res) => {
     try {
         const userId = req.user._id;
+
+        const myTrips = await Trip.find({ driverId: userId }).select('assignmentId reviewStatus').lean();
+        const submittedAndNotRejectedIds = myTrips
+            .filter(t => t.reviewStatus !== 'REJECTED')
+            .map(t => t.assignmentId.toString());
+
         const assignments = await Logistics.find({
             $or: [{ driverId: userId }, { pickupDriverId: userId }],
-            assignmentStatus: 'PENDING',
+            assignmentStatus: { $in: ['PENDING', 'COMPLETED', 'REJECTED'] },
+            _id: { $nin: submittedAndNotRejectedIds },
         })
             .populate('enquiryId')
             .populate('companyId')
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .lean();
+
+        // Attach rejected trip details if any
+        for (let a of assignments) {
+            if (a.assignmentStatus === 'REJECTED') {
+                const rejTrip = await Trip.findOne({ assignmentId: a._id, driverId: userId, reviewStatus: 'REJECTED' })
+                    .select('_id reviewNote reviewStatus')
+                    .lean();
+                if (rejTrip) {
+                    a.rejectedTrip = rejTrip;
+                }
+            }
+        }
 
         res.status(200).json(assignments);
     } catch (error) {

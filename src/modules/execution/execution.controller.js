@@ -2,6 +2,7 @@ const Logistics = require('../logistics/logistics.model');
 const Trip = require('./trip.model');
 const Packing = require('./packing.model');
 const { logSystemAction } = require('../../utils/auditLogger');
+const { createNotification } = require('../../utils/notificationHelper');
 
 // @desc    Get a single execution record (Assignment + merged Trip + Packing data)
 // @route   GET /api/execution/:id
@@ -173,7 +174,13 @@ const reviewExecution = async (req, res) => {
           });
         }
 
-        // --- Execution Database Updates ---
+        // --- Fetch logistics record to identify driver and munshi ---
+        const assignment = await Logistics.findById(assignmentId);
+        if (!assignment) {
+          return res.status(404).json({ message: 'Logistics assignment not found.' });
+        }
+
+        // --- Execution Database Updates & Notifications ---
 
         // Case A: Reject Munshi's packing summary
         if (isPackingRejected) {
@@ -181,6 +188,15 @@ const reviewExecution = async (req, res) => {
             { assignmentId },
             { status: "REJECTED", reviewNote: reviewNote },
           );
+          if (assignment.munshiId) {
+            await createNotification(
+              assignment.munshiId,
+              'PACKING_REJECTED',
+              `Your packing report was rejected by the Operations Manager. Reason: ${reviewNote}. Please resubmit.`,
+              assignmentId,
+              'Logistics'
+            );
+          }
         }
 
         // Case B: Reject Eicher Driver's trip logs
@@ -193,6 +209,15 @@ const reviewExecution = async (req, res) => {
               reviewedBy: req.user._id,
             },
           );
+          if (assignment.driverId) {
+            await createNotification(
+              assignment.driverId,
+              'TRIP_REJECTED',
+              `Your Eicher trip report was rejected by the Operations Manager. Reason: ${reviewNote}. Please resubmit.`,
+              assignmentId,
+              'Logistics'
+            );
+          }
         }
 
         // Case C: Reject Pickup Driver's trip logs
@@ -205,6 +230,15 @@ const reviewExecution = async (req, res) => {
               reviewedBy: req.user._id,
             },
           );
+          if (assignment.pickupDriverId) {
+            await createNotification(
+              assignment.pickupDriverId,
+              'TRIP_REJECTED',
+              `Your Pickup trip report was rejected by the Operations Manager. Reason: ${reviewNote}. Please resubmit.`,
+              assignmentId,
+              'Logistics'
+            );
+          }
         }
 
         await Logistics.findByIdAndUpdate(assignmentId, {
