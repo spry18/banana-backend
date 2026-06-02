@@ -375,12 +375,15 @@ const getEnquiryById = async (req, res) => {
 
         // Shape flat response exactly as per frontend View Details contract
         const e = enquiry.toObject();
+        if (req.user.role === 'Operational Manager') {
+            delete e.purchaseRate;
+        }
         res.status(200).json({
             ...e,
             farmerName: `${e.farmerFirstName} ${e.farmerLastName}`,
             mobile: e.farmerMobile,
             boxCount: e.estimatedBoxes || null,
-            rate: e.purchaseRate || null,
+            rate: req.user.role === 'Operational Manager' ? null : (e.purchaseRate || null),
             company: e.companyId ? e.companyId.companyName : null,
             fieldOwner: e.fieldOwnerId ? {
                 name: `${e.fieldOwnerId.firstName} ${e.fieldOwnerId.lastName}`,
@@ -504,8 +507,10 @@ const fixRate = async (req, res) => {
         await enquiry.save();
 
         // Flow 2 — In-app: notify all Operational Managers and Admins that this plot is ready for logistics
-        const rateMsg = `Rate fixed at ₹${purchaseRate} for enquiry ${enquiry.enquiryId} (${enquiry.farmerFirstName} ${enquiry.farmerLastName}, ${enquiry.location}). Ready for logistics assignment.`;
-        await broadcastToRole(['Operational Manager', 'Admin'], 'RATE_FIXED', rateMsg, enquiry._id, 'Enquiry');
+        const rateMsgAdmin = `Rate fixed at ₹${purchaseRate} for enquiry ${enquiry.enquiryId} (${enquiry.farmerFirstName} ${enquiry.farmerLastName}, ${enquiry.location}). Ready for logistics assignment.`;
+        const rateMsgOM = `Rate fixed for enquiry ${enquiry.enquiryId} (${enquiry.farmerFirstName} ${enquiry.farmerLastName}, ${enquiry.location}). Ready for logistics assignment.`;
+        await broadcastToRole('Admin', 'RATE_FIXED', rateMsgAdmin, enquiry._id, 'Enquiry');
+        await broadcastToRole('Operational Manager', 'RATE_FIXED', rateMsgOM, enquiry._id, 'Enquiry');
 
         await logSystemAction(
             req.user._id,

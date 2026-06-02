@@ -23,6 +23,7 @@ const getOmDashboard = async (req, res) => {
             Packing.countDocuments({ status: 'SUBMITTED' }),   // Munshi done, OM pending
             Logistics.countDocuments({ assignmentStatus: 'APPROVED' }),    // OM approved logistics assignments
             Logistics.find()
+                .select('-purchaseRate')
                 .sort({ createdAt: -1 })
                 .limit(5)
                 .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName location packingType')
@@ -84,6 +85,7 @@ const getOmPlots = async (req, res) => {
 
             const [enquiries, total] = await Promise.all([
                 Enquiry.find(query)
+                    .select('-purchaseRate')
                     .sort({ createdAt: -1 })
                     .skip(skip)
                     .limit(Number(limit))
@@ -147,6 +149,7 @@ const getOmPlots = async (req, res) => {
 
             const [enquiries, total] = await Promise.all([
                 Enquiry.find(query)
+                    .select('-purchaseRate')
                     .sort({ createdAt: -1 })
                     .skip(skip)
                     .limit(Number(limit))

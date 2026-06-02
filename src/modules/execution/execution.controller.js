@@ -55,8 +55,13 @@ const getExecutionById = async (req, res) => {
             .lean();
 
         // 4. Merge into unified response
+        const assignmentObj = assignment.toObject();
+        if (req.user.role === 'Operational Manager') {
+            delete assignmentObj.purchaseRate;
+        }
+
         res.status(200).json({
-            assignment: assignment.toObject(),
+            assignment: assignmentObj,
             trip: eicherTrip,         // kept for backward compatibility if FE relies on this name
             pickupTrip: pickupTrip,  // added the pickup trip explicitly
             trips: trips,            // you can optionally send the entire array
