@@ -82,6 +82,14 @@ const logisticsSchema = new mongoose.Schema(
             type: Boolean,
             default: false,
         },
+        fieldOwner: {
+            type: String,
+            default: null,
+        },
+        packingSize: {
+            type: Number,
+            default: null,
+        },
         assignmentStatus: {
             type: String,
             enum: ['PENDING', 'COMPLETED', 'CANCELLED', 'REJECTED', 'APPROVED'],

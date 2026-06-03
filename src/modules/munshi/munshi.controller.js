@@ -36,6 +36,8 @@ const getMunshiDashboard = async (req, res) => {
                 .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
                 .populate({ path: 'pickupDriverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
                 .populate('vehicleId', 'vehicleNumber vehicleType')
+                .populate('fieldOwner', 'firstName lastName')
+                .populate('packingSize', 'packingSize')
                 .lean(),
         ]);
 
