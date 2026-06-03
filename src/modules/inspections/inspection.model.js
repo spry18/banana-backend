@@ -122,20 +122,16 @@ const inspectionSchema = new mongoose.Schema(
 );
 
 // Validate maxVolume >= minVolume
-inspectionSchema.pre('validate', function (next) {
+inspectionSchema.pre('validate', function () {
   if (
     this.minVolume !== undefined &&
     this.maxVolume !== undefined &&
     this.maxVolume < this.minVolume
   ) {
-    return next(
-      new Error(
-        'maxVolume must be greater than or equal to minVolume.'
-      )
+    throw new Error(
+      'maxVolume must be greater than or equal to minVolume.'
     );
   }
-
-  next();
 });
 
 module.exports = mongoose.model('Inspection', inspectionSchema);
