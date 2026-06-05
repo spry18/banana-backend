@@ -1,6 +1,22 @@
 const DailyLog = require('./dailyLog.model');
 const { getFullUrl } = require('../../utils/urlHelper');
 
+// ── IST midnight helper ────────────────────────────────────────────────────
+// Server is UTC; app users are in IST (UTC+5:30).
+// Returns { startOfToday, endOfToday } as UTC Date objects that represent
+// 00:00:00 IST – 23:59:59 IST of the CURRENT IST calendar day.
+// This matches the same pattern used in field-owner.controller.js.
+const getIstTodayBounds = () => {
+    const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+    const nowUtc  = new Date();
+    const nowIst  = new Date(nowUtc.getTime() + IST_OFFSET_MS);
+    const istMid  = new Date(nowIst);
+    istMid.setUTCHours(0, 0, 0, 0);                              // midnight expressed in UTC
+    const startOfToday = new Date(istMid.getTime() - IST_OFFSET_MS); // shift back to UTC
+    const endOfToday   = new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000 - 1); // 23:59:59.999
+    return { startOfToday, endOfToday };
+};
+
 // @desc    Start day log
 // @route   POST /api/daily-logs/start
 // @access  Protected
@@ -16,15 +32,12 @@ const startDay = async (req, res) => {
             return res.status(400).json({ message: 'startKm is required' });
         }
 
-        const startOfToday = new Date();
-        startOfToday.setHours(0, 0, 0, 0);
-
-        const endOfToday = new Date();
-        endOfToday.setHours(23, 59, 59, 999);
+        // Use IST-aligned today boundary so users in IST are not affected by UTC day roll-over
+        const { startOfToday, endOfToday } = getIstTodayBounds();
 
         const existingLog = await DailyLog.findOne({
             userId: req.user._id,
-            date: { $gte: startOfToday, $lt: endOfToday },
+            date: { $gte: startOfToday, $lte: endOfToday },
         });
 
         if (existingLog) {
@@ -62,15 +75,12 @@ const endDay = async (req, res) => {
             return res.status(400).json({ message: 'endKm and endKmPhoto are required' });
         }
 
-        const startOfToday = new Date();
-        startOfToday.setHours(0, 0, 0, 0);
-
-        const endOfToday = new Date();
-        endOfToday.setHours(23, 59, 59, 999);
+        // Use IST-aligned today boundary (same as startDay)
+        const { startOfToday, endOfToday } = getIstTodayBounds();
 
         const log = await DailyLog.findOne({
             userId: req.user._id,
-            date: { $gte: startOfToday, $lt: endOfToday },
+            date: { $gte: startOfToday, $lte: endOfToday },
             status: 'STARTED',
         });
 
@@ -173,11 +183,8 @@ const getLogs = async (req, res) => {
 // @access  Protected (Field Selector, driver eicher, driver pickup, Munshi)
 const checkTodayLogStatus = async (req, res) => {
     try {
-        const startOfToday = new Date();
-        startOfToday.setHours(0, 0, 0, 0);
-
-        const endOfToday = new Date();
-        endOfToday.setHours(23, 59, 59, 999);
+        // Use IST-aligned today boundary (same as startDay / endDay)
+        const { startOfToday, endOfToday } = getIstTodayBounds();
 
         const log = await DailyLog.findOne({
             userId: req.user._id,

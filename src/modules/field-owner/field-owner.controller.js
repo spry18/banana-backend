@@ -256,7 +256,9 @@ const getFOPlots = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const _buildSelectorsPerformance = async (startDate, endDate) => {
     // All unique selectorIds across the global pool
-    const selectorIds = await Enquiry.find({}).distinct('assignedSelectorId');
+    // Filter out null values (enquiries with no selector assigned) to prevent CastError
+    const rawIds = await Enquiry.find({}).distinct('assignedSelectorId');
+    const selectorIds = rawIds.filter((id) => id != null);
     if (!selectorIds.length) return [];
 
     // KM aggregation from DailyLog
@@ -488,8 +490,9 @@ const getOmMetricsForFO = async (req, res) => {
 
         // Calculate counts for each OM
         const data = await Promise.all(oms.map(async (om) => {
-            // Find all logistics enquiries assigned to this OM
-            const assignedEnquiryIds = await Logistics.distinct('enquiryId');
+            // Find enquiry IDs that already have a logistics assignment FROM THIS OM
+            // (scoped to om._id so we don't exclude enquiries assigned to other OMs)
+            const assignedEnquiryIds = await Logistics.distinct('enquiryId', { omId: om._id });
 
             const [unassignedCount, assignedCount, completedCount] = await Promise.all([
                 // Unassigned: Enquiries that are rate fixed by this OM but have no logistics assignment

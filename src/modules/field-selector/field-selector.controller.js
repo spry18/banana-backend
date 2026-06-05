@@ -9,8 +9,26 @@ const Inspection = require('../inspections/inspection.model');
 const getDashboard = async (req, res) => {
     try {
         const selectorId = req.user._id;
-        const createdWithin24Hours = { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) };
-        const baseFilter = { assignedSelectorId: selectorId, createdAt: createdWithin24Hours };
+
+        // ── IST-aligned today boundary (matches Field Owner dashboard pattern) ──
+        // Server runs UTC; users are IST (UTC+5:30). We compute the IST calendar
+        // day boundaries in UTC so MongoDB date comparisons are correct.
+        const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+        const nowUtc = new Date();
+        const nowIst = new Date(nowUtc.getTime() + IST_OFFSET_MS);
+        const istMidnight = new Date(nowIst);
+        istMidnight.setUTCHours(0, 0, 0, 0);                        // midnight in IST expressed as UTC
+        const startOfTodayIst = new Date(istMidnight.getTime() - IST_OFFSET_MS); // convert back to UTC
+        const endOfTodayIst   = new Date(startOfTodayIst.getTime() + 24 * 60 * 60 * 1000);
+
+        // Base filter: this selector's enquiries assigned/scheduled for today (IST)
+        // We scope on scheduledDate for today so plots assigned today show up regardless
+        // of when the underlying enquiry record was originally created.
+        const baseFilter = { assignedSelectorId: selectorId };
+        const todayScheduledFilter = {
+            ...baseFilter,
+            scheduledDate: { $gte: startOfTodayIst, $lt: endOfTodayIst },
+        };
 
         // Run all aggregation counters in parallel for performance
         const [
@@ -21,35 +39,38 @@ const getDashboard = async (req, res) => {
             visited,
             recentActivity,
         ] = await Promise.all([
-            // Assigned = still in PENDING (not yet inspected)
-            Enquiry.countDocuments({ ...baseFilter, status: 'PENDING' }),
+            // Assigned = PENDING plots scheduled for today (not yet inspected)
+            Enquiry.countDocuments({ ...todayScheduledFilter, status: 'PENDING' }),
 
-            // Selector marked the plot as SELECTED (inspection approved)
-            Enquiry.countDocuments({ ...baseFilter, status: 'SELECTED' }),
+            // Selector marked the plot as SELECTED (inspection approved) — today
+            Enquiry.countDocuments({ ...todayScheduledFilter, status: 'SELECTED' }),
 
-            // Selector rejected the plot
-            Enquiry.countDocuments({ ...baseFilter, status: 'REJECTED' }),
+            // Selector rejected the plot — today
+            Enquiry.countDocuments({ ...todayScheduledFilter, status: 'REJECTED' }),
 
-            // Missed = still PENDING but the scheduledDate has passed
+            // Missed = still PENDING but the scheduledDate has passed (today's plots only)
             Enquiry.countDocuments({
-                ...baseFilter,
-                scheduledDate: { $lt: new Date() },
+                ...todayScheduledFilter,
+                scheduledDate: { $gte: startOfTodayIst, $lt: nowUtc },
                 status: 'PENDING',
             }),
 
-            // Visited = inspection was submitted (SELECTED + REJECTED + downstream statuses)
+            // Visited = inspection was submitted today (SELECTED + REJECTED + downstream)
             Enquiry.countDocuments({
-                ...baseFilter,
+                ...todayScheduledFilter,
                 status: { $in: ['SELECTED', 'REJECTED', 'RATE_FIXED', 'ASSIGNED', 'COMPLETED', 'CLOSED'] },
             }),
 
-            // Last 5 activity items for the feed
-            Enquiry.find(baseFilter)
+            // Last 5 activity items for the feed — all active assignments (no date cap)
+            Enquiry.find({
+                ...baseFilter,
+                status: { $in: ['PENDING', 'SELECTED', 'REJECTED', 'RESCHEDULED'] },
+            })
                 .sort({ updatedAt: -1 })
                 .limit(5)
                 .select('enquiryId farmerFirstName farmerLastName farmerMobile location subLocation status scheduledDate updatedAt generation companyId packingType estimatedBoxes')
                 .populate('generation', 'name')
-                .populate('companyId', 'name')
+                .populate('companyId', 'companyName')   // FIX: Company schema uses 'companyName', not 'name'
                 .lean(),
         ]);
 
@@ -85,10 +106,11 @@ const getAssignedFields = async (req, res) => {
         const selectorId = req.user._id;
         const { status, search, page = 1, limit = 20 } = req.query;
 
-        // Base filter: only this selector's enquiries created in the last 24 hours
+        // Base filter: all enquiries currently assigned to this selector
+        // (No date cap — a selector must be able to see plots regardless of when
+        //  the enquiry was created or how long ago it was assigned to them.)
         const filter = {
             assignedSelectorId: selectorId,
-            createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
         };
 
         // Optional status filter (single value or comma-separated list)
@@ -145,14 +167,14 @@ const getFieldDetails = async (req, res) => {
         const enquiryId = req.params.id;
 
         // Fetch the enquiry and its linked inspection in parallel
+        // Ownership is enforced by assignedSelectorId — no date filter needed here.
         const [enquiry, inspection] = await Promise.all([
             Enquiry.findOne({
                 _id: enquiryId,
                 assignedSelectorId: selectorId,
-                createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
             })
                 .populate('generation', 'name')
-                .populate('companyId', 'name')
+                .populate('companyId', 'companyName')   // FIX: Company schema uses 'companyName'
                 .populate('fieldOwnerId', 'firstName lastName mobileNo')
                 .lean(),
 
