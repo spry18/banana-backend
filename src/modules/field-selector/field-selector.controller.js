@@ -39,8 +39,8 @@ const getDashboard = async (req, res) => {
             visited,
             recentActivity,
         ] = await Promise.all([
-            // Assigned = PENDING plots scheduled for today (not yet inspected)
-            Enquiry.countDocuments({ ...todayScheduledFilter, status: 'PENDING' }),
+            // Assigned = ASSIGNED plots scheduled for today (not yet inspected, purchaseRate is null)
+            Enquiry.countDocuments({ ...todayScheduledFilter, status: 'ASSIGNED', purchaseRate: null }),
 
             // Selector marked the plot as SELECTED (inspection approved) — today
             Enquiry.countDocuments({ ...todayScheduledFilter, status: 'SELECTED' }),
@@ -48,23 +48,30 @@ const getDashboard = async (req, res) => {
             // Selector rejected the plot — today
             Enquiry.countDocuments({ ...todayScheduledFilter, status: 'REJECTED' }),
 
-            // Missed = still PENDING but the scheduledDate has passed (today's plots only)
+            // Missed = still ASSIGNED (purchaseRate is null) but the scheduledDate has passed (today's plots only)
             Enquiry.countDocuments({
                 ...todayScheduledFilter,
                 scheduledDate: { $gte: startOfTodayIst, $lt: nowUtc },
-                status: 'PENDING',
+                status: 'ASSIGNED',
+                purchaseRate: null,
             }),
 
-            // Visited = inspection was submitted today (SELECTED + REJECTED + downstream)
+            // Visited = inspection was submitted today (SELECTED + REJECTED + downstream/logistics-assigned)
             Enquiry.countDocuments({
                 ...todayScheduledFilter,
-                status: { $in: ['SELECTED', 'REJECTED', 'RATE_FIXED', 'ASSIGNED', 'COMPLETED', 'CLOSED'] },
+                $or: [
+                    { status: { $in: ['SELECTED', 'REJECTED', 'RATE_FIXED', 'COMPLETED', 'CLOSED'] } },
+                    { status: 'ASSIGNED', purchaseRate: { $ne: null, $exists: true } }
+                ]
             }),
 
-            // Last 5 activity items for the feed — all active assignments (no date cap)
+            // Last 5 activity items for the feed — all active selector assignments (no date cap)
             Enquiry.find({
                 ...baseFilter,
-                status: { $in: ['PENDING', 'SELECTED', 'REJECTED', 'RESCHEDULED'] },
+                $or: [
+                    { status: { $in: ['SELECTED', 'REJECTED', 'RESCHEDULED'] } },
+                    { status: 'ASSIGNED', purchaseRate: null }
+                ]
             })
                 .sort({ updatedAt: -1 })
                 .limit(5)

@@ -53,7 +53,11 @@ const getFODashboard = async (req, res) => {
             Enquiry.countDocuments(todayFilter),
             Enquiry.countDocuments({ ...todayFilter, status: 'SELECTED' }),
             Enquiry.countDocuments({ ...todayFilter, status: 'REJECTED' }),
-            Enquiry.countDocuments({ ...todayFilter, status: { $in: ['RATE_FIXED', 'ASSIGNED', 'COMPLETED'] } }),
+            Enquiry.countDocuments({
+                ...todayFilter,
+                status: { $in: ['RATE_FIXED', 'ASSIGNED', 'COMPLETED'] },
+                purchaseRate: { $ne: null, $exists: true }
+            }),
             // Missed: PENDING and either past scheduledDate OR completely missing a scheduledDate (for today's created plots)
             Enquiry.countDocuments({
                 ...todayFilter,

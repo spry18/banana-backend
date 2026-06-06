@@ -10,16 +10,20 @@ const { createNotification } = require('../../utils/notificationHelper');
 // @access  Protected (Admin, Operational Manager)
 const getOmDashboard = async (req, res) => {
     try {
+        const assignedEnquiryIds = await Logistics.distinct('enquiryId');
+
         // Run all KPI queries in parallel for best performance
         const [
             fixedPlotsCount,       // Enquiries at RATE_FIXED (ready to assign)
             teamsAssigned,         // Total logistics assignments created
+            activeTripsCount,      // Active assignments (dispatched trips)
             pendingReviewCount,    // Packing reports Munshi submitted → OM hasn't acted yet
             approvedCount,         // Packing reports OM has approved
             recentAssignments,     // Latest 5 assignments for activity feed
         ] = await Promise.all([
-            Enquiry.countDocuments({ status: 'RATE_FIXED' }),
+            Enquiry.countDocuments({ status: 'RATE_FIXED', _id: { $nin: assignedEnquiryIds } }),
             Logistics.countDocuments(),
+            Logistics.countDocuments({ assignmentStatus: 'PENDING' }),
             Packing.countDocuments({ status: 'SUBMITTED' }),   // Munshi done, OM pending
             Logistics.countDocuments({ assignmentStatus: 'APPROVED' }),    // OM approved logistics assignments
             Logistics.find()
@@ -36,6 +40,7 @@ const getOmDashboard = async (req, res) => {
             kpis: {
                 fixedPlots: fixedPlotsCount,       // Enquiries ready for logistics assignment
                 teamsAssigned: teamsAssigned,       // Total logistics assignments created
+                activeTrips: activeTripsCount,     // Active assignments (dispatched trips)
                 pendingReview: pendingReviewCount,  // Munshi submitted packing, OM hasn't reviewed yet
                 approvedTrips: approvedCount,       // Packing reports OM has approved
             },

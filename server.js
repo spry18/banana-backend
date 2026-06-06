@@ -1,4 +1,8 @@
 require('dotenv').config();
+// Force Node.js to use public DNS (Google/Cloudflare) to resolve MongoDB SRV records (fixes querySrv ECONNREFUSED)
+const dns = require('dns');
+dns.setServers(['8.8.8.8', '1.1.1.1']);
+
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');

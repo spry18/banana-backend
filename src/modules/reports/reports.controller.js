@@ -144,7 +144,12 @@ const getExecutionDetailedReport = async (req, res) => {
             rescheduled,
         ] = await Promise.all([
             Enquiry.countDocuments(),
-            Enquiry.countDocuments({ status: { $in: ['SELECTED', 'RATE_FIXED', 'ASSIGNED', 'COMPLETED'] } }),
+            Enquiry.countDocuments({
+                $or: [
+                    { status: { $in: ['SELECTED', 'RATE_FIXED', 'COMPLETED'] } },
+                    { status: 'ASSIGNED', purchaseRate: { $ne: null, $exists: true } }
+                ]
+            }),
             Enquiry.countDocuments({ status: 'REJECTED' }),
             Enquiry.countDocuments({ scheduledDate: { $lt: now }, status: 'PENDING' }),
             Enquiry.countDocuments({ status: 'RESCHEDULED' }),
