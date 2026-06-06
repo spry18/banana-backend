@@ -14,7 +14,7 @@ const generateToken = (id, role) => {
 // @access  Public (or Admin only later depending on RBAC)
 const registerUser = async (req, res) => {
     try {
-        const { firstName, lastName, mobileNo, password, role, vehicleId } = req.body;
+        const { firstName, lastName, mobileNo, password, role, vehicleId, bikeNumber } = req.body;
 
         // Validate required fields
         if (!firstName || !lastName || !mobileNo || !password || !role) {
@@ -35,6 +35,7 @@ const registerUser = async (req, res) => {
             passwordHash: password, // The pre-save hook will hash this
             role,
             vehicleId: vehicleId || null,
+            bikeNumber: bikeNumber || null,
         });
 
         if (user) {
@@ -46,6 +47,7 @@ const registerUser = async (req, res) => {
                 role: user.role,
                 isActive: user.isActive,
                 vehicleId: user.vehicleId,
+                bikeNumber: user.bikeNumber,
             });
         } else {
             res.status(400).json({ message: 'Invalid user data' });
@@ -232,7 +234,8 @@ const updateUser = async (req, res) => {
             lastName: user.lastName,
             mobileNo: user.mobileNo,
             email: user.email,
-            role: user.role
+            role: user.role,
+            bikeNumber: user.bikeNumber
         };
 
         user.firstName = req.body.firstName || user.firstName;
@@ -256,6 +259,11 @@ const updateUser = async (req, res) => {
             user.vehicleId = req.body.vehicleId || null;
         }
 
+        // Allow setting/clearing a bike number (e.g. for Field Selectors)
+        if (req.body.bikeNumber !== undefined) {
+            user.bikeNumber = req.body.bikeNumber || null;
+        }
+
         if (req.body.password) {
             user.passwordHash = req.body.password; // pre-save hook will hash it
         }
@@ -267,7 +275,8 @@ const updateUser = async (req, res) => {
             lastName: updatedUser.lastName,
             mobileNo: updatedUser.mobileNo,
             email: updatedUser.email,
-            role: updatedUser.role
+            role: updatedUser.role,
+            bikeNumber: updatedUser.bikeNumber
         };
 
         if (req.user) {
@@ -293,6 +302,7 @@ const updateUser = async (req, res) => {
             role: updatedUser.role,
             isActive: updatedUser.isActive,
             vehicleId: updatedUser.vehicleId,
+            bikeNumber: updatedUser.bikeNumber,
         });
     } catch (error) {
         if (error.name === 'CastError') {

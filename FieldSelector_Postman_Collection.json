@@ -193,7 +193,7 @@
                                 "start"
                             ]
                         },
-                        "description": "Submits the morning report to start the day's log.\n\n- Will return 400 if the selector already has an active log for today.\n- `petrolAdvance` and `petrolReceiptPhoto` are optional — only for Field Selectors claiming petrol expenses."
+                        "description": "Submits the morning report to start the day's log.\n\n- Will return 400 if the selector already has an active log for today.\n- `vehicleNumber` is optional — if not provided, the backend will auto-fill using the selector's registered `bikeNumber` from their profile.\n- `petrolAdvance` and `petrolReceiptPhoto` are optional — only for Field Selectors claiming petrol expenses."
                     },
                     "response": []
                 },

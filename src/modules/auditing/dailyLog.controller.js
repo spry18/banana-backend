@@ -48,7 +48,7 @@ const startDay = async (req, res) => {
             userId: req.user._id,
             startKm,
             startMeterPhotoUrl: startKmPhotoFile ? startKmPhotoFile.location : null,
-            vehicleNumber: vehicleNumber || null,
+            vehicleNumber: vehicleNumber || req.user.bikeNumber || null,
             // Petrol advance fields (optional — only submitted by Field Selectors)
             petrolAdvance: petrolAdvance ? Number(petrolAdvance) : null,
             petrolReceiptPhoto: petrolReceiptPhotoFile

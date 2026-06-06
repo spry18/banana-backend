@@ -111,3 +111,7 @@ dist
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Local test & utility scripts
+list-users.js
+test-kpis-dynamic.js

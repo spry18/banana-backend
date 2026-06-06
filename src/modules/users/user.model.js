@@ -55,6 +55,10 @@ const userSchema = new mongoose.Schema(
             ref: 'Vehicle',
             default: null,
         },
+        bikeNumber: {
+            type: String,
+            default: null,
+        },
     },
     {
         timestamps: true,

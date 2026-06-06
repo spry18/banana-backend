@@ -158,6 +158,9 @@ const importMasterData = async (req, res) => {
                     }
                     const exists = await User.findOne({ mobileNo: row.mobileNo });
                     if (exists) { skipped++; continue; }
+                    
+                    const bikeNumber = row.bikeNumber || row.bikeNo || row.vehicleNumber || undefined;
+                    
                     await User.create({
                         firstName: row.firstName,
                         lastName: row.lastName,
@@ -165,6 +168,7 @@ const importMasterData = async (req, res) => {
                         role: row.role,
                         email: row.email || undefined,
                         passwordHash: DEFAULT_PASSWORD, // hashed by pre-save hook
+                        bikeNumber: bikeNumber || undefined,
                     });
                     imported++;
                 }

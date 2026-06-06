@@ -895,7 +895,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"firstName\": \"Rohit\",\n  \"lastName\": \"Shinde\",\n  \"mobileNo\": \"8845010106\",\n  \"password\": \"Staff@123\",\n  \"role\": \"driver eicher\",\n  \"vehicleId\": \"REPLACE_WITH_VEHICLE_ID\"\n}"
+                            "raw": "{\n  \"firstName\": \"Rohit\",\n  \"lastName\": \"Shinde\",\n  \"mobileNo\": \"8845010106\",\n  \"password\": \"Staff@123\",\n  \"role\": \"Field Selector\",\n  \"bikeNumber\": \"MH15AB1234\"\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/users/register",
@@ -908,7 +908,7 @@
                                 "register"
                             ]
                         },
-                        "description": "Available roles: Admin | Field Owner | Field Selector | Operational Manager | Munshi | driver eicher | driver pickup\n\nvehicleId is OPTIONAL — only needed for driver roles. Providing it links the driver to their vehicle in a single call, so no separate PUT is required.\nGet vehicle IDs from GET /api/master-data/vehicles."
+                        "description": "Available roles: Admin | Field Owner | Field Selector | Operational Manager | Munshi | driver eicher | driver pickup\n\nvehicleId is OPTIONAL — only needed for driver roles. Providing it links the driver to their vehicle in a single call, so no separate PUT is required.\nbikeNumber is OPTIONAL — only needed for Field Selector roles. Providing it links the selector to their bike registration plate.\nGet vehicle IDs from GET /api/master-data/vehicles."
                     }
                 },
                 {
@@ -952,7 +952,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"firstName\": \"Updated Name\",\n  \"email\": \"new.email@vaxtrack.in\",\n  \"role\": \"field owner\",\n  \"vehicleId\": \"REPLACE_WITH_VEHICLE_ID\"\n}"
+                            "raw": "{\n  \"firstName\": \"Updated Name\",\n  \"email\": \"new.email@vaxtrack.in\",\n  \"role\": \"Field Selector\",\n  \"bikeNumber\": \"MH15XYZ9876\"\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/users/{{userId}}",
@@ -965,7 +965,7 @@
                                 "{{userId}}"
                             ]
                         },
-                        "description": "Updates user details. Can update: firstName, lastName, mobileNo, email, role, password.\n\nvehicleId (optional) — links or clears a driver's vehicle. Pass null to unlink: { \"vehicleId\": null }. Ignored for non-driver roles.\n\nResponse includes populated vehicleId object (vehicleNumber + vehicleType)."
+                        "description": "Updates user details. Can update: firstName, lastName, mobileNo, email, role, password, bikeNumber.\n\nvehicleId (optional) — links or clears a driver's vehicle. Pass null to unlink: { \"vehicleId\": null }. Ignored for non-driver roles.\nbikeNumber (optional) — links or clears a selector's bike number. Pass null to unlink: { \"bikeNumber\": null }. Ignored for non-selector roles.\n\nResponse includes populated vehicleId object (vehicleNumber + vehicleType)."
                     }
                 }
             ]
