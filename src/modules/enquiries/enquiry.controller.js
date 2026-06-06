@@ -178,7 +178,7 @@ const getEnquiries = async (req, res) => {
             .skip(skip)
             .limit(Number(limit))
             .sort({ createdAt: -1 })
-            .populate('assignedSelectorId', 'firstName lastName mobileNo')
+            .populate('assignedSelectorId', 'firstName lastName mobileNo bikeNumber')
             .populate('agentId', 'name')
             .populate('generation', 'name')
             .lean();
@@ -338,7 +338,7 @@ const getEnquiryById = async (req, res) => {
             .populate('generation', 'name description')
             .populate('agentId', 'agentName mobileNo location')
             .populate('fieldOwnerId', 'firstName lastName mobileNo')
-            .populate('assignedSelectorId', 'firstName lastName mobileNo')
+            .populate('assignedSelectorId', 'firstName lastName mobileNo bikeNumber')
             .populate('companyId', 'companyName');
 
         if (!enquiry) {
@@ -350,7 +350,7 @@ const getEnquiryById = async (req, res) => {
         // Join the inspection record for this enquiry (photos + composition data)
         const Inspection = require('../inspections/inspection.model');
         const inspection = await Inspection.findOne({ enquiryId: enquiry._id })
-            .populate('selectorId', 'firstName lastName mobileNo')
+            .populate('selectorId', 'firstName lastName mobileNo bikeNumber')
             .lean();
 
         // Join the logistics record to expose munshi, driver, vehicle, team data
@@ -391,6 +391,8 @@ const getEnquiryById = async (req, res) => {
             } : null,
             fieldSelector: inspection && inspection.selectorId ? {
                 name: `${inspection.selectorId.firstName} ${inspection.selectorId.lastName}`,
+                mobile: inspection.selectorId.mobileNo || null,
+                bikeNumber: inspection.selectorId.bikeNumber || null,
                 remarks: inspection.remarks || null,
             } : null,
             logistics: logisticsData,
@@ -619,7 +621,7 @@ const getMissedPlots = async (req, res) => {
             'missedAssignments.0': { $exists: true },
         })
             .sort({ updatedAt: -1 })
-            .populate('missedAssignments.selectorId', 'firstName lastName mobileNo')
+            .populate('missedAssignments.selectorId', 'firstName lastName mobileNo bikeNumber')
             .populate('fieldOwnerId', 'firstName lastName mobileNo')
             .populate('generation', 'name');
 

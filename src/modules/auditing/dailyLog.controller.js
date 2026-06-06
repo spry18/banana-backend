@@ -139,7 +139,7 @@ const getLogs = async (req, res) => {
                         date: 1, startKm: 1, endKm: 1, startTime: 1, endTime: 1,
                         vehicleNumber: 1, status: 1, startMeterPhotoUrl: 1, endMeterPhotoUrl: 1,
                         petrolAdvance: 1, createdAt: 1,
-                        userId: { _id: '$user._id', firstName: '$user.firstName', lastName: '$user.lastName', role: '$user.role' },
+                        userId: { _id: '$user._id', firstName: '$user.firstName', lastName: '$user.lastName', role: '$user.role', bikeNumber: '$user.bikeNumber' },
                     },
                 },
             ];
@@ -153,7 +153,7 @@ const getLogs = async (req, res) => {
                     .skip(skip)
                     .limit(Number(limit))
                     .sort({ createdAt: -1 })
-                    .populate('userId', 'firstName lastName role')
+                    .populate('userId', 'firstName lastName role bikeNumber')
                     .lean(),
                 DailyLog.countDocuments(match),
             ]);

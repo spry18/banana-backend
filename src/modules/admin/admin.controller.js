@@ -98,7 +98,7 @@ const getAlerts = async (req, res) => {
             status: 'PENDING',
         })
             .select('enquiryId farmerFirstName farmerLastName location scheduledDate visitPriority assignedSelectorId')
-            .populate('assignedSelectorId', 'firstName lastName mobileNo')
+            .populate('assignedSelectorId', 'firstName lastName mobileNo bikeNumber')
             .sort({ scheduledDate: 1 })
             .limit(50);
 
@@ -176,7 +176,7 @@ const getFieldSelectionOverview = async (req, res) => {
             status: 'PENDING',
         })
             .select('enquiryId farmerFirstName location scheduledDate visitPriority assignedSelectorId')
-            .populate('assignedSelectorId', 'firstName lastName')
+            .populate('assignedSelectorId', 'firstName lastName bikeNumber')
             .sort({ scheduledDate: 1 })
             .limit(20);
 
@@ -363,13 +363,13 @@ const getMonitoringDashboard = async (req, res) => {
         const [locationDocs, ownerDocs, selectorDocs] = await Promise.all([
             Enquiry.distinct('location'),
             User.find({ role: 'Field Owner', isActive: true }).select('_id firstName lastName').lean(),
-            User.find({ role: 'Field Selector', isActive: true }).select('_id firstName lastName').lean(),
+            User.find({ role: 'Field Selector', isActive: true }).select('_id firstName lastName bikeNumber').lean(),
         ]);
 
         const filters = {
             locations: locationDocs.filter(Boolean),
             fieldOwners: ownerDocs.map(u => ({ id: u._id, name: `${u.firstName} ${u.lastName}` })),
-            selectors: selectorDocs.map(u => ({ id: u._id, name: `${u.firstName} ${u.lastName}` })),
+            selectors: selectorDocs.map(u => ({ id: u._id, name: `${u.firstName} ${u.lastName}`, bikeNumber: u.bikeNumber })),
         };
 
         // ── Table filter query ───────────────────────────────────────────
@@ -416,7 +416,7 @@ const getMonitoringDashboard = async (req, res) => {
             .skip(skip)
             .limit(Number(limit))
             .populate('fieldOwnerId', 'firstName lastName')
-            .populate('assignedSelectorId', 'firstName lastName')
+            .populate('assignedSelectorId', 'firstName lastName bikeNumber')
             .lean();
 
         const tableEnquiryIds = rawTable.map(e => e._id);
@@ -461,6 +461,9 @@ const getMonitoringDashboard = async (req, res) => {
                     : null,
                 fieldSelector: e.assignedSelectorId
                     ? `${e.assignedSelectorId.firstName} ${e.assignedSelectorId.lastName}`
+                    : null,
+                fieldSelectorBike: e.assignedSelectorId
+                    ? (e.assignedSelectorId.bikeNumber || null)
                     : null,
                 // Requirement Fix: "Visited Date" should prioritize inspection time, then fallback to scheduled
                 visitDate: inspection 
@@ -552,7 +555,7 @@ const getFieldSelectionDashboard = async (req, res) => {
                 select: 'farmerFirstName farmerLastName location fieldOwnerId assignedSelectorId farmerMobile plantCount purchaseRate companyId',
                 populate: [
                     { path: 'fieldOwnerId', select: 'firstName lastName' },
-                    { path: 'assignedSelectorId', select: 'firstName lastName' },
+                    { path: 'assignedSelectorId', select: 'firstName lastName bikeNumber' },
                     { path: 'companyId', select: 'companyName' },
                 ],
             })
@@ -566,6 +569,7 @@ const getFieldSelectionDashboard = async (req, res) => {
                 location: e.location || null,
                 fieldOwner: e.fieldOwnerId ? `${e.fieldOwnerId.firstName} ${e.fieldOwnerId.lastName}` : null,
                 fieldSelector: e.assignedSelectorId ? `${e.assignedSelectorId.firstName} ${e.assignedSelectorId.lastName}` : null,
+                fieldSelectorBike: e.assignedSelectorId ? (e.assignedSelectorId.bikeNumber || null) : null,
                 farmerMobile: e.farmerMobile || 'N/A',
                 plantCount: e.plantCount || 0,
                 company: e.companyId ? e.companyId.companyName : 'N/A',
@@ -636,7 +640,7 @@ const getFieldSelectionDashboard = async (req, res) => {
             .sort({ updatedAt: -1 })
             .limit(50)
             .populate('fieldOwnerId', 'firstName lastName')
-            .populate('assignedSelectorId', 'firstName lastName')
+            .populate('assignedSelectorId', 'firstName lastName bikeNumber')
             .populate('companyId', 'companyName')
             .lean();
 
@@ -648,6 +652,7 @@ const getFieldSelectionDashboard = async (req, res) => {
             company: e.companyId ? e.companyId.companyName : null,
             fieldOwner: e.fieldOwnerId ? `${e.fieldOwnerId.firstName} ${e.fieldOwnerId.lastName}` : null,
             fieldSelector: e.assignedSelectorId ? `${e.assignedSelectorId.firstName} ${e.assignedSelectorId.lastName}` : null,
+            fieldSelectorBike: e.assignedSelectorId ? (e.assignedSelectorId.bikeNumber || null) : null,
             farmerMobile: e.farmerMobile,
             plantCount: e.plantCount,
             status: e.status,

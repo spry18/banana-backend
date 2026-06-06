@@ -88,7 +88,7 @@ const getAdvanceHistory = async (req, res) => {
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(Number(limit))
-                .populate({ path: 'fieldSelectorId', select: 'firstName lastName mobileNo role' })
+                .populate({ path: 'fieldSelectorId', select: 'firstName lastName mobileNo role bikeNumber' })
                 .populate('omId', 'firstName lastName')
                 .lean(),
             PetrolAdvance.countDocuments(query),

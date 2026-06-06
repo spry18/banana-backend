@@ -70,7 +70,7 @@ const getFieldSelectionReport = async (req, res) => {
 
         const enquiries = await Enquiry.find(query)
             .populate('fieldOwnerId', 'firstName lastName')
-            .populate('assignedSelectorId', 'firstName lastName')
+            .populate('assignedSelectorId', 'firstName lastName bikeNumber')
             .populate('companyId', 'companyName')
             .lean();
 
@@ -101,6 +101,7 @@ const getFieldSelectionReport = async (req, res) => {
                 rate: e.purchaseRate || null,
                 fieldOwner: e.fieldOwnerId ? `${e.fieldOwnerId.firstName} ${e.fieldOwnerId.lastName}` : null,
                 fieldSelector: e.assignedSelectorId ? `${e.assignedSelectorId.firstName} ${e.assignedSelectorId.lastName}` : null,
+                fieldSelectorBike: e.assignedSelectorId ? (e.assignedSelectorId.bikeNumber || null) : null,
                 company: e.companyId ? e.companyId.companyName : null,
                 weight: e.estimatedBoxes || e.plantCount || 0, // Fallback for "weight"
             };

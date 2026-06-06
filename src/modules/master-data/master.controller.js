@@ -311,7 +311,7 @@ const getFormDropdowns = async (req, res) => {
             Company.find({ isActive: true }).select('_id companyName legalName headquarters').lean(),
             Agent.find({ isActive: true }).select('_id agentName mobileNo location').lean(),
             Generation.find({ isActive: true }).select('_id name description').lean(),
-            User.find({ role: 'Field Selector', isActive: true }).select('_id firstName lastName mobileNo').lean(),
+            User.find({ role: 'Field Selector', isActive: true }).select('_id firstName lastName mobileNo bikeNumber').lean(),
             Brand.find({ isActive: true }).select('_id brandName companyId').populate('companyId', 'companyName').lean(),
             User.find({ role: { $regex: /munshi/i }, isActive: true }).select('_id firstName lastName mobileNo').lean(),
             User.find({ role: 'driver eicher', isActive: true }).select('_id firstName lastName mobileNo vehicleId').populate('vehicleId', 'vehicleNumber vehicleType').lean(),

@@ -95,7 +95,7 @@ const getOmPlots = async (req, res) => {
                     .skip(skip)
                     .limit(Number(limit))
                     .populate('companyId', 'companyName')
-                    .populate('assignedSelectorId', 'firstName lastName')
+                    .populate('assignedSelectorId', 'firstName lastName bikeNumber')
                     .populate('fieldOwnerId', 'firstName lastName')
                     .lean(),
                 Enquiry.countDocuments(query),
@@ -159,7 +159,7 @@ const getOmPlots = async (req, res) => {
                     .skip(skip)
                     .limit(Number(limit))
                     .populate('companyId', 'companyName')
-                    .populate('assignedSelectorId', 'firstName lastName mobileNo')
+                    .populate('assignedSelectorId', 'firstName lastName mobileNo bikeNumber')
                     .populate('fieldOwnerId', 'firstName lastName mobileNo')
                     .lean(),
                 Enquiry.countDocuments(query),
@@ -208,7 +208,7 @@ const getOmPlots = async (req, res) => {
                         select: 'enquiryId farmerFirstName farmerLastName farmerMobile location packingType fieldOwnerId assignedSelectorId',
                         populate: [
                             { path: 'fieldOwnerId', select: 'firstName lastName mobileNo' },
-                            { path: 'assignedSelectorId', select: 'firstName lastName mobileNo' }
+                            { path: 'assignedSelectorId', select: 'firstName lastName mobileNo bikeNumber' }
                         ]
                     })
                     .populate('companyId', 'companyName')
@@ -258,7 +258,7 @@ const getOmPlots = async (req, res) => {
                         select: 'enquiryId farmerFirstName farmerLastName farmerMobile location packingType fieldOwnerId assignedSelectorId',
                         populate: [
                             { path: 'fieldOwnerId', select: 'firstName lastName mobileNo' },
-                            { path: 'assignedSelectorId', select: 'firstName lastName mobileNo' }
+                            { path: 'assignedSelectorId', select: 'firstName lastName mobileNo bikeNumber' }
                         ]
                     })
                     .populate('companyId', 'companyName')
@@ -323,7 +323,7 @@ const getOmPlots = async (req, res) => {
                         select: 'enquiryId farmerFirstName farmerLastName farmerMobile location packingType fieldOwnerId assignedSelectorId',
                         populate: [
                             { path: 'fieldOwnerId', select: 'firstName lastName mobileNo' },
-                            { path: 'assignedSelectorId', select: 'firstName lastName mobileNo' }
+                            { path: 'assignedSelectorId', select: 'firstName lastName mobileNo bikeNumber' }
                         ]
                     })
                     .populate('companyId', 'companyName')
@@ -545,7 +545,7 @@ const getApprovedPlots = async (req, res) => {
                     select: 'enquiryId farmerFirstName farmerLastName farmerMobile location packingType fieldOwnerId assignedSelectorId',
                     populate: [
                         { path: 'fieldOwnerId', select: 'firstName lastName mobileNo' },
-                        { path: 'assignedSelectorId', select: 'firstName lastName mobileNo' }
+                        { path: 'assignedSelectorId', select: 'firstName lastName mobileNo bikeNumber' }
                     ]
                 })
                 .populate('companyId', 'companyName')

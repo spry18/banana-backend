@@ -357,7 +357,7 @@ const getInspections = async (req, res) => {
   try {
     const inspections = await Inspection.find()
       .populate("enquiryId")
-      .populate("selectorId", "firstName lastName mobileNo")
+      .populate("selectorId", "firstName lastName mobileNo bikeNumber")
       .lean();
 
     const data = inspections.map((insp) => {
@@ -380,7 +380,7 @@ const getInspectionById = async (req, res) => {
   try {
     const inspection = await Inspection.findById(req.params.id)
       .populate("enquiryId")
-      .populate("selectorId", "firstName lastName mobileNo");
+      .populate("selectorId", "firstName lastName mobileNo bikeNumber");
 
     if (!inspection) {
       return res.status(404).json({ message: "Inspection not found" });

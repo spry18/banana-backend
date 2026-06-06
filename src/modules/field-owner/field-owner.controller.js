@@ -207,7 +207,7 @@ const getFOPlots = async (req, res) => {
                 .sort({ updatedAt: -1 })
                 .skip(skip)
                 .limit(Number(limit))
-                .populate('assignedSelectorId', 'firstName lastName mobileNo')
+                .populate('assignedSelectorId', 'firstName lastName mobileNo bikeNumber')
                 .populate('companyId', 'companyName')
                 .populate('generation', 'name')
                 .lean(),
@@ -428,7 +428,7 @@ const getSelectorMileage = async (req, res) => {
 const getFOSelectors = async (req, res) => {
     try {
         const selectors = await User.find({ role: 'Field Selector', isActive: true })
-            .select('firstName lastName mobileNo role')
+            .select('firstName lastName mobileNo role bikeNumber')
             .sort({ firstName: 1, lastName: 1 });
 
         res.json({ data: selectors });
