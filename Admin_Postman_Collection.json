@@ -2778,6 +2778,170 @@
             ]
         },
         {
+            "name": "Farmers",
+            "description": "Endpoints to manage, search, import, and export farmer records.",
+            "item": [
+                {
+                    "name": "GET All Farmers",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/farmers?page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "farmers"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        },
+                        "description": "Get all unique farmers with pagination."
+                    }
+                },
+                {
+                    "name": "GET Search/Filter Farmers",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/farmers/search?name=Test&location=Nashik&mobile=9999999999&page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "farmers",
+                                "search"
+                            ],
+                            "query": [
+                                {
+                                    "key": "name",
+                                    "value": "Test",
+                                    "disabled": false
+                                },
+                                {
+                                    "key": "location",
+                                    "value": "Nashik",
+                                    "disabled": false
+                                },
+                                {
+                                    "key": "mobile",
+                                    "value": "9999999999",
+                                    "disabled": false
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        },
+                        "description": "Filter farmers using name, location, and mobile number."
+                    }
+                },
+                {
+                    "name": "POST Import Farmers Excel/CSV",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "file",
+                                    "type": "file",
+                                    "src": "",
+                                    "description": "Upload a .xlsx or .csv file with columns: Column 1=Location, Column 2=Name, Column 3=Mobile (no header row)."
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/farmers/import",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "farmers",
+                                "import"
+                            ]
+                        },
+                        "description": "Upload an Excel or CSV file to import/upsert farmer details. Column order: Column 1=Location, Column 2=Name, Column 3=Mobile, starting on row 1."
+                    }
+                },
+                {
+                    "name": "GET Export Farmers PDF",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/farmers/export-pdf?name=&location=&mobile=",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "farmers",
+                                "export-pdf"
+                            ],
+                            "query": [
+                                {
+                                    "key": "name",
+                                    "value": "",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "location",
+                                    "value": "",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "mobile",
+                                    "value": "",
+                                    "disabled": true
+                                }
+                            ]
+                        },
+                        "description": "Download a PDF directory of farmers in Location, Name, Number format, with no header banner/column labels."
+                    }
+                }
+            ]
+        },
+        {
             "name": "Get App Config",
             "request": {
                 "method": "GET",

@@ -64,6 +64,45 @@ class PdfService {
             }
         });
     }
+
+    static generateFarmersPdfStream(farmers) {
+        const doc = new PDFDocument({ margin: 30, size: 'A4' });
+
+        let currentY = 30;
+        farmers.forEach((farmer, idx) => {
+            // Check for page break (A4 height 842 - margin 30 = 812 max, using 790 safety margin)
+            if (currentY + 25 > 790) {
+                doc.addPage();
+                currentY = 30;
+            }
+
+            // Draw alternating row background for clean structure
+            if (idx % 2 === 1) {
+                doc.fillColor('#F9FAFB').rect(30, currentY, 535, 25).fill();
+            }
+
+            // Draw thin bottom border
+            doc.strokeColor('#F3F4F6').lineWidth(0.5).moveTo(30, currentY + 25).lineTo(565, currentY + 25).stroke();
+
+            // Render columns: Location, Name, Mobile
+            doc.fillColor('#374151').font('Helvetica').fontSize(9);
+            
+            // Col 1: Location (width: 170 pt)
+            doc.text(farmer.location, 35, currentY + 8, { width: 160, ellipsis: true, lineBreak: false });
+            
+            // Col 2: Name (width: 220 pt)
+            doc.text(farmer.name, 210, currentY + 8, { width: 210, ellipsis: true, lineBreak: false });
+            
+            // Col 3: Mobile (width: 135 pt)
+            doc.text(farmer.mobile, 435, currentY + 8, { width: 125, ellipsis: true, lineBreak: false });
+
+            currentY += 25;
+        });
+
+        // Finalize document
+        doc.end();
+        return doc;
+    }
 }
 
 module.exports = PdfService;

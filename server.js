@@ -108,6 +108,9 @@ app.use('/api/admin', require('./src/modules/admin/admin.routes'));
 // Reports module (Field Selection Report, Execution Detailed Report, Munshi Harvesting)
 app.use('/api/reports', require('./src/modules/reports/reports.routes'));
 
+// Farmers module (Get all, Search/Filter, Import Excel, Export PDF)
+app.use('/api/farmers', require('./src/modules/farmers/farmer.routes'));
+
 // Field Owner module
 app.use('/api/field-owner', require('./src/modules/field-owner/field-owner.routes'));
 
