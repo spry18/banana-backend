@@ -42,11 +42,19 @@ const getDashboard = async (req, res) => {
             // Assigned = ASSIGNED plots scheduled for today (not yet inspected, purchaseRate is null)
             Enquiry.countDocuments({ ...todayScheduledFilter, status: 'ASSIGNED', purchaseRate: null }),
 
-            // Selector marked the plot as SELECTED (inspection approved) — today
-            Enquiry.countDocuments({ ...todayScheduledFilter, status: 'SELECTED' }),
+            // Selector marked the plot as SELECTED (inspection approved) — today (polled from Inspection)
+            Inspection.countDocuments({
+                selectorId,
+                decision: 'APPROVED',
+                createdAt: { $gte: startOfTodayIst, $lt: endOfTodayIst },
+            }),
 
-            // Selector rejected the plot — today
-            Enquiry.countDocuments({ ...todayScheduledFilter, status: 'REJECTED' }),
+            // Selector rejected the plot — today (polled from Inspection)
+            Inspection.countDocuments({
+                selectorId,
+                decision: 'REJECTED',
+                createdAt: { $gte: startOfTodayIst, $lt: endOfTodayIst },
+            }),
 
             // Missed = still ASSIGNED (purchaseRate is null) but the scheduledDate has passed (today's plots only)
             Enquiry.countDocuments({
@@ -56,13 +64,10 @@ const getDashboard = async (req, res) => {
                 purchaseRate: null,
             }),
 
-            // Visited = inspection was submitted today (SELECTED + REJECTED + downstream/logistics-assigned)
-            Enquiry.countDocuments({
-                ...todayScheduledFilter,
-                $or: [
-                    { status: { $in: ['SELECTED', 'REJECTED', 'RATE_FIXED', 'COMPLETED', 'CLOSED'] } },
-                    { status: 'ASSIGNED', purchaseRate: { $ne: null, $exists: true } }
-                ]
+            // Visited = inspection was submitted today
+            Inspection.countDocuments({
+                selectorId,
+                createdAt: { $gte: startOfTodayIst, $lt: endOfTodayIst },
             }),
 
             // Last 5 activity items for the feed — all active selector assignments (no date cap)
