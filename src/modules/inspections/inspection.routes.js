@@ -18,7 +18,7 @@ router.get('/config', authorize('Admin', 'Field Selector', 'Field Owner', 'Opera
 
 router
     .route('/')
-    .post(authorize('Admin', 'Field Selector'), upload.array('photos', 20), createInspection)
+    .post(authorize('Admin', 'Field Selector'), upload.array('photos', 25), createInspection)
     .get(authorize('Admin', 'Field Owner', 'Field Selector', 'Operational Manager'), getInspections);
 
 router.route('/:id').get(getInspectionById);
