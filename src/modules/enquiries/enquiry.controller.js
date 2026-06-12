@@ -373,6 +373,10 @@ const getEnquiryById = async (req, res) => {
             teamName: logistics.teamName || null,
         } : null;
 
+        // Join packing report details if logistics exists
+        const Packing = require('../execution/packing.model');
+        const packing = logistics ? await Packing.findOne({ assignmentId: logistics._id }).lean() : null;
+
         // Shape flat response exactly as per frontend View Details contract
         const e = enquiry.toObject();
         if (req.user.role === 'Operational Manager') {
@@ -398,6 +402,8 @@ const getEnquiryById = async (req, res) => {
             logistics: logisticsData,
             inspection: inspection || null,
             rejectReason: (e.status === 'REJECTED' && inspection) ? (inspection.generalNotes || null) : null,
+            packingDetails: packing || null,
+            packingPhotos: packing ? packing.photos : [],
         });
     } catch (error) {
         console.error('Error fetching enquiry by ID:', error);

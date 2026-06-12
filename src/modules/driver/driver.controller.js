@@ -85,8 +85,11 @@ const getDriverHistory = async (req, res) => {
         const userId = req.user._id;
         const { page = 1, limit = 20 } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
-
-        const query = { driverId: userId };
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const query = { 
+            driverId: userId,
+            createdAt: { $gte: twentyFourHoursAgo }
+        };
 
         const [trips, total] = await Promise.all([
             Trip.find(query)

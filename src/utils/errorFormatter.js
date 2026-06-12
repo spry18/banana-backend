@@ -55,7 +55,7 @@ function formatError(err) {
         if (err.includes('Unexpected field') || err.includes('LIMIT_UNEXPECTED_FILE')) {
             return {
                 statusCode: 400,
-                message: 'Too many photos uploaded. Maximum allowed is 20.'
+                message: 'Too many photos uploaded. Maximum allowed is 25.'
             };
         }
         if (err.includes('LIMIT_FILE_SIZE')) {
@@ -85,7 +85,7 @@ function formatError(err) {
         statusCode = 400;
         switch (err.code) {
             case 'LIMIT_UNEXPECTED_FILE':
-                message = 'Too many photos uploaded. Maximum allowed is 20.';
+                message = 'Too many photos uploaded. Maximum allowed is 25.';
                 break;
             case 'LIMIT_FILE_SIZE':
                 message = 'File size is too large. Maximum allowed is 10MB per file.';
