@@ -591,7 +591,7 @@
                                 },
                                 {
                                     "key": "photos",
-                                    "description": "Plot photo #1 — REQUIRED. In Postman, duplicate this row (up to 20 times) each with key 'photos' and type File to send multiple photos.",
+                                    "description": "Plot photo #1 — REQUIRED. In Postman, duplicate this row (up to 25 times) each with key 'photos' and type File to send multiple photos.",
                                     "type": "file",
                                     "src": []
                                 }
@@ -607,7 +607,7 @@
                                 "inspections"
                             ]
                         },
-                        "description": "Submits a complete plot inspection with up to 20 photos.\n\n**Photo Upload Instructions for Postman:**\nIn the formdata body, add multiple rows all with the same key `photos`, each set to type `File`. Postman v10+ sends these as a proper array.\n\n**Payload Mapping (handled automatically by backend):**\n\n| Frontend field | Stored in DB as |\n|---|---|\n| volumeBox | volumeBoxRange |\n| chellingPercent | chelling |\n| spiklingPercent | spikling |\n| pulpePercent | pulpe |\n| phreepsPercent | phreeps |\n| decision: SELECTED | decision: APPROVED → Enquiry.status = SELECTED |\n| decision: REJECTED | decision: REJECTED → Enquiry.status = REJECTED |\n\n**Route Note:** `enquiryId` is sent in the request body (not the URL path) to protect existing Admin integrations."
+                        "description": "Submits a complete plot inspection with up to 25 photos.\n\n**Photo Upload Instructions for Postman:**\nIn the formdata body, add multiple rows all with the same key `photos`, each set to type `File`. Postman v10+ sends these as a proper array.\n\n**Payload Mapping (handled automatically by backend):**\n\n| Frontend field | Stored in DB as |\n|---|---|\n| volumeBox | volumeBoxRange |\n| chellingPercent | chelling |\n| spiklingPercent | spikling |\n| pulpePercent | pulpe |\n| phreepsPercent | phreeps |\n| decision: SELECTED | decision: APPROVED → Enquiry.status = SELECTED |\n| decision: REJECTED | decision: REJECTED → Enquiry.status = REJECTED |\n\n**Route Note:** `enquiryId` is sent in the request body (not the URL path) to protect existing Admin integrations."
                     },
                     "response": []
                 },
@@ -722,7 +722,7 @@
                                 },
                                 {
                                     "key": "photos",
-                                    "description": "Rejection evidence photo. Add multiple 'photos' rows (up to 20) for more images.",
+                                    "description": "Rejection evidence photo. Add multiple 'photos' rows (up to 25) for more images.",
                                     "type": "file",
                                     "src": []
                                 }

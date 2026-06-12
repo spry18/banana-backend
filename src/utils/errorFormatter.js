@@ -61,7 +61,7 @@ function formatError(err) {
         if (err.includes('LIMIT_FILE_SIZE')) {
             return {
                 statusCode: 400,
-                message: 'File size is too large. Maximum allowed is 10MB per file.'
+                message: 'File size is too large. Maximum allowed is 25MB per file.'
             };
         }
         if (err.includes('jwt expired') || err.includes('TokenExpiredError')) {
@@ -88,7 +88,7 @@ function formatError(err) {
                 message = 'Too many photos uploaded. Maximum allowed is 25.';
                 break;
             case 'LIMIT_FILE_SIZE':
-                message = 'File size is too large. Maximum allowed is 10MB per file.';
+                message = 'File size is too large. Maximum allowed is 25MB per file.';
                 break;
             case 'LIMIT_FILE_COUNT':
                 message = 'File count limit exceeded.';

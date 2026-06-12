@@ -140,17 +140,31 @@ const getAssignedFields = async (req, res) => {
             filter.status = { $in: statuses };
         }
 
+        // Build conditions array for $and to prevent search/exclusion collisions
+        const andFilters = [
+            {
+                $or: [
+                    { status: { $ne: 'ASSIGNED' } },
+                    { status: 'ASSIGNED', purchaseRate: null }
+                ]
+            }
+        ];
+
         // Optional text search across farmer name and location
         if (search) {
             const regex = new RegExp(search, 'i');
-            filter.$or = [
-                { farmerFirstName: regex },
-                { farmerLastName: regex },
-                { location: regex },
-                { subLocation: regex },
-                { enquiryId: regex },
-            ];
+            andFilters.push({
+                $or: [
+                    { farmerFirstName: regex },
+                    { farmerLastName: regex },
+                    { location: regex },
+                    { subLocation: regex },
+                    { enquiryId: regex },
+                ]
+            });
         }
+
+        filter.$and = andFilters;
 
         const skip = (Number(page) - 1) * Number(limit);
 
