@@ -87,6 +87,7 @@ const createEnquiry = async (req, res) => {
             visitPriority: visitPriority || 'Medium',
             fieldOwnerId,
             assignedSelectorId: selector ? sanitizedSelectorId : null,
+            status: selector ? 'ASSIGNED' : 'PENDING',
             editableUntil,
         });
 
@@ -150,14 +151,16 @@ const getEnquiries = async (req, res) => {
         }
 
         if (status) {
-            if (status === 'Missed') {
+            const statusUpper = status.toUpperCase();
+            if (statusUpper === 'MISSED') {
                 // 'Missed' = past scheduledDate but still PENDING (never visited)
                 query.scheduledDate = { $lt: new Date() };
                 query.status = 'PENDING';
-            } else if (status === 'Unassigned') {
+            } else if (statusUpper === 'UNASSIGNED') {
                 query.assignedSelectorId = null;
             } else {
-                query.status = status;
+                const statuses = status.split(',').map(s => s.trim().toUpperCase());
+                query.status = statuses.length > 1 ? { $in: statuses } : statuses[0];
             }
         }
 
@@ -382,8 +385,15 @@ const getEnquiryById = async (req, res) => {
         if (req.user.role === 'Operational Manager') {
             delete e.purchaseRate;
         }
+
+        let displayStatus = e.status;
+        if (req.user.role === 'Field Owner' && e.status === 'ASSIGNED' && e.purchaseRate != null) {
+            displayStatus = 'RATE_FIXED';
+        }
+
         res.status(200).json({
             ...e,
+            status: displayStatus,
             farmerName: `${e.farmerFirstName} ${e.farmerLastName}`,
             mobile: e.farmerMobile,
             boxCount: e.estimatedBoxes || null,

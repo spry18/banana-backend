@@ -500,7 +500,7 @@
                                 },
                                 {
                                     "key": "recoveryPercent",
-                                    "value": "82",
+                                    "value": "80-85",
                                     "description": "Recovery percentage — REQUIRED",
                                     "type": "text"
                                 },
@@ -512,25 +512,25 @@
                                 },
                                 {
                                     "key": "chellingPercent",
-                                    "value": "5",
+                                    "value": "3-5",
                                     "description": "Chelling % (UI name). Backend maps this → DB field 'chelling' — REQUIRED",
                                     "type": "text"
                                 },
                                 {
                                     "key": "spiklingPercent",
-                                    "value": "3",
+                                    "value": "1-3",
                                     "description": "Spikling % (UI name). Backend maps this → DB field 'spikling' — REQUIRED",
                                     "type": "text"
                                 },
                                 {
                                     "key": "pulpePercent",
-                                    "value": "2",
+                                    "value": "1-2",
                                     "description": "Pulpe % (UI name). Backend maps this → DB field 'pulpe' — REQUIRED",
                                     "type": "text"
                                 },
                                 {
                                     "key": "phreepsPercent",
-                                    "value": "1",
+                                    "value": "0-1",
                                     "description": "Phreeps % (UI name). Backend maps this → DB field 'phreeps' — REQUIRED",
                                     "type": "text"
                                 },
@@ -607,7 +607,7 @@
                                 "inspections"
                             ]
                         },
-                        "description": "Submits a complete plot inspection with up to 25 photos.\n\n**Photo Upload Instructions for Postman:**\nIn the formdata body, add multiple rows all with the same key `photos`, each set to type `File`. Postman v10+ sends these as a proper array.\n\n**Payload Mapping (handled automatically by backend):**\n\n| Frontend field | Stored in DB as |\n|---|---|\n| volumeBox | volumeBoxRange |\n| chellingPercent | chelling |\n| spiklingPercent | spikling |\n| pulpePercent | pulpe |\n| phreepsPercent | phreeps |\n| decision: SELECTED | decision: APPROVED → Enquiry.status = SELECTED |\n| decision: REJECTED | decision: REJECTED → Enquiry.status = REJECTED |\n\n**Route Note:** `enquiryId` is sent in the request body (not the URL path) to protect existing Admin integrations."
+                        "description": "Submits a complete plot inspection with up to 25 photos.\n\n**Photo Upload Instructions for Postman:**\nIn the formdata body, add multiple rows all with the same key `photos`, each set to type `File`. Postman v10+ sends these as a proper array.\n\n**Payload Mapping (handled automatically by backend):**\n\n| Frontend field | Stored in DB as |\n|---|---|\n| minVolume | minVolume |\n| maxVolume | maxVolume |\n| chellingPercent | chelling |\n| spiklingPercent | spikling |\n| pulpePercent | pulpe |\n| phreepsPercent | phreeps |\n| decision: SELECTED | decision: APPROVED → Enquiry.status = SELECTED |\n| decision: REJECTED | decision: REJECTED → Enquiry.status = REJECTED |\n\n**Route Note:** `enquiryId` is sent in the request body (not the URL path) to protect existing Admin integrations."
                     },
                     "response": []
                 },
@@ -651,7 +651,7 @@
                                 },
                                 {
                                     "key": "recoveryPercent",
-                                    "value": "55",
+                                    "value": "50-60",
                                     "type": "text"
                                 },
                                 {
@@ -661,22 +661,22 @@
                                 },
                                 {
                                     "key": "chellingPercent",
-                                    "value": "28",
+                                    "value": "25-30",
                                     "type": "text"
                                 },
                                 {
                                     "key": "spiklingPercent",
-                                    "value": "20",
+                                    "value": "15-25",
                                     "type": "text"
                                 },
                                 {
                                     "key": "pulpePercent",
-                                    "value": "15",
+                                    "value": "10-20",
                                     "type": "text"
                                 },
                                 {
                                     "key": "phreepsPercent",
-                                    "value": "10",
+                                    "value": "5-15",
                                     "type": "text"
                                 },
                                 {

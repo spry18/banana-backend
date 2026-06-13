@@ -76,7 +76,8 @@ const getMunshiAssignments = async (req, res) => {
 
         const query = { munshiId };
         if (status) {
-            query.assignmentStatus = status;
+            const statuses = status.split(',').map(s => s.trim().toUpperCase());
+            query.assignmentStatus = statuses.length > 1 ? { $in: statuses } : statuses[0];
         }
 
         const [assignments, total] = await Promise.all([

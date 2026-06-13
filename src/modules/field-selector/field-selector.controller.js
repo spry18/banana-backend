@@ -134,21 +134,47 @@ const getAssignedFields = async (req, res) => {
             assignedSelectorId: selectorId,
         };
 
+        let isQueryingSelected = false;
+        const andFilters = [];
+
         // Optional status filter (single value or comma-separated list)
         if (status) {
             const statuses = status.split(',').map(s => s.trim().toUpperCase());
-            filter.status = { $in: statuses };
+            if (statuses.includes('SELECTED')) {
+                isQueryingSelected = true;
+                const otherStatuses = statuses.filter(s => s !== 'SELECTED' && s !== 'ASSIGNED');
+                
+                // Add all statuses after SELECTED
+                const afterSelected = ['SELECTED', 'RATE_FIXED', 'COMPLETED', 'CLOSED'];
+                afterSelected.forEach(st => {
+                    if (!otherStatuses.includes(st)) {
+                        otherStatuses.push(st);
+                    }
+                });
+
+                const statusConditions = [
+                    { status: { $in: otherStatuses } },
+                    { status: 'ASSIGNED', purchaseRate: { $ne: null } }
+                ];
+                
+                if (statuses.includes('ASSIGNED')) {
+                    statusConditions.push({ status: 'ASSIGNED', purchaseRate: null });
+                }
+                
+                andFilters.push({ $or: statusConditions });
+            } else {
+                filter.status = { $in: statuses };
+            }
         }
 
-        // Build conditions array for $and to prevent search/exclusion collisions
-        const andFilters = [
-            {
+        if (!isQueryingSelected) {
+            andFilters.push({
                 $or: [
                     { status: { $ne: 'ASSIGNED' } },
                     { status: 'ASSIGNED', purchaseRate: null }
                 ]
-            }
-        ];
+            });
+        }
 
         // Optional text search across farmer name and location
         if (search) {
@@ -164,7 +190,9 @@ const getAssignedFields = async (req, res) => {
             });
         }
 
-        filter.$and = andFilters;
+        if (andFilters.length > 0) {
+            filter.$and = andFilters;
+        }
 
         const skip = (Number(page) - 1) * Number(limit);
 
