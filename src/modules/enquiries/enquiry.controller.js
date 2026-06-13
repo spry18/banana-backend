@@ -387,7 +387,7 @@ const getEnquiryById = async (req, res) => {
         }
 
         let displayStatus = e.status;
-        if (req.user.role === 'Field Owner' && e.status === 'ASSIGNED' && e.purchaseRate != null) {
+        if (e.status === 'ASSIGNED' && e.purchaseRate != null) {
             displayStatus = 'RATE_FIXED';
         }
 
