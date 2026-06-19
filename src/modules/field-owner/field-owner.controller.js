@@ -175,12 +175,27 @@ const getFODashboard = async (req, res) => {
 // @access  Private (Field Owner, Admin)
 const getFOPlots = async (req, res) => {
     try {
-        const { status, location, search, page = 1, limit = 20 } = req.query;
+        const { status, location, search, page = 1, limit = 20, date } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
         const now = new Date();
 
         const base = {}; // Global Shared Pool: all enquiries regardless of role
         let query = { ...base };
+
+        if (date) {
+            const { getIstDayRange } = require('../../utils/dateHelper');
+            const { startOfDay, endOfDay } = getIstDayRange(date);
+            const statusStr = status ? status.toUpperCase() : '';
+            const isPendingQuery = statusStr.includes('PENDING') || statusStr.includes('RESCHEDULED') || statusStr.includes('MISSED') || statusStr.includes('UNASSIGNED');
+            
+            if (isPendingQuery) {
+                query.scheduledDate = { $gte: startOfDay, $lt: endOfDay };
+            } else if (statusStr && statusStr !== 'ALL') {
+                query.updatedAt = { $gte: startOfDay, $lt: endOfDay };
+            } else {
+                query.createdAt = { $gte: startOfDay, $lt: endOfDay };
+            }
+        }
 
         const andFilters = [];
 
@@ -510,23 +525,42 @@ const getFOSelectors = async (req, res) => {
 // @access  Private (Field Owner, Admin)
 const getUnassignedPlots = async (req, res) => {
     try {
-        const { search, page = 1, limit = 20 } = req.query;
+        const { search, page = 1, limit = 20, date } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
 
-        // Unassigned = PENDING plots with no selector assigned yet
-        const query = {
-            assignedSelectorId: null,
-            status: 'PENDING',
-        };
+        const andFilters = [
+            { assignedSelectorId: null },
+            { status: 'PENDING' }
+        ];
+
+        if (date) {
+            const { getIstDayRange } = require('../../utils/dateHelper');
+            const { startOfDay, endOfDay } = getIstDayRange(date);
+            andFilters.push({
+                $or: [
+                    { scheduledDate: { $gte: startOfDay, $lt: endOfDay } },
+                    {
+                        $and: [
+                            { $or: [{ scheduledDate: null }, { scheduledDate: { $exists: false } }] },
+                            { createdAt: { $gte: startOfDay, $lt: endOfDay } }
+                        ]
+                    }
+                ]
+            });
+        }
 
         if (search) {
-            query.$or = [
-                { farmerFirstName: { $regex: search, $options: 'i' } },
-                { farmerLastName:  { $regex: search, $options: 'i' } },
-                { farmerMobile:    { $regex: search, $options: 'i' } },
-                { enquiryId:       { $regex: search, $options: 'i' } },
-            ];
+            andFilters.push({
+                $or: [
+                    { farmerFirstName: { $regex: search, $options: 'i' } },
+                    { farmerLastName:  { $regex: search, $options: 'i' } },
+                    { farmerMobile:    { $regex: search, $options: 'i' } },
+                    { enquiryId:       { $regex: search, $options: 'i' } },
+                ]
+            });
         }
+
+        const query = { $and: andFilters };
 
         const [enquiries, total] = await Promise.all([
             Enquiry.find(query)

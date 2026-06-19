@@ -125,17 +125,42 @@ const getDashboard = async (req, res) => {
 const getAssignedFields = async (req, res) => {
     try {
         const selectorId = req.user._id;
-        const { status, search, page = 1, limit = 20 } = req.query;
-
+        const { status, search, page = 1, limit = 20, date } = req.query;
+ 
         // Base filter: all enquiries currently assigned to this selector
         // (No date cap — a selector must be able to see plots regardless of when
         //  the enquiry was created or how long ago it was assigned to them.)
         const filter = {
             assignedSelectorId: selectorId,
         };
-
+ 
         let isQueryingSelected = false;
         const andFilters = [];
+
+        if (date) {
+            const { getIstDayRange } = require('../../utils/dateHelper');
+            const { startOfDay, endOfDay } = getIstDayRange(date);
+            const statusStr = status ? status.toUpperCase() : '';
+            const isPendingQuery = statusStr.includes('PENDING') || statusStr.includes('RESCHEDULED') || statusStr.includes('MISSED') || statusStr.includes('UNASSIGNED') || statusStr.includes('ASSIGNED');
+            
+            if (isPendingQuery) {
+                andFilters.push({
+                    $or: [
+                        { scheduledDate: { $gte: startOfDay, $lt: endOfDay } },
+                        {
+                            $and: [
+                                { $or: [{ scheduledDate: null }, { scheduledDate: { $exists: false } }] },
+                                { createdAt: { $gte: startOfDay, $lt: endOfDay } }
+                            ]
+                        }
+                    ]
+                });
+            } else if (statusStr && statusStr !== 'ALL') {
+                andFilters.push({ updatedAt: { $gte: startOfDay, $lt: endOfDay } });
+            } else {
+                andFilters.push({ createdAt: { $gte: startOfDay, $lt: endOfDay } });
+            }
+        }
 
         // Optional status filter (single value or comma-separated list)
         if (status) {

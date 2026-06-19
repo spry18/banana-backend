@@ -361,7 +361,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/enquiries/reports/missed",
+                            "raw": "{{baseUrl}}/api/enquiries/reports/missed?date=today",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -370,6 +370,13 @@
                                 "enquiries",
                                 "reports",
                                 "missed"
+                            ],
+                            "query": [
+                                {
+                                    "key": "date",
+                                    "value": "today",
+                                    "description": "Date filter: today, yesterday, or YYYY-MM-DD"
+                                }
                             ]
                         },
                         "description": "Returns all enquiries where missedAssignments is not empty. Each entry includes the selector(s) who failed to visit within 24h (firstName, lastName, mobileNo), sorted by updatedAt descending."
@@ -387,7 +394,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/enquiries/farmer-history?farmerMobile=9876543210",
+                            "raw": "{{baseUrl}}/api/enquiries/farmer-history?farmerMobile=9876543210&date=today",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -419,6 +426,11 @@
                                     "value": "20",
                                     "description": "Items per page (default 20)",
                                     "disabled": true
+                                },
+                                {
+                                    "key": "date",
+                                    "value": "today",
+                                    "description": "Date filter: today, yesterday, or YYYY-MM-DD"
                                 }
                             ]
                         },
@@ -442,7 +454,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/field-owner/plots?page=1&limit=20",
+                            "raw": "{{baseUrl}}/api/field-owner/plots?page=1&limit=20&date=today",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -459,6 +471,11 @@
                                 {
                                     "key": "limit",
                                     "value": "20"
+                                },
+                                {
+                                    "key": "date",
+                                    "value": "today",
+                                    "description": "Date filter: today, yesterday, or YYYY-MM-DD"
                                 }
                             ]
                         },
@@ -476,7 +493,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/field-owner/plots?status=SELECTED",
+                            "raw": "{{baseUrl}}/api/field-owner/plots?status=SELECTED&date=today",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -489,6 +506,11 @@
                                 {
                                     "key": "status",
                                     "value": "SELECTED"
+                                },
+                                {
+                                    "key": "date",
+                                    "value": "today",
+                                    "description": "Date filter: today, yesterday, or YYYY-MM-DD"
                                 }
                             ]
                         }
@@ -505,7 +527,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/field-owner/plots?status=REJECTED",
+                            "raw": "{{baseUrl}}/api/field-owner/plots?status=REJECTED&date=today",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -518,6 +540,11 @@
                                 {
                                     "key": "status",
                                     "value": "REJECTED"
+                                },
+                                {
+                                    "key": "date",
+                                    "value": "today",
+                                    "description": "Date filter: today, yesterday, or YYYY-MM-DD"
                                 }
                             ]
                         }
@@ -534,7 +561,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/field-owner/plots?status=Missed",
+                            "raw": "{{baseUrl}}/api/field-owner/plots?status=Missed&date=today",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -547,6 +574,11 @@
                                 {
                                     "key": "status",
                                     "value": "Missed"
+                                },
+                                {
+                                    "key": "date",
+                                    "value": "today",
+                                    "description": "Date filter: today, yesterday, or YYYY-MM-DD"
                                 }
                             ]
                         },
@@ -564,7 +596,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/field-owner/plots?status=Rescheduled",
+                            "raw": "{{baseUrl}}/api/field-owner/plots?status=Rescheduled&date=today",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -577,6 +609,11 @@
                                 {
                                     "key": "status",
                                     "value": "Rescheduled"
+                                },
+                                {
+                                    "key": "date",
+                                    "value": "today",
+                                    "description": "Date filter: today, yesterday, or YYYY-MM-DD"
                                 }
                             ]
                         },
@@ -594,7 +631,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/field-owner/plots?search=Vikram",
+                            "raw": "{{baseUrl}}/api/field-owner/plots?search=Vikram&date=today",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -607,6 +644,11 @@
                                 {
                                     "key": "search",
                                     "value": "Vikram"
+                                },
+                                {
+                                    "key": "date",
+                                    "value": "today",
+                                    "description": "Date filter: today, yesterday, or YYYY-MM-DD"
                                 }
                             ]
                         }
@@ -628,7 +670,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/enquiries/{{enquiryId}}",
+                            "raw": "{{baseUrl}}/api/enquiries/{{enquiryId}}?date=today",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -636,6 +678,13 @@
                                 "api",
                                 "enquiries",
                                 "{{enquiryId}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "date",
+                                    "value": "today",
+                                    "description": "Date filter: today, yesterday, or YYYY-MM-DD"
+                                }
                             ]
                         },
                         "description": "Fetches the full plot record plus its joined Inspection (photos + composition). Returns 403 if this plot doesn't belong to the logged-in FO."

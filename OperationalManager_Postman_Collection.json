@@ -187,7 +187,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/operational-manager/plots?stage=Unassigned&page=1&limit=20",
+                            "raw": "{{baseUrl}}/api/operational-manager/plots?stage=Unassigned&page=1&limit=20&date=today",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -213,6 +213,11 @@
                                     "key": "search",
                                     "value": "",
                                     "disabled": true
+                                },
+                                {
+                                    "key": "date",
+                                    "value": "today",
+                                    "description": "Date filter: today, yesterday, or YYYY-MM-DD"
                                 }
                             ]
                         },
@@ -230,7 +235,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/operational-manager/plots?stage=All&page=1&limit=20",
+                            "raw": "{{baseUrl}}/api/operational-manager/plots?stage=All&page=1&limit=20&date=today",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -256,6 +261,11 @@
                                     "key": "search",
                                     "value": "",
                                     "disabled": true
+                                },
+                                {
+                                    "key": "date",
+                                    "value": "today",
+                                    "description": "Date filter: today, yesterday, or YYYY-MM-DD"
                                 }
                             ]
                         },
@@ -273,7 +283,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/operational-manager/plots?stage=Assigned&page=1&limit=20",
+                            "raw": "{{baseUrl}}/api/operational-manager/plots?stage=Assigned&page=1&limit=20&date=today",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -294,6 +304,11 @@
                                 {
                                     "key": "limit",
                                     "value": "20"
+                                },
+                                {
+                                    "key": "date",
+                                    "value": "today",
+                                    "description": "Date filter: today, yesterday, or YYYY-MM-DD"
                                 }
                             ]
                         },
@@ -311,7 +326,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/operational-manager/plots?stage=Complete&page=1&limit=20",
+                            "raw": "{{baseUrl}}/api/operational-manager/plots?stage=Complete&page=1&limit=20&date=today",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -332,6 +347,11 @@
                                 {
                                     "key": "limit",
                                     "value": "20"
+                                },
+                                {
+                                    "key": "date",
+                                    "value": "today",
+                                    "description": "Date filter: today, yesterday, or YYYY-MM-DD"
                                 }
                             ]
                         },
@@ -349,7 +369,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/operational-manager/plots?stage=Rejected&page=1&limit=20",
+                            "raw": "{{baseUrl}}/api/operational-manager/plots?stage=Rejected&page=1&limit=20&date=today",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -370,6 +390,11 @@
                                 {
                                     "key": "limit",
                                     "value": "20"
+                                },
+                                {
+                                    "key": "date",
+                                    "value": "today",
+                                    "description": "Date filter: today, yesterday, or YYYY-MM-DD"
                                 }
                             ]
                         },
@@ -387,7 +412,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/operational-manager/plots/approved",
+                            "raw": "{{baseUrl}}/api/operational-manager/plots/approved?date=today",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -396,6 +421,13 @@
                                 "operational-manager",
                                 "plots",
                                 "approved"
+                            ],
+                            "query": [
+                                {
+                                    "key": "date",
+                                    "value": "today",
+                                    "description": "Date filter: today, yesterday, or YYYY-MM-DD"
+                                }
                             ]
                         },
                         "description": "Returns assignments where assignmentStatus is APPROVED. These represent all assignments that have been finally approved by the OM and are ready for Finance."

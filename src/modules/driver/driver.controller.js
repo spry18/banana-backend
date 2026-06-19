@@ -172,6 +172,21 @@ const submitTripReport = async (req, res) => {
             isLocked,
         } = req.body;
 
+        if (totalKm === undefined || totalKm === '') {
+            return res.status(400).json({ message: 'totalKm is required' });
+        }
+        const kmNum = Number(totalKm);
+        if (Number.isNaN(kmNum) || kmNum > 999 || kmNum < 0) {
+            return res.status(400).json({ message: 'totalKm must be a valid number and maximum 3 digits (0 - 999)' });
+        }
+
+        if (tollExpense !== undefined && tollExpense !== '') {
+            const tollNum = Number(tollExpense);
+            if (Number.isNaN(tollNum) || tollNum > 999 || tollNum < 0) {
+                return res.status(400).json({ message: 'tollExpense must be a valid number and maximum 3 digits (0 - 999)' });
+            }
+        }
+
         // Parse JSON fields that may come as strings from form-data
         let parsedRoutes = [];
         if (routes) {
@@ -303,15 +318,18 @@ const updateTripReport = async (req, res) => {
 
         if (totalKm !== undefined && totalKm !== '') {
             const n = Number(totalKm);
-            if (Number.isNaN(n)) {
-                return res.status(400).json({ message: 'totalKm must be a number' });
+            if (Number.isNaN(n) || n > 999 || n < 0) {
+                return res.status(400).json({ message: 'totalKm must be a valid number and maximum 3 digits (0 - 999)' });
             }
             trip.totalKm = n;
         }
 
         if (tollExpense !== undefined && tollExpense !== '') {
             const t = Number(tollExpense);
-            trip.tollExpense = Number.isNaN(t) ? 0 : t;
+            if (Number.isNaN(t) || t > 999 || t < 0) {
+                return res.status(400).json({ message: 'tollExpense must be a valid number and maximum 3 digits (0 - 999)' });
+            }
+            trip.tollExpense = t;
         }
 
         if (routes !== undefined) {

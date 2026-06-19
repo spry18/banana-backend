@@ -85,8 +85,9 @@ const responseInterceptor = (req, res, next) => {
                 if (errorToFormat) {
                     const { statusCode: formattedStatus, message: formattedMessage } = formatError(errorToFormat);
 
-                    // If a technical error was mapped to 500 in controller, override it to the proper code (e.g. 400)
-                    if (formattedStatus !== currentStatus) {
+                    // Only override status code if currentStatus is 500 and formattedStatus is not 500,
+                    // or if formattedStatus is 4xx and we want to correct a 500.
+                    if (formattedStatus !== currentStatus && (currentStatus === 500 || formattedStatus !== 500)) {
                         currentStatus = formattedStatus;
                         originalStatus.call(this, formattedStatus);
                     }

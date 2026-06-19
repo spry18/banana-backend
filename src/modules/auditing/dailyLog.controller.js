@@ -92,6 +92,10 @@ const endDay = async (req, res) => {
             return res.status(400).json({ message: `endKm (${endKm}) must be greater than startKm (${log.startKm})` });
         }
 
+        if (Number(endKm) - log.startKm > 999) {
+            return res.status(400).json({ message: 'Total daily distance (endKm - startKm) cannot exceed 3 digits (999 KM)' });
+        }
+
         log.endKm = endKm;
         log.endMeterPhotoUrl = req.file.location;
         log.endTime = Date.now();

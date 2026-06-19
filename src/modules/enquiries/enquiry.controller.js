@@ -137,7 +137,7 @@ const createEnquiry = async (req, res) => {
 // @access  Protected
 const getEnquiries = async (req, res) => {
     try {
-        const { page = 1, limit = 10, search, status, location } = req.query;
+        const { page = 1, limit = 10, search, status, location, date } = req.query;
         const skip = (page - 1) * limit;
 
         let query = {};
@@ -161,6 +161,21 @@ const getEnquiries = async (req, res) => {
             } else {
                 const statuses = status.split(',').map(s => s.trim().toUpperCase());
                 query.status = statuses.length > 1 ? { $in: statuses } : statuses[0];
+            }
+        }
+
+        if (date) {
+            const { getIstDayRange } = require('../../utils/dateHelper');
+            const { startOfDay, endOfDay } = getIstDayRange(date);
+            const statusStr = status ? status.toUpperCase() : '';
+            const isPendingQuery = statusStr.includes('PENDING') || statusStr.includes('RESCHEDULED') || statusStr.includes('MISSED') || statusStr.includes('UNASSIGNED');
+            
+            if (isPendingQuery) {
+                query.scheduledDate = { $gte: startOfDay, $lt: endOfDay };
+            } else if (statusStr && statusStr !== 'ALL') {
+                query.updatedAt = { $gte: startOfDay, $lt: endOfDay };
+            } else {
+                query.createdAt = { $gte: startOfDay, $lt: endOfDay };
             }
         }
 
