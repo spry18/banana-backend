@@ -613,11 +613,41 @@
                                 {
                                     "key": "date",
                                     "value": "today",
-                                    "description": "Date filter: today, yesterday, or YYYY-MM-DD"
+                                    "description": "Date filter: today, yesterday, or YYYY-MM-DD (defaults to today if status=Rescheduled)"
                                 }
                             ]
                         },
-                        "description": "'Rescheduled' = PENDING + scheduledDate in the future. The backend translates this automatically."
+                        "description": "Fetches rescheduled enquiries. Filters by rescheduleDate. Defaults to today's date if no date query parameter is provided."
+                    }
+                },
+                {
+                    "name": "GET Plots — Filter: Cancelled",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/field-owner/plots?status=Cancelled",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "field-owner",
+                                "plots"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "Cancelled"
+                                }
+                            ]
+                        },
+                        "description": "Fetches all cancelled plots. Enriched with Munshi cancellation reasons (mapped as rejectReason) and field selector report details."
                     }
                 },
                 {
