@@ -3,6 +3,7 @@ const Inspection = require('../inspections/inspection.model');
 const DailyLog = require('../auditing/dailyLog.model');
 const User = require('../users/user.model');
 const Logistics = require('../logistics/logistics.model');
+const Packing = require('../execution/packing.model');
 const { getFullUrl } = require('../../utils/urlHelper');
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -84,32 +85,48 @@ const getFODashboard = async (req, res) => {
             Enquiry.countDocuments({ ...base, status: 'REJECTED', createdAt: { $gte: startOfDay } }),
             Enquiry.countDocuments({ ...base, status: 'REJECTED', createdAt: { $gte: startOfWeek } }),
             Enquiry.countDocuments({ ...base, status: 'REJECTED', createdAt: { $gte: startOfMonth } }),
-            // Recent Activity: all strictly SELECTED, RESCHEDULED, or selector-ASSIGNED enquiries for this FO (To-Do list) - lifetime
+            // Recent Activity: all strictly SELECTED, RESCHEDULED (only within last 24h OR rescheduleDate is today), or selector-ASSIGNED enquiries for this FO (To-Do list)
             Enquiry.find({
                 ...base,
                 $or: [
-                    { status: { $in: ['SELECTED', 'RESCHEDULED'] } },
-                    { status: 'ASSIGNED', purchaseRate: null }
+                    { status: 'SELECTED' },
+                    { status: 'ASSIGNED', purchaseRate: null },
+                    {
+                        status: 'RESCHEDULED',
+                        $or: [
+                            { updatedAt: { $gte: new Date(now.getTime() - 24 * 60 * 60 * 1000) } },
+                            { rescheduleDate: { $gte: startOfDay, $lt: endOfDay } }
+                        ]
+                    }
                 ]
             })
                 .sort({ updatedAt: -1 })
-                .select('enquiryId farmerFirstName farmerLastName farmerMobile status location updatedAt generation companyId scheduledDate rescheduleDate editableUntil')
+                .select('enquiryId farmerFirstName farmerLastName farmerMobile status location updatedAt generation companyId scheduledDate rescheduleDate editableUntil assignedSelectorId')
                 .populate('generation', 'name')
                 .populate('companyId', 'companyName')
+                .populate('assignedSelectorId', 'firstName lastName')
                 .lean(),
         ]);
 
         const recentActivity = await Promise.all(
             recentEnquiries.map(async (enq) => {
-                const inspection = await Inspection.findOne({ enquiryId: enq._id })
-                    .select('packingSize volumeBoxRange recoveryPercent')
+                const inspection = await Inspection.findOne({ enquiryId: enq._id }).lean();
+                const log = await Logistics.findOne({ enquiryId: enq._id })
+                    .populate('munshiId', 'firstName lastName mobileNo')
                     .lean();
+                const pack = log ? await Packing.findOne({ assignmentId: log._id }).lean() : null;
 
                 const isRescheduled = enq.status === 'RESCHEDULED';
+                const farmerName = `${enq.farmerFirstName} ${enq.farmerLastName}`.trim();
+                const fieldSelectorName = enq.assignedSelectorId ? `${enq.assignedSelectorId.firstName} ${enq.assignedSelectorId.lastName}`.trim() : null;
+                const munshiName = log && log.munshiId ? `${log.munshiId.firstName} ${log.munshiId.lastName}`.trim() : null;
+
                 const activity = {
                     _id: enq._id,
                     enquiryId: enq.enquiryId,
-                    farmerName: `${enq.farmerFirstName} ${enq.farmerLastName}`.trim(),
+                    farmerName,
+                    fieldSelectorName,
+                    munshiName,
                     mobileNo: enq.farmerMobile,
                     location: enq.location,
                     status: enq.status,
@@ -122,6 +139,10 @@ const getFODashboard = async (req, res) => {
                     volume: inspection ? inspection.volumeBoxRange : '-',
                     recovery: inspection ? inspection.recoveryPercent : '-',
                     updatedAt: enq.updatedAt,
+                    fieldSelectorReport: inspection || null,
+                    munshiReport: pack || null,
+                    weight: pack ? (pack.totalBoxes ?? 0) : (log ? (log.totalBoxes ?? 0) : (enq.estimatedBoxes ?? enq.plantCount ?? 0)),
+                    wastage: pack ? (pack.wastageKg ?? 0) : 0
                 };
                 // Show edit window state only for ASSIGNED enquiries
                 if (enq.status === 'ASSIGNED') {
@@ -182,11 +203,13 @@ const getFOPlots = async (req, res) => {
         const base = {}; // Global Shared Pool: all enquiries regardless of role
         let query = { ...base };
 
-        if (date) {
+        const statusStr = status ? status.toUpperCase() : '';
+        const isRescheduledQuery = statusStr.includes('RESCHEDULED');
+
+        if (date && !isRescheduledQuery) {
             const { getIstDayRange } = require('../../utils/dateHelper');
             const { startOfDay, endOfDay } = getIstDayRange(date);
-            const statusStr = status ? status.toUpperCase() : '';
-            const isPendingQuery = statusStr.includes('PENDING') || statusStr.includes('RESCHEDULED') || statusStr.includes('MISSED') || statusStr.includes('UNASSIGNED');
+            const isPendingQuery = statusStr.includes('PENDING') || statusStr.includes('MISSED') || statusStr.includes('UNASSIGNED');
             
             if (isPendingQuery) {
                 query.scheduledDate = { $gte: startOfDay, $lt: endOfDay };
@@ -206,9 +229,12 @@ const getFOPlots = async (req, res) => {
                 query.status = 'PENDING';
                 query.scheduledDate = { $lt: now };
             } else if (statusUpper === 'RESCHEDULED') {
-                // Rescheduled = PENDING with a scheduledDate in the future (was previously changed)
-                query.status = 'PENDING';
-                query.scheduledDate = { $gt: now };
+                const { getIstDayRange } = require('../../utils/dateHelper');
+                const targetDate = date ? date : 'today';
+                const { startOfDay, endOfDay } = getIstDayRange(targetDate);
+                
+                query.status = 'RESCHEDULED';
+                query.rescheduleDate = { $gte: startOfDay, $lt: endOfDay };
             } else if (statusUpper === 'UNASSIGNED') {
                 query.status = 'PENDING';
                 query.assignedSelectorId = null;
@@ -289,17 +315,40 @@ const getFOPlots = async (req, res) => {
 
         // ── Bulk fetch linked inspections (single query, avoids N+1) ──────────────────────
         const enquiryIds = enquiries.map((e) => e._id);
-        const inspections = await Inspection.find({ enquiryId: { $in: enquiryIds } })
-            .select('enquiryId minVolume maxVolume recoveryPercent packingSize generalNotes volumeBoxRange')
-            .lean();
+        const inspections = await Inspection.find({ enquiryId: { $in: enquiryIds } }).lean();
         const inspectionMap = {};
         inspections.forEach((insp) => {
             inspectionMap[insp.enquiryId.toString()] = insp;
         });
 
+        // ── Bulk fetch linked logistics assignments and packings ─────────────────────────
+        const logisticsList = await Logistics.find({ enquiryId: { $in: enquiryIds } })
+            .populate('munshiId', 'firstName lastName mobileNo')
+            .lean();
+        const logisticsMap = {};
+        logisticsList.forEach((log) => {
+            logisticsMap[log.enquiryId.toString()] = log;
+        });
+
+        const logisticsIds = logisticsList.map(l => l._id);
+        const packings = await Packing.find({ assignmentId: { $in: logisticsIds } })
+            .populate('brandId', 'brandName')
+            .lean();
+        const packingMap = {};
+        packings.forEach((pack) => {
+            packingMap[pack.assignmentId.toString()] = pack;
+        });
+
         // Shape response with all required plot card fields
         const data = enquiries.map((enq) => {
             const insp = inspectionMap[enq._id.toString()] || null;
+            const log = logisticsMap[enq._id.toString()] || null;
+            const pack = log ? (packingMap[log._id.toString()] || null) : null;
+
+            // Compute names
+            const farmerName = `${enq.farmerFirstName} ${enq.farmerLastName}`.trim();
+            const fieldSelectorName = enq.assignedSelectorId ? `${enq.assignedSelectorId.firstName} ${enq.assignedSelectorId.lastName}`.trim() : null;
+            const munshiName = log && log.munshiId ? `${log.munshiId.firstName} ${log.munshiId.lastName}`.trim() : null;
 
             // Map status for frontend: if it is ASSIGNED in DB but has purchaseRate,
             // return status as RATE_FIXED so FO app opens the correct Rate Fixed screen.
@@ -308,9 +357,22 @@ const getFOPlots = async (req, res) => {
                 displayStatus = 'RATE_FIXED';
             }
 
+            // Map rejectReason:
+            // 1. If REJECTED, it's field selector reject reason (insp.generalNotes)
+            // 2. If CANCELLED, it's Munshi's cancellationReason (pack.cancellationReason)
+            let rejectReason = null;
+            if (enq.status === 'REJECTED' && insp) {
+                rejectReason = insp.generalNotes || null;
+            } else if (enq.status === 'CANCELLED' && pack) {
+                rejectReason = pack.cancellationReason || null;
+            }
+
             return {
                 ...enq,
                 status: displayStatus,
+                farmerName,
+                fieldSelectorName,
+                munshiName,
                 // Extra fields required by the updated plot card
                 fixRate:      enq.purchaseRate    ?? null,
                 companyName:  enq.companyId       ? enq.companyId.companyName : null,
@@ -318,10 +380,16 @@ const getFOPlots = async (req, res) => {
                 minVolume:    insp               ? (insp.minVolume ?? null)    : null,
                 maxVolume:    insp               ? (insp.maxVolume ?? null)    : null,
                 recovery:     insp               ? (insp.recoveryPercent ?? null) : null,
-                rejectReason: (enq.status === 'REJECTED' && insp) ? (insp.generalNotes ?? null) : null,
+                rejectReason: rejectReason,
                 location:     enq.location,
                 mobileNumber: enq.farmerMobile,
                 inspection:   insp                || null,
+
+                // Detailed sub-reports for FO view
+                fieldSelectorReport: insp || null,
+                munshiReport: pack || null,
+                weight: pack ? (pack.totalBoxes ?? 0) : (log ? (log.totalBoxes ?? 0) : (enq.estimatedBoxes ?? enq.plantCount ?? 0)),
+                wastage: pack ? (pack.wastageKg ?? 0) : 0
             };
         });
 
