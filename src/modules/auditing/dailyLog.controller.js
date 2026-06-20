@@ -200,6 +200,7 @@ const checkTodayLogStatus = async (req, res) => {
                 isStarted: true,
                 logId: log._id,
                 role: req.user.role,
+                startKm: log.startKm,
             });
         }
 
