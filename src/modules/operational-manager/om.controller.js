@@ -68,9 +68,9 @@ const getOmDashboard = async (req, res) => {
 // @query   ?stage=All|Unassigned|Assigned|Complete  ?page=1  ?limit=20  ?search=...
 const getOmPlots = async (req, res) => {
     try {
-        const { stage, search, page = 1, limit = 20 } = req.query;
+        const { stage, search, page = 1, limit = 20, date } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
-
+ 
         // ---- Stage: All (default) = combined active workload view ----
         // Returns all RATE_FIXED and ASSIGNED enquiries with their logistics record (if any) attached.
         // purchaseRate is strictly excluded from all logistics objects.
@@ -78,6 +78,12 @@ const getOmPlots = async (req, res) => {
             const query = {
                 status: { $in: ['RATE_FIXED', 'ASSIGNED'] },
             };
+ 
+            if (date) {
+                const { getIstDayRange } = require('../../utils/dateHelper');
+                const { startOfDay, endOfDay } = getIstDayRange(date);
+                query.createdAt = { $gte: startOfDay, $lt: endOfDay };
+            }
 
             if (search) {
                 query.$or = [
@@ -87,7 +93,7 @@ const getOmPlots = async (req, res) => {
                     { location: { $regex: search, $options: 'i' } },
                 ];
             }
-
+ 
             const [enquiries, total] = await Promise.all([
                 Enquiry.find(query)
                     .select('-purchaseRate')
@@ -100,7 +106,7 @@ const getOmPlots = async (req, res) => {
                     .lean(),
                 Enquiry.countDocuments(query),
             ]);
-
+ 
             // Build a lookup map of enquiryId → logistics assignment (purchaseRate excluded)
             const enquiryObjectIds = enquiries.map(e => e._id);
             const logisticsRecords = await Logistics.find({ enquiryId: { $in: enquiryObjectIds } })
@@ -109,7 +115,7 @@ const getOmPlots = async (req, res) => {
                 .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
                 .populate('vehicleId', 'vehicleNumber')
                 .lean();
-
+ 
             // An enquiry can have multiple Logistics records (original + rollovers + overflows).
             // Return ALL records grouped by enquiry so the frontend can display the full picture.
             const logisticsMap = {};
@@ -118,12 +124,12 @@ const getOmPlots = async (req, res) => {
                 if (!logisticsMap[key]) logisticsMap[key] = [];
                 logisticsMap[key].push(l);
             });
-
+ 
             const data = enquiries.map(e => ({
                 ...e,
                 logistics: logisticsMap[e._id.toString()] || [],
             }));
-
+ 
             return res.status(200).json({
                 stage: 'All',
                 total,
@@ -132,16 +138,22 @@ const getOmPlots = async (req, res) => {
                 data,
             });
         }
-
+ 
         // ---- Stage: Unassigned = RATE_FIXED enquiries that have NO logistics record ----
         if (stage === 'Unassigned') {
             // Find all enquiryIds that already have a logistics assignment
             const assignedEnquiryIds = await Logistics.distinct('enquiryId');
-
+ 
             const query = {
                 status: 'RATE_FIXED',
                 _id: { $nin: assignedEnquiryIds },
             };
+
+            if (date) {
+                const { getIstDayRange } = require('../../utils/dateHelper');
+                const { startOfDay, endOfDay } = getIstDayRange(date);
+                query.updatedAt = { $gte: startOfDay, $lt: endOfDay };
+            }
 
             if (search) {
                 query.$or = [
@@ -184,6 +196,12 @@ const getOmPlots = async (req, res) => {
                 assignmentStatus: { $in: ['PENDING'] },
             };
 
+            if (date) {
+                const { getIstDayRange } = require('../../utils/dateHelper');
+                const { startOfDay, endOfDay } = getIstDayRange(date);
+                assignmentQuery.createdAt = { $gte: startOfDay, $lt: endOfDay };
+            }
+ 
             // Build a search filter on enquiry fields via two queries
             if (search) {
                 const matchingEnquiries = await Enquiry.find({
@@ -196,7 +214,7 @@ const getOmPlots = async (req, res) => {
                 }).select('_id');
                 assignmentQuery.enquiryId = { $in: matchingEnquiries.map(e => e._id) };
             }
-
+ 
             const [assignments, total] = await Promise.all([
                 Logistics.find(assignmentQuery)
                     .select('-purchaseRate')
@@ -218,7 +236,7 @@ const getOmPlots = async (req, res) => {
                     .lean(),
                 Logistics.countDocuments(assignmentQuery),
             ]);
-
+ 
             return res.status(200).json({
                 stage: 'Assigned',
                 total,
@@ -227,13 +245,19 @@ const getOmPlots = async (req, res) => {
                 data: assignments,
             });
         }
-
+ 
         // ---- Stage: Rejected = Assignments with assignmentStatus REJECTED ----
         if (stage === 'Rejected') {
             const assignmentQuery = {
                 assignmentStatus: 'REJECTED',
             };
 
+            if (date) {
+                const { getIstDayRange } = require('../../utils/dateHelper');
+                const { startOfDay, endOfDay } = getIstDayRange(date);
+                assignmentQuery.updatedAt = { $gte: startOfDay, $lt: endOfDay };
+            }
+ 
             // Build a search filter on enquiry fields via two queries
             if (search) {
                 const matchingEnquiries = await Enquiry.find({
@@ -246,7 +270,7 @@ const getOmPlots = async (req, res) => {
                 }).select('_id');
                 assignmentQuery.enquiryId = { $in: matchingEnquiries.map(e => e._id) };
             }
-
+ 
             const [assignments, total] = await Promise.all([
                 Logistics.find(assignmentQuery)
                     .select('-purchaseRate')
@@ -268,7 +292,7 @@ const getOmPlots = async (req, res) => {
                     .lean(),
                 Logistics.countDocuments(assignmentQuery),
             ]);
-
+ 
             // --- Enhancement: Attach Packing Details ---
             const assignmentIds = assignments.map(a => a._id);
             const packingRecords = await Packing.find({ assignmentId: { $in: assignmentIds } }).lean();
@@ -276,13 +300,13 @@ const getOmPlots = async (req, res) => {
                 map[packing.assignmentId.toString()] = packing;
                 return map;
             }, {});
-
+ 
             const data = assignments.map(a => ({
                 ...a,
                 packingDetails: packingMap[a._id.toString()] || null,
             }));
             // --- End Enhancement ---
-
+ 
             return res.status(200).json({
                 stage: 'Rejected',
                 total,
@@ -291,13 +315,19 @@ const getOmPlots = async (req, res) => {
                 data,
             });
         }
-
+ 
         // ---- Stage: Complete = Assignments with assignmentStatus COMPLETED, REJECTED, or APPROVED ----
         if (stage === 'Complete') {
             const assignmentQuery = {
                 // assignmentStatus: { $in: ['COMPLETED', 'REJECTED', 'APPROVED'] },
                 assignmentStatus: { $in: ['COMPLETED'] },
             };
+
+            if (date) {
+                const { getIstDayRange } = require('../../utils/dateHelper');
+                const { startOfDay, endOfDay } = getIstDayRange(date);
+                assignmentQuery.updatedAt = { $gte: startOfDay, $lt: endOfDay };
+            }
 
             // Build a search filter on enquiry fields via two queries
             if (search) {
@@ -514,12 +544,18 @@ const approvePackingReport = async (req, res) => {
 // @query   ?page=1  ?limit=20  ?search=...
 const getApprovedPlots = async (req, res) => {
     try {
-        const { search, page = 1, limit = 20 } = req.query;
+        const { search, page = 1, limit = 20, date } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
-
+ 
         const assignmentQuery = {
             assignmentStatus: 'APPROVED',
         };
+
+        if (date) {
+            const { getIstDayRange } = require('../../utils/dateHelper');
+            const { startOfDay, endOfDay } = getIstDayRange(date);
+            assignmentQuery.updatedAt = { $gte: startOfDay, $lt: endOfDay };
+        }
 
         // Build a search filter on enquiry fields via two queries
         if (search) {

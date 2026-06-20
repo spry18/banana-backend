@@ -87,6 +87,7 @@ const createEnquiry = async (req, res) => {
             visitPriority: visitPriority || 'Medium',
             fieldOwnerId,
             assignedSelectorId: selector ? sanitizedSelectorId : null,
+            status: selector ? 'ASSIGNED' : 'PENDING',
             editableUntil,
         });
 
@@ -136,7 +137,7 @@ const createEnquiry = async (req, res) => {
 // @access  Protected
 const getEnquiries = async (req, res) => {
     try {
-        const { page = 1, limit = 10, search, status, location } = req.query;
+        const { page = 1, limit = 10, search, status, location, date } = req.query;
         const skip = (page - 1) * limit;
 
         let query = {};
@@ -150,14 +151,31 @@ const getEnquiries = async (req, res) => {
         }
 
         if (status) {
-            if (status === 'Missed') {
+            const statusUpper = status.toUpperCase();
+            if (statusUpper === 'MISSED') {
                 // 'Missed' = past scheduledDate but still PENDING (never visited)
                 query.scheduledDate = { $lt: new Date() };
                 query.status = 'PENDING';
-            } else if (status === 'Unassigned') {
+            } else if (statusUpper === 'UNASSIGNED') {
                 query.assignedSelectorId = null;
             } else {
-                query.status = status;
+                const statuses = status.split(',').map(s => s.trim().toUpperCase());
+                query.status = statuses.length > 1 ? { $in: statuses } : statuses[0];
+            }
+        }
+
+        if (date) {
+            const { getIstDayRange } = require('../../utils/dateHelper');
+            const { startOfDay, endOfDay } = getIstDayRange(date);
+            const statusStr = status ? status.toUpperCase() : '';
+            const isPendingQuery = statusStr.includes('PENDING') || statusStr.includes('RESCHEDULED') || statusStr.includes('MISSED') || statusStr.includes('UNASSIGNED');
+            
+            if (isPendingQuery) {
+                query.scheduledDate = { $gte: startOfDay, $lt: endOfDay };
+            } else if (statusStr && statusStr !== 'ALL') {
+                query.updatedAt = { $gte: startOfDay, $lt: endOfDay };
+            } else {
+                query.createdAt = { $gte: startOfDay, $lt: endOfDay };
             }
         }
 
@@ -373,13 +391,24 @@ const getEnquiryById = async (req, res) => {
             teamName: logistics.teamName || null,
         } : null;
 
+        // Join packing report details if logistics exists
+        const Packing = require('../execution/packing.model');
+        const packing = logistics ? await Packing.findOne({ assignmentId: logistics._id }).lean() : null;
+
         // Shape flat response exactly as per frontend View Details contract
         const e = enquiry.toObject();
         if (req.user.role === 'Operational Manager') {
             delete e.purchaseRate;
         }
+
+        let displayStatus = e.status;
+        if (e.status === 'ASSIGNED' && e.purchaseRate != null) {
+            displayStatus = 'RATE_FIXED';
+        }
+
         res.status(200).json({
             ...e,
+            status: displayStatus,
             farmerName: `${e.farmerFirstName} ${e.farmerLastName}`,
             mobile: e.farmerMobile,
             boxCount: e.estimatedBoxes || null,
@@ -398,6 +427,8 @@ const getEnquiryById = async (req, res) => {
             logistics: logisticsData,
             inspection: inspection || null,
             rejectReason: (e.status === 'REJECTED' && inspection) ? (inspection.generalNotes || null) : null,
+            packingDetails: packing || null,
+            packingPhotos: packing ? packing.photos : [],
         });
     } catch (error) {
         console.error('Error fetching enquiry by ID:', error);

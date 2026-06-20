@@ -25,6 +25,13 @@ const dailyLogSchema = new mongoose.Schema(
         },
         endKm: {
             type: Number,
+            validate: {
+                validator: function(value) {
+                    if (value == null) return true;
+                    return (value - this.startKm) <= 999;
+                },
+                message: 'Total daily KM (endKm - startKm) cannot exceed 3 digits (999 KM)'
+            }
         },
         endMeterPhotoUrl: {
             type: String,

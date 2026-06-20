@@ -85,8 +85,11 @@ const getDriverHistory = async (req, res) => {
         const userId = req.user._id;
         const { page = 1, limit = 20 } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
-
-        const query = { driverId: userId };
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const query = { 
+            driverId: userId,
+            createdAt: { $gte: twentyFourHoursAgo }
+        };
 
         const [trips, total] = await Promise.all([
             Trip.find(query)
@@ -168,6 +171,21 @@ const submitTripReport = async (req, res) => {
             farmerBoxBreakdown,  // JSON string or array
             isLocked,
         } = req.body;
+
+        if (totalKm === undefined || totalKm === '') {
+            return res.status(400).json({ message: 'totalKm is required' });
+        }
+        const kmNum = Number(totalKm);
+        if (Number.isNaN(kmNum) || kmNum > 999 || kmNum < 0) {
+            return res.status(400).json({ message: 'totalKm must be a valid number and maximum 3 digits (0 - 999)' });
+        }
+
+        if (tollExpense !== undefined && tollExpense !== '') {
+            const tollNum = Number(tollExpense);
+            if (Number.isNaN(tollNum) || tollNum > 999 || tollNum < 0) {
+                return res.status(400).json({ message: 'tollExpense must be a valid number and maximum 3 digits (0 - 999)' });
+            }
+        }
 
         // Parse JSON fields that may come as strings from form-data
         let parsedRoutes = [];
@@ -300,15 +318,18 @@ const updateTripReport = async (req, res) => {
 
         if (totalKm !== undefined && totalKm !== '') {
             const n = Number(totalKm);
-            if (Number.isNaN(n)) {
-                return res.status(400).json({ message: 'totalKm must be a number' });
+            if (Number.isNaN(n) || n > 999 || n < 0) {
+                return res.status(400).json({ message: 'totalKm must be a valid number and maximum 3 digits (0 - 999)' });
             }
             trip.totalKm = n;
         }
 
         if (tollExpense !== undefined && tollExpense !== '') {
             const t = Number(tollExpense);
-            trip.tollExpense = Number.isNaN(t) ? 0 : t;
+            if (Number.isNaN(t) || t > 999 || t < 0) {
+                return res.status(400).json({ message: 'tollExpense must be a valid number and maximum 3 digits (0 - 999)' });
+            }
+            trip.tollExpense = t;
         }
 
         if (routes !== undefined) {

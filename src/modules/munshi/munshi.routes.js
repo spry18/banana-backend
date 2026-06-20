@@ -31,7 +31,7 @@ router.post('/assignments/:id/add-vehicle', authorize(...roles), addExtraVehicle
 router.post(
     '/packing/:id',
     authorize(...roles),
-    upload.array('photos', 10),   // up to 10 packing photos
+    upload.array('photos', 25),   // up to 25 packing photos
     submitPackingReport
 );
 router.get(
@@ -42,7 +42,7 @@ router.get(
 router.put(
     '/assignments/:assignmentId/packing',
     authorize(...roles),
-    upload.array('photos', 10),   // up to 10 packing photos
+    upload.array('photos', 25),   // up to 25 packing photos
     updatePackingReport
 );
 router.get('/reports', authorize(...roles), getMunshiReports);

@@ -708,7 +708,7 @@
                                     "key": "photos",
                                     "src": "",
                                     "type": "file",
-                                    "description": "Packing photo 1 (up to 10 files allowed)"
+                                    "description": "Packing photo 1 (up to 25 files allowed)"
                                 },
                                 {
                                     "key": "photos",

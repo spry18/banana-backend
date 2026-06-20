@@ -1,3 +1,7 @@
+const multer = require('multer');
+
+const { formatError } = require('../utils/errorFormatter');
+
 const notFound = (req, res, next) => {
     const error = new Error(`Not Found - ${req.originalUrl}`);
     res.status(404);
@@ -5,21 +9,11 @@ const notFound = (req, res, next) => {
 };
 
 const errorHandler = (err, req, res, next) => {
-    let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
-    let message = err.message;
+    const { statusCode, message } = formatError(err);
 
-    // Handle Mongoose "CastError"
-    if (err.name === 'CastError') {
-        statusCode = 404;
-        message = 'Resource not found';
-    }
-
-    // Handle Mongoose Duplicate Key Error
-    if (err.code === 11000) {
-        statusCode = 400;
-        const field = Object.keys(err.keyValue)[0];
-        message = `Duplicate value entered for field: ${field}. Please use another value.`;
-    }
+    // Log the actual error stack trace for backend developers
+    console.error('--- Global Error Handler Catch ---');
+    console.error(err);
 
     res.status(statusCode).json({
         message: message,

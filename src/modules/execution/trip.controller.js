@@ -24,6 +24,21 @@ const createTrip = async (req, res) => {
             unloadSlipUrl: bodyUnloadSlip
         } = req.body;
 
+        if (totalKm === undefined || totalKm === '') {
+            return res.status(400).json({ message: 'totalKm is required' });
+        }
+        const kmNum = Number(totalKm);
+        if (Number.isNaN(kmNum) || kmNum > 999 || kmNum < 0) {
+            return res.status(400).json({ message: 'totalKm must be a valid number and maximum 3 digits (0 - 999)' });
+        }
+
+        if (tollExpense !== undefined && tollExpense !== '') {
+            const tollNum = Number(tollExpense);
+            if (Number.isNaN(tollNum) || tollNum > 999 || tollNum < 0) {
+                return res.status(400).json({ message: 'tollExpense must be a valid number and maximum 3 digits (0 - 999)' });
+            }
+        }
+
         // const weightSlipUrl = req.files && req.files.weightSlipUrl ? req.files.weightSlipUrl[0].location : null;
         // const dieselSlipUrl = req.files && req.files.dieselSlipUrl ? req.files.dieselSlipUrl[0].location : null;
         // const unloadSlipUrl = req.files && req.files.unloadSlipUrl ? req.files.unloadSlipUrl[0].location : null;

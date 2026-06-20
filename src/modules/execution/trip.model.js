@@ -61,10 +61,14 @@ const tripSchema = new mongoose.Schema(
         totalKm: {
             type: Number,
             required: true,
+            max: [999, 'Total KM cannot exceed 3 digits (999 KM)'],
+            min: [0, 'Total KM cannot be negative'],
         },
         tollExpense: {
             type: Number,
             default: 0,
+            max: [999, 'Toll expense cannot exceed 3 digits (999)'],
+            min: [0, 'Toll expense cannot be negative'],
         },
         isHault: {
             type: Boolean,

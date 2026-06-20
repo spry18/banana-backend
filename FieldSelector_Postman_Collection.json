@@ -324,7 +324,7 @@
                         "method": "GET",
                         "header": [],
                         "url": {
-                            "raw": "{{baseUrl}}/api/field-selector/fields?page=1&limit=20",
+                            "raw": "{{baseUrl}}/api/field-selector/fields?page=1&limit=20&date=today",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -353,6 +353,11 @@
                                 {
                                     "key": "limit",
                                     "value": "20"
+                                },
+                                {
+                                    "key": "date",
+                                    "value": "today",
+                                    "description": "Date filter: today, yesterday, or YYYY-MM-DD"
                                 }
                             ]
                         },
@@ -376,7 +381,7 @@
                         "method": "GET",
                         "header": [],
                         "url": {
-                            "raw": "{{baseUrl}}/api/field-selector/fields/REPLACE_WITH_ENQUIRY_OBJECT_ID",
+                            "raw": "{{baseUrl}}/api/field-selector/fields/REPLACE_WITH_ENQUIRY_OBJECT_ID?date=today",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -385,6 +390,13 @@
                                 "field-selector",
                                 "fields",
                                 "REPLACE_WITH_ENQUIRY_OBJECT_ID"
+                            ],
+                            "query": [
+                                {
+                                    "key": "date",
+                                    "value": "today",
+                                    "description": "Date filter: today, yesterday, or YYYY-MM-DD"
+                                }
                             ]
                         },
                         "description": "Fetches full details of one specific enquiry, plus the linked inspection report if one has already been submitted.\n\n**Security:** Returns 404 if the enquiry exists but is NOT assigned to the logged-in selector.\n\n**Updated 2026-05-07:** Response now embeds an `inspection` key. If no inspection has been submitted yet, `inspection` is `null`. After the Field Selector submits a report, `inspection` will contain all saved visit fields using the same frontend field names used during submission.\n\nResponse shape (SELECTED, inspection already submitted):\n```json\n{\n  \"_id\": \"69fb70c65f36d6f318f8e66b\",\n  \"enquiryId\": \"ENQ-1778086086332\",\n  \"status\": \"SELECTED\",\n  \"farmerFirstName\": \"Om\",\n  \"farmerLastName\": \"Shinde\",\n  \"farmerMobile\": \"9876543210\",\n  \"location\": \"Nashik\",\n  \"subLocation\": \"Sinnar\",\n  \"generation\": { \"_id\": \"...\", \"name\": \"F2\" },\n  \"companyId\": { \"_id\": \"...\", \"name\": \"ABC Exports\" },\n  \"fieldOwnerId\": { \"firstName\": \"Vaibhav\", \"lastName\": \"Katkar\", \"mobileNo\": \"9999999999\" },\n  \"inspection\": {\n    \"_id\": \"...\",\n    \"harvestingStage\": \"1st\",\n    \"minVolume\": 800,\n    \"maxVolume\": 1000,\n    \"recoveryPercent\": \"82\",\n    \"packingSize\": \"13kg\",\n    \"chellingPercent\": \"5\",\n    \"spiklingPercent\": \"3\",\n    \"pulpePercent\": \"2\",\n    \"phreepsPercent\": \"1\",\n    \"harvestingTime\": \"After 3-4 days\",\n    \"generalNotes\": \"Good quality plot.\",\n    \"isThroughPartner\": false,\n    \"partnerName\": null,\n    \"photos\": [\"/uploads/photo1.jpg\"],\n    \"caliper\": \"42/44/46\",\n    \"length\": \"7+\",\n    \"plotType\": \"NFC\",\n    \"greenLeaf\": \"7 to 9\",\n    \"decision\": \"APPROVED\",\n    \"submittedAt\": \"2026-05-07T09:00:00.000Z\"\n  }\n}\n```\n\n⚠️ Replace `REPLACE_WITH_ENQUIRY_OBJECT_ID` with a real MongoDB ObjectId from the fields list.\n\n**Field name mapping reminder:** The `inspection` object uses the same UI field names (`minVolume`, `maxVolume`, `chellingPercent`, `spiklingPercent`, `pulpePercent`, `phreepsPercent`) that are sent during submission — the backend reverse-maps from the stored DB names automatically."
@@ -500,7 +512,7 @@
                                 },
                                 {
                                     "key": "recoveryPercent",
-                                    "value": "82",
+                                    "value": "80-85",
                                     "description": "Recovery percentage — REQUIRED",
                                     "type": "text"
                                 },
@@ -512,25 +524,25 @@
                                 },
                                 {
                                     "key": "chellingPercent",
-                                    "value": "5",
+                                    "value": "3-5",
                                     "description": "Chelling % (UI name). Backend maps this → DB field 'chelling' — REQUIRED",
                                     "type": "text"
                                 },
                                 {
                                     "key": "spiklingPercent",
-                                    "value": "3",
+                                    "value": "1-3",
                                     "description": "Spikling % (UI name). Backend maps this → DB field 'spikling' — REQUIRED",
                                     "type": "text"
                                 },
                                 {
                                     "key": "pulpePercent",
-                                    "value": "2",
+                                    "value": "1-2",
                                     "description": "Pulpe % (UI name). Backend maps this → DB field 'pulpe' — REQUIRED",
                                     "type": "text"
                                 },
                                 {
                                     "key": "phreepsPercent",
-                                    "value": "1",
+                                    "value": "0-1",
                                     "description": "Phreeps % (UI name). Backend maps this → DB field 'phreeps' — REQUIRED",
                                     "type": "text"
                                 },
@@ -591,7 +603,7 @@
                                 },
                                 {
                                     "key": "photos",
-                                    "description": "Plot photo #1 — REQUIRED. In Postman, duplicate this row (up to 20 times) each with key 'photos' and type File to send multiple photos.",
+                                    "description": "Plot photo #1 — REQUIRED. In Postman, duplicate this row (up to 25 times) each with key 'photos' and type File to send multiple photos.",
                                     "type": "file",
                                     "src": []
                                 }
@@ -607,7 +619,7 @@
                                 "inspections"
                             ]
                         },
-                        "description": "Submits a complete plot inspection with up to 20 photos.\n\n**Photo Upload Instructions for Postman:**\nIn the formdata body, add multiple rows all with the same key `photos`, each set to type `File`. Postman v10+ sends these as a proper array.\n\n**Payload Mapping (handled automatically by backend):**\n\n| Frontend field | Stored in DB as |\n|---|---|\n| volumeBox | volumeBoxRange |\n| chellingPercent | chelling |\n| spiklingPercent | spikling |\n| pulpePercent | pulpe |\n| phreepsPercent | phreeps |\n| decision: SELECTED | decision: APPROVED → Enquiry.status = SELECTED |\n| decision: REJECTED | decision: REJECTED → Enquiry.status = REJECTED |\n\n**Route Note:** `enquiryId` is sent in the request body (not the URL path) to protect existing Admin integrations."
+                        "description": "Submits a complete plot inspection with up to 25 photos.\n\n**Photo Upload Instructions for Postman:**\nIn the formdata body, add multiple rows all with the same key `photos`, each set to type `File`. Postman v10+ sends these as a proper array.\n\n**Payload Mapping (handled automatically by backend):**\n\n| Frontend field | Stored in DB as |\n|---|---|\n| minVolume | minVolume |\n| maxVolume | maxVolume |\n| chellingPercent | chelling |\n| spiklingPercent | spikling |\n| pulpePercent | pulpe |\n| phreepsPercent | phreeps |\n| decision: SELECTED | decision: APPROVED → Enquiry.status = SELECTED |\n| decision: REJECTED | decision: REJECTED → Enquiry.status = REJECTED |\n\n**Route Note:** `enquiryId` is sent in the request body (not the URL path) to protect existing Admin integrations."
                     },
                     "response": []
                 },
@@ -651,7 +663,7 @@
                                 },
                                 {
                                     "key": "recoveryPercent",
-                                    "value": "55",
+                                    "value": "50-60",
                                     "type": "text"
                                 },
                                 {
@@ -661,22 +673,22 @@
                                 },
                                 {
                                     "key": "chellingPercent",
-                                    "value": "28",
+                                    "value": "25-30",
                                     "type": "text"
                                 },
                                 {
                                     "key": "spiklingPercent",
-                                    "value": "20",
+                                    "value": "15-25",
                                     "type": "text"
                                 },
                                 {
                                     "key": "pulpePercent",
-                                    "value": "15",
+                                    "value": "10-20",
                                     "type": "text"
                                 },
                                 {
                                     "key": "phreepsPercent",
-                                    "value": "10",
+                                    "value": "5-15",
                                     "type": "text"
                                 },
                                 {
@@ -722,7 +734,7 @@
                                 },
                                 {
                                     "key": "photos",
-                                    "description": "Rejection evidence photo. Add multiple 'photos' rows (up to 20) for more images.",
+                                    "description": "Rejection evidence photo. Add multiple 'photos' rows (up to 25) for more images.",
                                     "type": "file",
                                     "src": []
                                 }

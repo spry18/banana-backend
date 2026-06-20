@@ -394,7 +394,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/enquiries/{{enquiryId}}",
+                            "raw": "{{baseUrl}}/api/enquiries/{{enquiryId}}?date=today",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -402,6 +402,13 @@
                                 "api",
                                 "enquiries",
                                 "{{enquiryId}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "date",
+                                    "value": "today",
+                                    "description": "Date filter: today, yesterday, or YYYY-MM-DD"
+                                }
                             ]
                         },
                         "description": "Returns full enquiry with all joins including logistics.\n\n## Response Shape (frontend View Details contract):\n```json\n{\n  \"farmerName\": \"Parag Survase\",\n  \"mobile\": \"9876543210\",\n  \"location\": \"Falwani\",\n  \"subLocation\": \"...\",\n  \"boxCount\": 600,\n  \"packingType\": \"13 Kg\",\n  \"rate\": 918,\n  \"company\": \"Nature\",\n  \"status\": \"SELECTED\",\n  \"fieldOwner\": { \"name\": \"Vikas Wagh\", \"mobile\": \"8390002226\" },\n  \"fieldSelector\": { \"name\": \"Mauli Bhosle\", \"remarks\": \"High quality 20-30% pulp\" },\n  \"logistics\": {\n    \"munshi\": \"Hakim\",\n    \"driver\": \"Sidhu Wagh\",\n    \"driverMobile\": \"...\",\n    \"vehicleNumber\": \"MH45AF8299\",\n    \"teamName\": \"Team_Hakim\"\n  },\n  \"inspection\": { ... }\n}\n```"
@@ -480,7 +487,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/enquiries?page=1&limit=10&status=PENDING",
+                            "raw": "{{baseUrl}}/api/enquiries?page=1&limit=10&status=PENDING&date=today",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -510,6 +517,11 @@
                                     "key": "search",
                                     "value": "",
                                     "disabled": true
+                                },
+                                {
+                                    "key": "date",
+                                    "value": "today",
+                                    "description": "Date filter: today, yesterday, or YYYY-MM-DD"
                                 }
                             ]
                         }
@@ -617,7 +629,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/enquiries/reports/missed",
+                            "raw": "{{baseUrl}}/api/enquiries/reports/missed?date=today",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -626,6 +638,13 @@
                                 "enquiries",
                                 "reports",
                                 "missed"
+                            ],
+                            "query": [
+                                {
+                                    "key": "date",
+                                    "value": "today",
+                                    "description": "Date filter: today, yesterday, or YYYY-MM-DD"
+                                }
                             ]
                         },
                         "description": "Returns all enquiries where missedAssignments is not empty. Each entry includes the selector(s) who failed to visit within 24h (firstName, lastName, mobileNo), sorted by updatedAt descending."

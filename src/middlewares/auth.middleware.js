@@ -16,6 +16,22 @@ const protect = async (req, res, next) => {
             // Verify token
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+            // Daily 4:00 AM IST session expiration check
+            const now = new Date();
+            const istOffset = 5.5 * 60 * 60 * 1000;
+            const nowIst = new Date(now.getTime() + istOffset);
+            const ist4AmToday = new Date(nowIst);
+            ist4AmToday.setUTCHours(4, 0, 0, 0);
+            let last4AmIst = new Date(ist4AmToday.getTime() - istOffset);
+            if (last4AmIst > now) {
+                last4AmIst = new Date(last4AmIst.getTime() - 24 * 60 * 60 * 1000);
+            }
+            const last4AmIstSec = Math.floor(last4AmIst.getTime() / 1000);
+
+            if (decoded.iat && decoded.iat < last4AmIstSec) {
+                return res.status(401).json({ message: 'Session expired (daily 4:00 AM auto-logout), please log in again.' });
+            }
+
             // Handle hardcoded mock Admin for dev/testing
             if (decoded.id === '111111111111111111111111') {
                 req.user = {
@@ -36,7 +52,7 @@ const protect = async (req, res, next) => {
             next();
         } catch (error) {
             console.error(error);
-            res.status(401).json({ message: 'Not authorized' });
+            next(error);
         }
     }
 

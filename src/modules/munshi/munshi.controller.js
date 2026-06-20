@@ -18,17 +18,17 @@ const getMunshiDashboard = async (req, res) => {
 
         // KPIs scoped to logged-in Munshi
         const [
-            pickupsCount,         // Assignments in PENDING or IN_PROGRESS
+            pickupsCount,         // Assignments in PENDING, IN_PROGRESS, or REJECTED
             completedCount,       // Assignments COMPLETED
             cancelledCount,       // Assignments CANCELLED
             activeAssignments,    // Active list for the UI
         ] = await Promise.all([
-            Logistics.countDocuments({ munshiId, assignmentStatus: { $in: ['PENDING', 'IN_PROGRESS'] } }),
+            Logistics.countDocuments({ munshiId, assignmentStatus: { $in: ['PENDING', 'IN_PROGRESS', 'REJECTED'] } }),
             Logistics.countDocuments({ munshiId, assignmentStatus: 'COMPLETED' }),
             Logistics.countDocuments({ munshiId, assignmentStatus: 'CANCELLED' }),
             Logistics.find({
                 munshiId,
-                assignmentStatus: { $in: ['PENDING', 'IN_PROGRESS'] },
+                assignmentStatus: { $in: ['PENDING', 'IN_PROGRESS', 'REJECTED'] },
             })
                 .sort({ createdAt: -1 })
                 .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName farmerMobile location subLocation plantCount')
@@ -38,6 +38,16 @@ const getMunshiDashboard = async (req, res) => {
                 .populate('vehicleId', 'vehicleNumber vehicleType')
                 .lean(),
         ]);
+
+        // Attach rejection reasons if status is REJECTED
+        for (let a of activeAssignments) {
+            if (a.assignmentStatus === 'REJECTED') {
+                const packing = await Packing.findOne({ assignmentId: a._id }).select('omRemark').lean();
+                if (packing) {
+                    a.rejectedReason = packing.omRemark || null;
+                }
+            }
+        }
 
         res.status(200).json({
             kpis: {
@@ -66,7 +76,8 @@ const getMunshiAssignments = async (req, res) => {
 
         const query = { munshiId };
         if (status) {
-            query.assignmentStatus = status;
+            const statuses = status.split(',').map(s => s.trim().toUpperCase());
+            query.assignmentStatus = statuses.length > 1 ? { $in: statuses } : statuses[0];
         }
 
         const [assignments, total] = await Promise.all([
@@ -82,6 +93,16 @@ const getMunshiAssignments = async (req, res) => {
                 .lean(),
             Logistics.countDocuments(query),
         ]);
+
+        // Attach rejection reasons if status is REJECTED
+        for (let a of assignments) {
+            if (a.assignmentStatus === 'REJECTED') {
+                const packing = await Packing.findOne({ assignmentId: a._id }).select('omRemark').lean();
+                if (packing) {
+                    a.rejectedReason = packing.omRemark || null;
+                }
+            }
+        }
 
         res.status(200).json({
             total,

@@ -84,8 +84,14 @@ const getFODashboard = async (req, res) => {
             Enquiry.countDocuments({ ...base, status: 'REJECTED', createdAt: { $gte: startOfDay } }),
             Enquiry.countDocuments({ ...base, status: 'REJECTED', createdAt: { $gte: startOfWeek } }),
             Enquiry.countDocuments({ ...base, status: 'REJECTED', createdAt: { $gte: startOfMonth } }),
-            // Recent Activity: all strictly SELECTED or RESCHEDULED enquiries for this FO (To-Do list) - lifetime
-            Enquiry.find({ ...base, status: { $in: ['SELECTED', 'RESCHEDULED', 'ASSIGNED'] } })
+            // Recent Activity: all strictly SELECTED, RESCHEDULED, or selector-ASSIGNED enquiries for this FO (To-Do list) - lifetime
+            Enquiry.find({
+                ...base,
+                $or: [
+                    { status: { $in: ['SELECTED', 'RESCHEDULED'] } },
+                    { status: 'ASSIGNED', purchaseRate: null }
+                ]
+            })
                 .sort({ updatedAt: -1 })
                 .select('enquiryId farmerFirstName farmerLastName farmerMobile status location updatedAt generation companyId scheduledDate rescheduleDate editableUntil')
                 .populate('generation', 'name')
@@ -169,37 +175,104 @@ const getFODashboard = async (req, res) => {
 // @access  Private (Field Owner, Admin)
 const getFOPlots = async (req, res) => {
     try {
-        const { status, location, search, page = 1, limit = 20 } = req.query;
+        const { status, location, search, page = 1, limit = 20, date } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
         const now = new Date();
 
         const base = {}; // Global Shared Pool: all enquiries regardless of role
         let query = { ...base };
 
+        if (date) {
+            const { getIstDayRange } = require('../../utils/dateHelper');
+            const { startOfDay, endOfDay } = getIstDayRange(date);
+            const statusStr = status ? status.toUpperCase() : '';
+            const isPendingQuery = statusStr.includes('PENDING') || statusStr.includes('RESCHEDULED') || statusStr.includes('MISSED') || statusStr.includes('UNASSIGNED');
+            
+            if (isPendingQuery) {
+                query.scheduledDate = { $gte: startOfDay, $lt: endOfDay };
+            } else if (statusStr && statusStr !== 'ALL') {
+                query.updatedAt = { $gte: startOfDay, $lt: endOfDay };
+            } else {
+                query.createdAt = { $gte: startOfDay, $lt: endOfDay };
+            }
+        }
+
+        const andFilters = [];
+
         // Status filter — 'Missed' is a derived state, not a real enum value
-        if (status === 'Missed') {
-            query.status = 'PENDING';
-            query.scheduledDate = { $lt: now };
-        } else if (status === 'Rescheduled') {
-            // Rescheduled = PENDING with a scheduledDate in the future (was previously changed)
-            query.status = 'PENDING';
-            query.scheduledDate = { $gt: now };
-        } else if (status === 'Unassigned' || status === 'UNASSIGNED') {
-            query.status = 'PENDING';
-            query.assignedSelectorId = null;
-        } else if (status) {
-            query.status = status;
+        if (status) {
+            const statusUpper = status.toUpperCase();
+            if (statusUpper === 'MISSED') {
+                query.status = 'PENDING';
+                query.scheduledDate = { $lt: now };
+            } else if (statusUpper === 'RESCHEDULED') {
+                // Rescheduled = PENDING with a scheduledDate in the future (was previously changed)
+                query.status = 'PENDING';
+                query.scheduledDate = { $gt: now };
+            } else if (statusUpper === 'UNASSIGNED') {
+                query.status = 'PENDING';
+                query.assignedSelectorId = null;
+            } else {
+                const statuses = status.split(',').map(s => s.trim().toUpperCase());
+                
+                // If it includes RATE_FIXED, we want to include database status:
+                // - RATE_FIXED
+                // - COMPLETED
+                // - CLOSED
+                // - ASSIGNED (where purchaseRate is not null)
+                const mappedStatuses = [...statuses];
+                const hasRateFixed = statuses.includes('RATE_FIXED');
+                const hasAssigned = statuses.includes('ASSIGNED');
+
+                if (hasRateFixed) {
+                    ['COMPLETED', 'CLOSED'].forEach(st => {
+                        if (!mappedStatuses.includes(st)) {
+                            mappedStatuses.push(st);
+                        }
+                    });
+                }
+
+                const statusConditions = [];
+                
+                // 1. Any status in mappedStatuses EXCEPT ASSIGNED
+                const nonAssignedStatuses = mappedStatuses.filter(s => s !== 'ASSIGNED');
+                if (nonAssignedStatuses.length > 0) {
+                    statusConditions.push({ status: { $in: nonAssignedStatuses } });
+                }
+
+                // 2. Handling ASSIGNED
+                if (hasAssigned && hasRateFixed) {
+                    // Both tabs requested, so match any ASSIGNED
+                    statusConditions.push({ status: 'ASSIGNED' });
+                } else if (hasRateFixed) {
+                    // Only Rate Fixed requested, match ASSIGNED only if purchaseRate is not null
+                    statusConditions.push({ status: 'ASSIGNED', purchaseRate: { $ne: null } });
+                } else if (hasAssigned) {
+                    // Only Assigned requested, match ASSIGNED only if purchaseRate is null
+                    statusConditions.push({ status: 'ASSIGNED', purchaseRate: null });
+                }
+
+                if (statusConditions.length > 0) {
+                    andFilters.push({ $or: statusConditions });
+                }
+            }
         }
 
         if (location) query.location = location;
 
         if (search) {
-            query.$or = [
-                { farmerFirstName: { $regex: search, $options: 'i' } },
-                { farmerLastName: { $regex: search, $options: 'i' } },
-                { farmerMobile: { $regex: search, $options: 'i' } },
-                { enquiryId: { $regex: search, $options: 'i' } },
-            ];
+            andFilters.push({
+                $or: [
+                    { farmerFirstName: { $regex: search, $options: 'i' } },
+                    { farmerLastName: { $regex: search, $options: 'i' } },
+                    { farmerMobile: { $regex: search, $options: 'i' } },
+                    { enquiryId: { $regex: search, $options: 'i' } },
+                ]
+            });
+        }
+
+        if (andFilters.length > 0) {
+            query.$and = andFilters;
         }
 
         const [enquiries, total] = await Promise.all([
@@ -227,8 +300,17 @@ const getFOPlots = async (req, res) => {
         // Shape response with all required plot card fields
         const data = enquiries.map((enq) => {
             const insp = inspectionMap[enq._id.toString()] || null;
+
+            // Map status for frontend: if it is ASSIGNED in DB but has purchaseRate,
+            // return status as RATE_FIXED so FO app opens the correct Rate Fixed screen.
+            let displayStatus = enq.status;
+            if (enq.status === 'ASSIGNED' && enq.purchaseRate != null) {
+                displayStatus = 'RATE_FIXED';
+            }
+
             return {
                 ...enq,
+                status: displayStatus,
                 // Extra fields required by the updated plot card
                 fixRate:      enq.purchaseRate    ?? null,
                 companyName:  enq.companyId       ? enq.companyId.companyName : null,
@@ -443,23 +525,42 @@ const getFOSelectors = async (req, res) => {
 // @access  Private (Field Owner, Admin)
 const getUnassignedPlots = async (req, res) => {
     try {
-        const { search, page = 1, limit = 20 } = req.query;
+        const { search, page = 1, limit = 20, date } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
 
-        // Unassigned = PENDING plots with no selector assigned yet
-        const query = {
-            assignedSelectorId: null,
-            status: 'PENDING',
-        };
+        const andFilters = [
+            { assignedSelectorId: null },
+            { status: 'PENDING' }
+        ];
+
+        if (date) {
+            const { getIstDayRange } = require('../../utils/dateHelper');
+            const { startOfDay, endOfDay } = getIstDayRange(date);
+            andFilters.push({
+                $or: [
+                    { scheduledDate: { $gte: startOfDay, $lt: endOfDay } },
+                    {
+                        $and: [
+                            { $or: [{ scheduledDate: null }, { scheduledDate: { $exists: false } }] },
+                            { createdAt: { $gte: startOfDay, $lt: endOfDay } }
+                        ]
+                    }
+                ]
+            });
+        }
 
         if (search) {
-            query.$or = [
-                { farmerFirstName: { $regex: search, $options: 'i' } },
-                { farmerLastName:  { $regex: search, $options: 'i' } },
-                { farmerMobile:    { $regex: search, $options: 'i' } },
-                { enquiryId:       { $regex: search, $options: 'i' } },
-            ];
+            andFilters.push({
+                $or: [
+                    { farmerFirstName: { $regex: search, $options: 'i' } },
+                    { farmerLastName:  { $regex: search, $options: 'i' } },
+                    { farmerMobile:    { $regex: search, $options: 'i' } },
+                    { enquiryId:       { $regex: search, $options: 'i' } },
+                ]
+            });
         }
+
+        const query = { $and: andFilters };
 
         const [enquiries, total] = await Promise.all([
             Enquiry.find(query)

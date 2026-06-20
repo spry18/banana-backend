@@ -39,14 +39,31 @@ const getDashboard = async (req, res) => {
             visited,
             recentActivity,
         ] = await Promise.all([
-            // Assigned = ASSIGNED plots scheduled for today (not yet inspected, purchaseRate is null)
-            Enquiry.countDocuments({ ...todayScheduledFilter, status: 'ASSIGNED', purchaseRate: null }),
+            // Assigned = ASSIGNED plots scheduled for today OR with no scheduled date (not yet inspected, purchaseRate is null)
+            Enquiry.countDocuments({
+                assignedSelectorId: selectorId,
+                status: 'ASSIGNED',
+                purchaseRate: null,
+                $or: [
+                    { scheduledDate: { $gte: startOfTodayIst, $lt: endOfTodayIst } },
+                    { scheduledDate: null },
+                    { scheduledDate: { $exists: false } },
+                ],
+            }),
 
-            // Selector marked the plot as SELECTED (inspection approved) — today
-            Enquiry.countDocuments({ ...todayScheduledFilter, status: 'SELECTED' }),
+            // Selector marked the plot as SELECTED (inspection approved) — today (polled from Inspection)
+            Inspection.countDocuments({
+                selectorId,
+                decision: 'APPROVED',
+                createdAt: { $gte: startOfTodayIst, $lt: endOfTodayIst },
+            }),
 
-            // Selector rejected the plot — today
-            Enquiry.countDocuments({ ...todayScheduledFilter, status: 'REJECTED' }),
+            // Selector rejected the plot — today (polled from Inspection)
+            Inspection.countDocuments({
+                selectorId,
+                decision: 'REJECTED',
+                createdAt: { $gte: startOfTodayIst, $lt: endOfTodayIst },
+            }),
 
             // Missed = still ASSIGNED (purchaseRate is null) but the scheduledDate has passed (today's plots only)
             Enquiry.countDocuments({
@@ -56,13 +73,10 @@ const getDashboard = async (req, res) => {
                 purchaseRate: null,
             }),
 
-            // Visited = inspection was submitted today (SELECTED + REJECTED + downstream/logistics-assigned)
-            Enquiry.countDocuments({
-                ...todayScheduledFilter,
-                $or: [
-                    { status: { $in: ['SELECTED', 'REJECTED', 'RATE_FIXED', 'COMPLETED', 'CLOSED'] } },
-                    { status: 'ASSIGNED', purchaseRate: { $ne: null, $exists: true } }
-                ]
+            // Visited = inspection was submitted today
+            Inspection.countDocuments({
+                selectorId,
+                createdAt: { $gte: startOfTodayIst, $lt: endOfTodayIst },
             }),
 
             // Last 5 activity items for the feed — all active selector assignments (no date cap)
@@ -111,31 +125,98 @@ const getDashboard = async (req, res) => {
 const getAssignedFields = async (req, res) => {
     try {
         const selectorId = req.user._id;
-        const { status, search, page = 1, limit = 20 } = req.query;
-
+        const { status, search, page = 1, limit = 20, date } = req.query;
+ 
         // Base filter: all enquiries currently assigned to this selector
         // (No date cap — a selector must be able to see plots regardless of when
         //  the enquiry was created or how long ago it was assigned to them.)
         const filter = {
             assignedSelectorId: selectorId,
         };
+ 
+        let isQueryingSelected = false;
+        const andFilters = [];
+
+        if (date) {
+            const { getIstDayRange } = require('../../utils/dateHelper');
+            const { startOfDay, endOfDay } = getIstDayRange(date);
+            const statusStr = status ? status.toUpperCase() : '';
+            const isPendingQuery = statusStr.includes('PENDING') || statusStr.includes('RESCHEDULED') || statusStr.includes('MISSED') || statusStr.includes('UNASSIGNED') || statusStr.includes('ASSIGNED');
+            
+            if (isPendingQuery) {
+                andFilters.push({
+                    $or: [
+                        { scheduledDate: { $gte: startOfDay, $lt: endOfDay } },
+                        {
+                            $and: [
+                                { $or: [{ scheduledDate: null }, { scheduledDate: { $exists: false } }] },
+                                { createdAt: { $gte: startOfDay, $lt: endOfDay } }
+                            ]
+                        }
+                    ]
+                });
+            } else if (statusStr && statusStr !== 'ALL') {
+                andFilters.push({ updatedAt: { $gte: startOfDay, $lt: endOfDay } });
+            } else {
+                andFilters.push({ createdAt: { $gte: startOfDay, $lt: endOfDay } });
+            }
+        }
 
         // Optional status filter (single value or comma-separated list)
         if (status) {
             const statuses = status.split(',').map(s => s.trim().toUpperCase());
-            filter.status = { $in: statuses };
+            if (statuses.includes('SELECTED')) {
+                isQueryingSelected = true;
+                const otherStatuses = statuses.filter(s => s !== 'SELECTED' && s !== 'ASSIGNED');
+                
+                // Add all statuses after SELECTED
+                const afterSelected = ['SELECTED', 'RATE_FIXED', 'COMPLETED', 'CLOSED'];
+                afterSelected.forEach(st => {
+                    if (!otherStatuses.includes(st)) {
+                        otherStatuses.push(st);
+                    }
+                });
+
+                const statusConditions = [
+                    { status: { $in: otherStatuses } },
+                    { status: 'ASSIGNED', purchaseRate: { $ne: null } }
+                ];
+                
+                if (statuses.includes('ASSIGNED')) {
+                    statusConditions.push({ status: 'ASSIGNED', purchaseRate: null });
+                }
+                
+                andFilters.push({ $or: statusConditions });
+            } else {
+                filter.status = { $in: statuses };
+            }
+        }
+
+        if (!isQueryingSelected) {
+            andFilters.push({
+                $or: [
+                    { status: { $ne: 'ASSIGNED' } },
+                    { status: 'ASSIGNED', purchaseRate: null }
+                ]
+            });
         }
 
         // Optional text search across farmer name and location
         if (search) {
             const regex = new RegExp(search, 'i');
-            filter.$or = [
-                { farmerFirstName: regex },
-                { farmerLastName: regex },
-                { location: regex },
-                { subLocation: regex },
-                { enquiryId: regex },
-            ];
+            andFilters.push({
+                $or: [
+                    { farmerFirstName: regex },
+                    { farmerLastName: regex },
+                    { location: regex },
+                    { subLocation: regex },
+                    { enquiryId: regex },
+                ]
+            });
+        }
+
+        if (andFilters.length > 0) {
+            filter.$and = andFilters;
         }
 
         const skip = (Number(page) - 1) * Number(limit);
