@@ -67,6 +67,28 @@ const createAssignment = async (req, res) => {
         // Set omId to logged-in Operational Manager / Admin
         const omId = req.user._id;
 
+        // Resolve target scheduledDate
+        const targetDate = req.body.scheduledDate ? new Date(req.body.scheduledDate) : (req.body.date ? new Date(req.body.date) : enquiry.scheduledDate);
+
+        // Check if Munshi is already assigned to a different enquiry on the same day (IST range)
+        if (targetDate && munshiId) {
+            const { getIstDayRange } = require('../../utils/dateHelper');
+            const { startOfDay, endOfDay } = getIstDayRange(targetDate);
+            
+            const existingAssignment = await Logistics.findOne({
+                munshiId,
+                enquiryId: { $ne: enquiryId },
+                assignmentStatus: { $ne: 'CANCELLED' },
+                scheduledDate: { $gte: startOfDay, $lt: endOfDay }
+            });
+            
+            if (existingAssignment) {
+                return res.status(400).json({
+                    message: `Munshi is already assigned to another plot on this day (${new Date(targetDate).toLocaleDateString('en-IN')}).`
+                });
+            }
+        }
+
         // Create the logistics assignment document
         const assignment = await Logistics.create({
             enquiryId,
@@ -80,6 +102,7 @@ const createAssignment = async (req, res) => {
             priority,
             lightInTime,
             lightOutTime,
+            scheduledDate: targetDate || null,
             teamName:    teamName    || null,
             assignmentStatus: 'PENDING',   // Driver has not yet started — becomes IN_PROGRESS on first transitStatus update
         });
@@ -275,6 +298,25 @@ const addExtraVehicle = async (req, res) => {
             resolvedMunshi = munshi;
         }
 
+        const targetDate = scheduledDate ? new Date(scheduledDate) : original.scheduledDate;
+        if (targetDate && resolvedMunshiId) {
+            const { getIstDayRange } = require('../../utils/dateHelper');
+            const { startOfDay, endOfDay } = getIstDayRange(targetDate);
+            
+            const existingAssignment = await Logistics.findOne({
+                munshiId: resolvedMunshiId,
+                enquiryId: { $ne: original.enquiryId._id || original.enquiryId },
+                assignmentStatus: { $ne: 'CANCELLED' },
+                scheduledDate: { $gte: startOfDay, $lt: endOfDay }
+            });
+            
+            if (existingAssignment) {
+                return res.status(400).json({
+                    message: `Munshi is already assigned to another plot on this day (${new Date(targetDate).toLocaleDateString('en-IN')}).`
+                });
+            }
+        }
+
         // 5. Create the overflow assignment — use provided values or fall back to original
         const overflow = await Logistics.create({
             enquiryId:          original.enquiryId._id || original.enquiryId,
@@ -453,8 +495,32 @@ const changeAssignedTeam = async (req, res) => {
 
         const oldMunshiId = assignment.munshiId ? assignment.munshiId.toString() : null;
 
+        const targetMunshiId = munshiId !== undefined ? munshiId : assignment.munshiId;
+        const targetDate = date ? new Date(date) : (req.body.scheduledDate ? new Date(req.body.scheduledDate) : assignment.scheduledDate);
+
+        if (targetDate && targetMunshiId) {
+            const { getIstDayRange } = require('../../utils/dateHelper');
+            const { startOfDay, endOfDay } = getIstDayRange(targetDate);
+            
+            const existingAssignment = await Logistics.findOne({
+                _id: { $ne: assignmentId },
+                munshiId: targetMunshiId,
+                enquiryId: { $ne: assignment.enquiryId },
+                assignmentStatus: { $ne: 'CANCELLED' },
+                scheduledDate: { $gte: startOfDay, $lt: endOfDay }
+            });
+            
+            if (existingAssignment) {
+                return res.status(400).json({
+                    message: `Munshi is already assigned to another plot on this day (${new Date(targetDate).toLocaleDateString('en-IN')}).`
+                });
+            }
+        }
+
         if (date !== undefined && date) {
-            assignment.date = new Date(date); 
+            assignment.scheduledDate = new Date(date); 
+        } else if (req.body.scheduledDate !== undefined && req.body.scheduledDate) {
+            assignment.scheduledDate = new Date(req.body.scheduledDate);
         }
 
         if (companyId !== undefined && companyId) {

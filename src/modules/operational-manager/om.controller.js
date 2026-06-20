@@ -12,6 +12,15 @@ const getOmDashboard = async (req, res) => {
     try {
         const assignedEnquiryIds = await Logistics.distinct('enquiryId');
 
+        // ── IST-aligned today boundary ──
+        const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+        const nowUtc = new Date();
+        const nowIst = new Date(nowUtc.getTime() + IST_OFFSET_MS);
+        const istMidnight = new Date(nowIst);
+        istMidnight.setUTCHours(0, 0, 0, 0);                        // midnight in IST expressed as UTC
+        const startOfTodayIst = new Date(istMidnight.getTime() - IST_OFFSET_MS); // convert back to UTC
+        const endOfTodayIst   = new Date(startOfTodayIst.getTime() + 24 * 60 * 60 * 1000);
+
         // Run all KPI queries in parallel for best performance
         const [
             fixedPlotsCount,       // Enquiries at RATE_FIXED (ready to assign)
@@ -23,7 +32,19 @@ const getOmDashboard = async (req, res) => {
         ] = await Promise.all([
             Enquiry.countDocuments({ status: 'RATE_FIXED', _id: { $nin: assignedEnquiryIds } }),
             Logistics.countDocuments(),
-            Logistics.countDocuments({ assignmentStatus: 'PENDING' }),
+            Logistics.countDocuments({
+                assignmentStatus: { $ne: 'CANCELLED' },
+                $or: [
+                    { scheduledDate: { $gte: startOfTodayIst, $lt: endOfTodayIst } },
+                    {
+                        assignmentStatus: 'PENDING',
+                        $or: [
+                            { scheduledDate: null },
+                            { scheduledDate: { $exists: false } }
+                        ]
+                    }
+                ]
+            }),
             Packing.countDocuments({ status: 'SUBMITTED' }),   // Munshi done, OM pending
             Logistics.countDocuments({ assignmentStatus: 'APPROVED' }),    // OM approved logistics assignments
             Logistics.find()
@@ -387,7 +408,76 @@ const getOmPlots = async (req, res) => {
             });
         }
 
-        return res.status(400).json({ message: 'Invalid stage. Must be: All, Unassigned, Assigned, or Complete' });
+        // ---- Stage: Cancelled = Assignments with assignmentStatus CANCELLED ----
+        if (stage === 'Cancelled') {
+            const assignmentQuery = {
+                assignmentStatus: 'CANCELLED',
+            };
+
+            if (date) {
+                const { getIstDayRange } = require('../../utils/dateHelper');
+                const { startOfDay, endOfDay } = getIstDayRange(date);
+                assignmentQuery.updatedAt = { $gte: startOfDay, $lt: endOfDay };
+            }
+
+            // Build a search filter on enquiry fields via two queries
+            if (search) {
+                const matchingEnquiries = await Enquiry.find({
+                    $or: [
+                        { farmerFirstName: { $regex: search, $options: 'i' } },
+                        { farmerLastName: { $regex: search, $options: 'i' } },
+                        { enquiryId: { $regex: search, $options: 'i' } },
+                        { location: { $regex: search, $options: 'i' } },
+                    ],
+                }).select('_id');
+                assignmentQuery.enquiryId = { $in: matchingEnquiries.map(e => e._id) };
+            }
+
+            const [assignments, total] = await Promise.all([
+                Logistics.find(assignmentQuery)
+                    .select('-purchaseRate')
+                    .sort({ createdAt: -1 })
+                    .skip(skip)
+                    .limit(Number(limit))
+                    .populate({
+                        path: 'enquiryId',
+                        select: 'enquiryId farmerFirstName farmerLastName farmerMobile location packingType fieldOwnerId assignedSelectorId',
+                        populate: [
+                            { path: 'fieldOwnerId', select: 'firstName lastName mobileNo' },
+                            { path: 'assignedSelectorId', select: 'firstName lastName mobileNo bikeNumber' }
+                        ]
+                    })
+                    .populate('companyId', 'companyName')
+                    .populate('munshiId', 'firstName lastName mobileNo')
+                    .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
+                    .populate('vehicleId', 'vehicleNumber')
+                    .lean(),
+                Logistics.countDocuments(assignmentQuery),
+            ]);
+
+            // Attach Packing Details
+            const assignmentIds = assignments.map(a => a._id);
+            const packingRecords = await Packing.find({ assignmentId: { $in: assignmentIds } }).lean();
+            const packingMap = packingRecords.reduce((map, packing) => {
+                map[packing.assignmentId.toString()] = packing;
+                return map;
+            }, {});
+
+            const data = assignments.map(a => ({
+                ...a,
+                packingDetails: packingMap[a._id.toString()] || null,
+            }));
+
+            return res.status(200).json({
+                stage: 'Cancelled',
+                total,
+                page: Number(page),
+                pages: Math.ceil(total / Number(limit)),
+                data,
+            });
+        }
+
+        return res.status(400).json({ message: 'Invalid stage. Must be: All, Unassigned, Assigned, Rejected, Cancelled, or Complete' });
 
     } catch (error) {
         console.error('Error fetching OM plots pipeline:', error);
