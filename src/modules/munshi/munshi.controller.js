@@ -4,6 +4,7 @@ const User = require('../users/user.model');
 const Enquiry = require('../enquiries/enquiry.model');
 const NotificationService = require('../../services/notification.service');
 const { createNotification } = require('../../utils/notificationHelper');
+const { getFullUrl } = require('../../utils/urlHelper');
 
 // ============================================================
 //  PHASE 2: Dashboard & Pickup Driver
@@ -357,9 +358,9 @@ const getMunshiReports = async (req, res) => {
         const month = Number(req.query.month) || (now.getMonth() + 1);
         const year = Number(req.query.year) || now.getFullYear();
 
-        // Date range for the requested month
-        const startDate = new Date(year, month - 1, 1);
-        const endDate = new Date(year, month, 1);
+        const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+        const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0) - IST_OFFSET_MS);
+        const endDate = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0) - IST_OFFSET_MS);
 
         // All submitted or approved packing records for this Munshi in the month
         const packings = await Packing.find({
@@ -367,7 +368,14 @@ const getMunshiReports = async (req, res) => {
             status: { $in: ['SUBMITTED', 'APPROVED'] },
             createdAt: { $gte: startDate, $lt: endDate },
         })
-            .populate('assignmentId', 'purchaseRate companyId')
+            .populate({
+                path: 'assignmentId',
+                select: 'purchaseRate companyId enquiryId',
+                populate: {
+                    path: 'enquiryId',
+                    select: 'enquiryId farmerFirstName farmerLastName location subLocation farmerMobile'
+                }
+            })
             .populate('brandId', 'brandName')
             .lean();
 
@@ -377,6 +385,14 @@ const getMunshiReports = async (req, res) => {
         const boxBreakdown = { box4H: 0, box5H: 0, box6H: 0, box8H: 0, boxCL: 0, box7Kg: 0, boxOther: 0, box5Kg: 0, box13Kg: 0, box13_5Kg: 0, box14Kg: 0, box16Kg: 0 };
         const dailyLog = {};  // grouped by date string
 
+        const getIstDateString = (d) => {
+            const dIst = new Date(new Date(d).getTime() + IST_OFFSET_MS);
+            const y = dIst.getUTCFullYear();
+            const m = String(dIst.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(dIst.getUTCDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        };
+
         packings.forEach(p => {
             totalBoxes += p.totalBoxes || 0;
             totalWaste += p.wastageKg || 0;
@@ -385,11 +401,16 @@ const getMunshiReports = async (req, res) => {
                 boxBreakdown[key] += p[key] || 0;
             });
 
-            // Group by day for daily harvesting log
-            const dayKey = new Date(p.createdAt).toISOString().slice(0, 10); // YYYY-MM-DD
+            // Group by day for daily harvesting log (aligned with IST calendar day)
+            const dayKey = getIstDateString(p.createdAt);
             if (!dailyLog[dayKey]) {
                 dailyLog[dayKey] = { date: dayKey, entries: [], dayTotalBoxes: 0, dayWastage: 0 };
             }
+
+            const farmerName = p.assignmentId?.enquiryId
+                ? `${p.assignmentId.enquiryId.farmerFirstName} ${p.assignmentId.enquiryId.farmerLastName}`.trim()
+                : 'N/A';
+
             dailyLog[dayKey].entries.push({
                 packingId: p._id,
                 lineNo: p.lineNo,
@@ -397,6 +418,27 @@ const getMunshiReports = async (req, res) => {
                 brand: p.brandId?.brandName || 'N/A',
                 totalBoxes: p.totalBoxes,
                 wastageKg: p.wastageKg,
+                farmerName,
+                farmerMobile: p.assignmentId?.enquiryId?.farmerMobile || 'N/A',
+                location: p.assignmentId?.enquiryId?.location || 'N/A',
+                subLocation: p.assignmentId?.enquiryId?.subLocation || 'N/A',
+                enquiryRef: p.assignmentId?.enquiryId?.enquiryId || 'N/A',
+                purchaseRate: p.assignmentId?.purchaseRate || 0,
+                // Box details inside the response
+                box4H: p.box4H ?? 0,
+                box5H: p.box5H ?? 0,
+                box6H: p.box6H ?? 0,
+                box8H: p.box8H ?? 0,
+                boxCL: p.boxCL ?? 0,
+                box7Kg: p.box7Kg ?? 0,
+                boxOther: p.boxOther ?? 0,
+                box5Kg: p.box5Kg ?? 0,
+                box13Kg: p.box13Kg ?? 0,
+                box13_5Kg: p.box13_5Kg ?? 0,
+                box14Kg: p.box14Kg ?? 0,
+                box16Kg: p.box16Kg ?? 0,
+                photos: p.photos ? p.photos.map(url => getFullUrl(req, url)) : [],
+                remarks: p.remarks || '',
             });
             dailyLog[dayKey].dayTotalBoxes += p.totalBoxes || 0;
             dailyLog[dayKey].dayWastage += p.wastageKg || 0;
