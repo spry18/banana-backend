@@ -17,7 +17,10 @@ router.post('/start', authorize(...fieldRoles), upload.fields([
     { name: 'petrolReceiptPhoto', maxCount: 1 },
 ]), startDay);
 // PATCH (not PUT) — partial update of existing day log
-router.patch('/end', authorize(...fieldRoles), upload.single('endKmPhoto'), endDay);
+router.patch('/end', authorize(...fieldRoles), upload.fields([
+    { name: 'endKmPhoto', maxCount: 1 },
+    { name: 'petrolReceiptPhoto', maxCount: 1 },
+]), endDay);
 router.get('/', authorize('Admin', 'Operational Manager', 'Field Owner'), getLogs);
 
 module.exports = router;

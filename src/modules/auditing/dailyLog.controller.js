@@ -68,10 +68,13 @@ const startDay = async (req, res) => {
 // @access  Protected
 const endDay = async (req, res) => {
     try {
-        const { endKm } = req.body;
+        const { endKm, petrolAdvance } = req.body;
 
-        // route uses upload.single('endKmPhoto') — file lands on req.file
-        if (!endKm || !req.file) {
+        // req.files is an object keyed by field name (from upload.fields)
+        const endKmPhotoFile = req.files?.endKmPhoto?.[0];
+        const petrolReceiptPhotoFile = req.files?.petrolReceiptPhoto?.[0];
+
+        if (!endKm || !endKmPhotoFile) {
             return res.status(400).json({ message: 'endKm and endKmPhoto are required' });
         }
 
@@ -97,9 +100,17 @@ const endDay = async (req, res) => {
         }
 
         log.endKm = endKm;
-        log.endMeterPhotoUrl = req.file.location;
+        log.endMeterPhotoUrl = endKmPhotoFile.location;
         log.endTime = Date.now();
         log.status = 'COMPLETED';
+
+        // Optional petrol advance recorded at logout
+        if (petrolAdvance !== undefined && petrolAdvance !== '') {
+            log.petrolAdvance = Number(petrolAdvance);
+        }
+        if (petrolReceiptPhotoFile) {
+            log.petrolReceiptPhoto = petrolReceiptPhotoFile.location;
+        }
 
         await log.save();
 
