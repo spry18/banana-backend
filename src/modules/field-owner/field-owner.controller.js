@@ -4,6 +4,7 @@ const DailyLog = require('../auditing/dailyLog.model');
 const User = require('../users/user.model');
 const Logistics = require('../logistics/logistics.model');
 const Packing = require('../execution/packing.model');
+const Trip = require('../execution/trip.model');
 const { getFullUrl } = require('../../utils/urlHelper');
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -113,13 +114,48 @@ const getFODashboard = async (req, res) => {
                 const inspection = await Inspection.findOne({ enquiryId: enq._id }).lean();
                 const log = await Logistics.findOne({ enquiryId: enq._id })
                     .populate('munshiId', 'firstName lastName mobileNo')
+                    .populate('driverId', 'firstName lastName mobileNo')
+                    .populate('pickupDriverId', 'firstName lastName mobileNo')
                     .lean();
                 const pack = log ? await Packing.findOne({ assignmentId: log._id }).lean() : null;
+                const trip = log ? await Trip.findOne({ assignmentId: log._id }).populate('driverId', 'firstName lastName mobileNo').lean() : null;
 
                 const isRescheduled = enq.status === 'RESCHEDULED';
                 const farmerName = `${enq.farmerFirstName} ${enq.farmerLastName}`.trim();
                 const fieldSelectorName = enq.assignedSelectorId ? `${enq.assignedSelectorId.firstName} ${enq.assignedSelectorId.lastName}`.trim() : null;
                 const munshiName = log && log.munshiId ? `${log.munshiId.firstName} ${log.munshiId.lastName}`.trim() : null;
+
+                let driverName = null;
+                if (trip && trip.driverId) {
+                    driverName = `${trip.driverId.firstName || ''} ${trip.driverId.lastName || ''}`.trim() || null;
+                } else if (log) {
+                    if (log.driverId) {
+                        driverName = `${log.driverId.firstName || ''} ${log.driverId.lastName || ''}`.trim() || null;
+                    } else if (log.pickupDriverId) {
+                        driverName = `${log.pickupDriverId.firstName || ''} ${log.pickupDriverId.lastName || ''}`.trim() || null;
+                    }
+                }
+
+                const enhancedInsp = inspection ? {
+                    ...inspection,
+                    photos: inspection.photos ? inspection.photos.map(p => getFullUrl(req, p)) : []
+                } : null;
+
+                const enhancedPack = pack ? {
+                    ...pack,
+                    photos: pack.photos ? pack.photos.map(p => getFullUrl(req, p)) : []
+                } : null;
+
+                const enhancedTrip = trip ? {
+                    ...trip,
+                    weightSlipUrl: trip.weightSlipUrl ? getFullUrl(req, trip.weightSlipUrl) : null,
+                    dieselSlipUrl: trip.dieselSlipUrl ? getFullUrl(req, trip.dieselSlipUrl) : null,
+                    unloadSlipUrl: trip.unloadSlipUrl ? getFullUrl(req, trip.unloadSlipUrl) : null,
+                    uploadSlipUrl: trip.uploadSlipUrl ? getFullUrl(req, trip.uploadSlipUrl) : null,
+                    meterPhotoUrl: trip.meterPhotoUrl ? getFullUrl(req, trip.meterPhotoUrl) : null,
+                    tollSlipUrl: trip.tollSlipUrl ? getFullUrl(req, trip.tollSlipUrl) : null,
+                    endKmPhotoUrl: trip.endKmPhotoUrl ? getFullUrl(req, trip.endKmPhotoUrl) : null
+                } : null;
 
                 const activity = {
                     _id: enq._id,
@@ -127,6 +163,7 @@ const getFODashboard = async (req, res) => {
                     farmerName,
                     fieldSelectorName,
                     munshiName,
+                    driverName,
                     mobileNo: enq.farmerMobile,
                     location: enq.location,
                     status: enq.status,
@@ -139,8 +176,9 @@ const getFODashboard = async (req, res) => {
                     volume: inspection ? inspection.volumeBoxRange : '-',
                     recovery: inspection ? inspection.recoveryPercent : '-',
                     updatedAt: enq.updatedAt,
-                    fieldSelectorReport: inspection || null,
-                    munshiReport: pack || null,
+                    fieldSelectorReport: enhancedInsp,
+                    munshiReport: enhancedPack,
+                    driverReport: enhancedTrip,
                     weight: pack ? (pack.totalBoxes ?? 0) : (log ? (log.totalBoxes ?? 0) : (enq.estimatedBoxes ?? enq.plantCount ?? 0)),
                     wastage: pack ? (pack.wastageKg ?? 0) : 0
                 };
@@ -324,6 +362,8 @@ const getFOPlots = async (req, res) => {
         // ── Bulk fetch linked logistics assignments and packings ─────────────────────────
         const logisticsList = await Logistics.find({ enquiryId: { $in: enquiryIds } })
             .populate('munshiId', 'firstName lastName mobileNo')
+            .populate('driverId', 'firstName lastName mobileNo')
+            .populate('pickupDriverId', 'firstName lastName mobileNo')
             .lean();
         const logisticsMap = {};
         logisticsList.forEach((log) => {
@@ -339,16 +379,57 @@ const getFOPlots = async (req, res) => {
             packingMap[pack.assignmentId.toString()] = pack;
         });
 
+        const tripsList = await Trip.find({ assignmentId: { $in: logisticsIds } })
+            .populate('driverId', 'firstName lastName mobileNo')
+            .lean();
+        const tripMap = {};
+        tripsList.forEach((t) => {
+            tripMap[t.assignmentId.toString()] = t;
+        });
+
         // Shape response with all required plot card fields
         const data = enquiries.map((enq) => {
             const insp = inspectionMap[enq._id.toString()] || null;
             const log = logisticsMap[enq._id.toString()] || null;
             const pack = log ? (packingMap[log._id.toString()] || null) : null;
+            const trip = log ? (tripMap[log._id.toString()] || null) : null;
 
             // Compute names
             const farmerName = `${enq.farmerFirstName} ${enq.farmerLastName}`.trim();
             const fieldSelectorName = enq.assignedSelectorId ? `${enq.assignedSelectorId.firstName} ${enq.assignedSelectorId.lastName}`.trim() : null;
             const munshiName = log && log.munshiId ? `${log.munshiId.firstName} ${log.munshiId.lastName}`.trim() : null;
+
+            let driverName = null;
+            if (trip && trip.driverId) {
+                driverName = `${trip.driverId.firstName || ''} ${trip.driverId.lastName || ''}`.trim() || null;
+            } else if (log) {
+                if (log.driverId) {
+                    driverName = `${log.driverId.firstName || ''} ${log.driverId.lastName || ''}`.trim() || null;
+                } else if (log.pickupDriverId) {
+                    driverName = `${log.pickupDriverId.firstName || ''} ${log.pickupDriverId.lastName || ''}`.trim() || null;
+                }
+            }
+
+            const enhancedInsp = insp ? {
+                ...insp,
+                photos: insp.photos ? insp.photos.map(p => getFullUrl(req, p)) : []
+            } : null;
+
+            const enhancedPack = pack ? {
+                ...pack,
+                photos: pack.photos ? pack.photos.map(p => getFullUrl(req, p)) : []
+            } : null;
+
+            const enhancedTrip = trip ? {
+                ...trip,
+                weightSlipUrl: trip.weightSlipUrl ? getFullUrl(req, trip.weightSlipUrl) : null,
+                dieselSlipUrl: trip.dieselSlipUrl ? getFullUrl(req, trip.dieselSlipUrl) : null,
+                unloadSlipUrl: trip.unloadSlipUrl ? getFullUrl(req, trip.unloadSlipUrl) : null,
+                uploadSlipUrl: trip.uploadSlipUrl ? getFullUrl(req, trip.uploadSlipUrl) : null,
+                meterPhotoUrl: trip.meterPhotoUrl ? getFullUrl(req, trip.meterPhotoUrl) : null,
+                tollSlipUrl: trip.tollSlipUrl ? getFullUrl(req, trip.tollSlipUrl) : null,
+                endKmPhotoUrl: trip.endKmPhotoUrl ? getFullUrl(req, trip.endKmPhotoUrl) : null
+            } : null;
 
             // Map status for frontend: if it is ASSIGNED in DB but has purchaseRate,
             // return status as RATE_FIXED so FO app opens the correct Rate Fixed screen.
@@ -373,6 +454,7 @@ const getFOPlots = async (req, res) => {
                 farmerName,
                 fieldSelectorName,
                 munshiName,
+                driverName,
                 // Extra fields required by the updated plot card
                 fixRate:      enq.purchaseRate    ?? null,
                 companyName:  enq.companyId       ? enq.companyId.companyName : null,
@@ -386,8 +468,9 @@ const getFOPlots = async (req, res) => {
                 inspection:   insp                || null,
 
                 // Detailed sub-reports for FO view
-                fieldSelectorReport: insp || null,
-                munshiReport: pack || null,
+                fieldSelectorReport: enhancedInsp,
+                munshiReport: enhancedPack,
+                driverReport: enhancedTrip,
                 weight: pack ? (pack.totalBoxes ?? 0) : (log ? (log.totalBoxes ?? 0) : (enq.estimatedBoxes ?? enq.plantCount ?? 0)),
                 wastage: pack ? (pack.wastageKg ?? 0) : 0
             };
