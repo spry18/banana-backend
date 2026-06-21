@@ -109,6 +109,74 @@
                         "description": "Returns full driver profile including populated vehicleId (vehicleNumber, vehicleType). Use this to pre-fill the Start Shift form with the default vehicle number."
                     },
                     "response": []
+                },
+                {
+                    "name": "POST Register FCM Token",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"your-device-fcm-token-here\",\n  \"deviceType\": \"Android\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/fcm-token",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "fcm-token"
+                            ]
+                        },
+                        "description": "Registers or updates the FCM push registration token for this user."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "DELETE Deregister FCM Token",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"your-device-fcm-token-here\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/fcm-token",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "fcm-token"
+                            ]
+                        },
+                        "description": "Deregisters/removes the FCM push registration token for this user."
+                    },
+                    "response": []
                 }
             ]
         },
@@ -459,7 +527,7 @@
                                 }
                             ]
                         },
-                        "description": "Returns a monthly summary:\n- `summary.totalTrips` — number of completed trips\n- `summary.totalKm` — total kilometers driven\n- `summary.totalToll` — total toll expenses (₹)\n- `summary.totalFuelAdvance` — total diesel advance received (₹)\n- `summary.totalHaults` — number of overnight halts\n- `summary.totalLineCancels` — number of line cancellations\n- `dailyTripLog[]` — trips grouped by date"
+                        "description": "Returns a monthly summary:\n- `summary.totalTrips` — number of completed trips\n- `summary.totalKm` — total kilometers driven\n- `summary.totalToll` — total toll expenses (₹)\n- `summary.totalFuelAdvance` — total diesel advance received (₹)\n- `summary.totalHaults` — number of overnight halts\n- `summary.totalLineCancels` — number of line cancellations\n- `summary.totalEarnings` — total gross earnings (₹)\n- `summary.netPayout` — net payout after advances (₹)\n- `dieselPrice` — diesel rate used (₹)\n- `dailyTripLog[]` — trips grouped by date with `dailyEarning`, `monthlyEarning` (cumulative net payout), and `dayAdvance`"
                     },
                     "response": []
                 },
