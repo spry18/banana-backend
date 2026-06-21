@@ -9,6 +9,8 @@ const {
     toggleUserStatus,
     updateUser,
     logoutUser,
+    registerFcmToken,
+    deregisterFcmToken,
 } = require('./user.controller');
 
 // Public
@@ -19,6 +21,10 @@ router.post('/register', protect, authorize('Admin'), registerUser);
 
 // Private
 router.get('/me', protect, getMe);
+
+// FCM Tokens
+router.post('/fcm-token', protect, registerFcmToken);
+router.delete('/fcm-token', protect, deregisterFcmToken);
 
 // Logout — MUST come before /:id wildcards, otherwise "logout" is captured as :id
 router.post('/logout', protect, logoutUser);

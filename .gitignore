@@ -115,3 +115,6 @@ Thumbs.db
 # Local test & utility scripts
 list-users.js
 test-kpis-dynamic.js
+
+# Firebase credentials
+banana-management-system-firebase-adminsdk.json

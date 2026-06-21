@@ -312,6 +312,65 @@ const updateUser = async (req, res) => {
     }
 };
 
+// @desc    Register/update FCM token
+// @route   POST /api/users/fcm-token
+// @access  Private
+const registerFcmToken = async (req, res) => {
+    try {
+        const { token, deviceType } = req.body;
+        if (!token) {
+            return res.status(400).json({ message: 'Token is required' });
+        }
+
+        const userId = req.user._id;
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Check if token already exists in user's fcmTokens array
+        const existingTokenIndex = user.fcmTokens.findIndex(f => f.token === token);
+        if (existingTokenIndex !== -1) {
+            user.fcmTokens[existingTokenIndex].updatedAt = new Date();
+            if (deviceType) {
+                user.fcmTokens[existingTokenIndex].deviceType = deviceType;
+            }
+        } else {
+            user.fcmTokens.push({
+                token,
+                deviceType: deviceType || 'Android',
+                updatedAt: new Date()
+            });
+        }
+
+        await user.save();
+        res.status(200).json({ message: 'FCM token registered successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error while registering FCM token', error: error.message });
+    }
+};
+
+// @desc    Deregister FCM token
+// @route   DELETE /api/users/fcm-token
+// @access  Private
+const deregisterFcmToken = async (req, res) => {
+    try {
+        const { token } = req.body;
+        if (!token) {
+            return res.status(400).json({ message: 'Token is required' });
+        }
+
+        const userId = req.user._id;
+        await User.findByIdAndUpdate(userId, {
+            $pull: { fcmTokens: { token } }
+        });
+
+        res.status(200).json({ message: 'FCM token deregistered successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error while deregistering FCM token', error: error.message });
+    }
+};
+
 // @desc    Logout user
 // @route   POST /api/users/logout
 // @access  Private
@@ -323,6 +382,15 @@ const updateUser = async (req, res) => {
 //   2. Give the mobile app a clean, explicit logout handshake endpoint.
 const logoutUser = async (req, res) => {
     try {
+        const { token } = req.body;
+        
+        // Optionally remove token on logout if provided
+        if (token) {
+            await User.findByIdAndUpdate(req.user._id, {
+                $pull: { fcmTokens: { token } }
+            });
+        }
+
         await logSystemAction(
             req.user._id,
             'LOGOUT',
@@ -347,4 +415,6 @@ module.exports = {
     toggleUserStatus,
     updateUser,
     logoutUser,
+    registerFcmToken,
+    deregisterFcmToken,
 };

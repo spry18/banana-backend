@@ -12,6 +12,7 @@
 
 const Notification = require('../modules/notifications/notification.model');
 const User = require('../modules/users/user.model');
+const pushService = require('../services/push.service');
 
 /**
  * createNotification
@@ -38,6 +39,16 @@ const createNotification = async (recipientId, type, message, referenceId = null
         const user = await User.findById(recipientId).select('firstName lastName role');
         const userName = user ? `${user.firstName} ${user.lastName} (${user.role})` : recipientId;
         console.log(`[In-App Notification OUT] To: ${userName} | Type: ${type} | Msg: "${message}"`);
+
+        // Propagate to real-time FCM push notification (fire-and-forget)
+        pushService.sendPushToUser(
+            recipientId,
+            String(type).replace(/_/g, ' '),
+            message,
+            { referenceId, referenceModel }
+        ).catch(err => {
+            console.error('[Notification] Failed to send push notification:', err.message);
+        });
 
     } catch (err) {
         // Log but never re-throw — notification failure must not break business logic
