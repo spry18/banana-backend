@@ -53,7 +53,7 @@ const getDashboard = async (req, res) => {
                         { scheduledDate: { $gte: startOfTodayIst, $lt: endOfTodayIst } },
                         { _id: { $in: inspectedEnquiryIds } },
                         {
-                            status: 'ASSIGNED',
+                            status: { $ne: 'CANCELLED' },
                             purchaseRate: null,
                             $or: [
                                 { scheduledDate: null },
