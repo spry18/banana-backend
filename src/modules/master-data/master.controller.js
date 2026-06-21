@@ -424,6 +424,103 @@ const getAppConfig = async (req, res) => {
     }
 };
 
+// @desc    Get live fuel prices (diesel and petrol) for a given state or city
+// @route   GET /api/master-data/fuel-price
+// @access  Protected
+const getFuelPrice = async (req, res) => {
+    try {
+        const location = req.query.location || 'Maharashtra';
+        const locationType = req.query.location_type || 'state';
+        
+        // Allowed location types: state or city
+        if (!['state', 'city'].includes(locationType)) {
+            return res.status(400).json({ message: 'location_type must be either state or city' });
+        }
+
+        const apiKey = process.env.FUEL_API_KEY;
+
+        // Fallback to mock pricing if API key is not configured
+        if (!apiKey) {
+            return res.status(200).json(getMockPrices(location, locationType));
+        }
+
+        console.log(`Fetching live fuel prices from IndianAPI for ${location} (${locationType})`);
+        
+        const [dieselRes, petrolRes] = await Promise.all([
+            fetch(`https://fuel.indianapi.in/live_fuel_price?fuel_type=diesel&location_type=${locationType}`, {
+                headers: { 'x-api-key': apiKey }
+            }),
+            fetch(`https://fuel.indianapi.in/live_fuel_price?fuel_type=petrol&location_type=${locationType}`, {
+                headers: { 'x-api-key': apiKey }
+            })
+        ]);
+
+        if (dieselRes.status !== 200 || petrolRes.status !== 200) {
+            console.warn(`Fuel Price API returned non-200. Diesel: ${dieselRes.status}, Petrol: ${petrolRes.status}. Using mock fallback.`);
+            return res.status(200).json(getMockPrices(location, locationType));
+        }
+
+        const dieselData = await dieselRes.json();
+        const petrolData = await petrolRes.json();
+
+        if (!Array.isArray(dieselData) || !Array.isArray(petrolData)) {
+            console.warn('Fuel Price API did not return arrays. Using mock fallback.');
+            return res.status(200).json(getMockPrices(location, locationType));
+        }
+
+        // Case-insensitive search for location in city, state, or name fields
+        const matchLocation = (item) => {
+            const locName = location.toLowerCase();
+            return (item.city && item.city.toLowerCase() === locName) ||
+                   (item.state && item.state.toLowerCase() === locName) ||
+                   (item.name && item.name.toLowerCase() === locName);
+        };
+
+        const dieselRecord = dieselData.find(matchLocation);
+        const petrolRecord = petrolData.find(matchLocation);
+
+        if (!dieselRecord && !petrolRecord) {
+            return res.status(404).json({ message: `Fuel price data not found for location: ${location}` });
+        }
+
+        res.status(200).json({
+            location,
+            locationType,
+            diesel: dieselRecord ? {
+                price: parseFloat(dieselRecord.price),
+                change: parseFloat(dieselRecord.change || 0)
+            } : null,
+            petrol: petrolRecord ? {
+                price: parseFloat(petrolRecord.price),
+                change: parseFloat(petrolRecord.change || 0)
+            } : null,
+            source: 'live'
+        });
+    } catch (error) {
+        console.error('Error fetching live fuel prices:', error);
+        const location = req.query.location || 'Maharashtra';
+        const locationType = req.query.location_type || 'state';
+        res.status(200).json(getMockPrices(location, locationType));
+    }
+};
+
+const getMockPrices = (location, locationType) => {
+    const isMaharashtra = location.toLowerCase() === 'maharashtra';
+    return {
+        location,
+        locationType,
+        diesel: {
+            price: isMaharashtra ? 92.50 : 90.00,
+            change: 0.00
+        },
+        petrol: {
+            price: isMaharashtra ? 104.20 : 101.50,
+            change: 0.00
+        },
+        source: 'mock_fallback'
+    };
+};
+
 module.exports = {
     createCompany,
     getCompanies,
@@ -452,4 +549,5 @@ module.exports = {
     getFormDropdowns,
     getDrivers,
     getAppConfig,
+    getFuelPrice,
 };

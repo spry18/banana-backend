@@ -29,6 +29,7 @@ const {
     getFormDropdowns,
     getDrivers,
     getAppConfig,
+    getFuelPrice,
 } = require('./master.controller');
 
 // Apply protection to all routes
@@ -44,6 +45,10 @@ router.get('/dropdowns', authorize('Admin', 'Field Owner', 'Operational Manager'
 // GET /api/master-data/app-config
 // Open to any authenticated role to read dynamic app configurations
 router.get('/app-config', getAppConfig);
+
+// GET /api/master-data/fuel-price
+// Open to any authenticated role to retrieve live or fallback fuel rates
+router.get('/fuel-price', getFuelPrice);
 
 // Companies — Admin only
 router.route('/companies').post(authorize('Admin'), createCompany).get(authorize('Admin', 'Field Owner', 'Field Selector'), getCompanies);

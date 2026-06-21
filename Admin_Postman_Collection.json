@@ -1080,7 +1080,45 @@
                             ]
                         },
                         "description": "Single endpoint to populate all UI select boxes in Create Enquiry and Fix Rate forms. Returns: companies[], agents[], generations[], selectors[].\n\nAccess: Admin, Field Owner, Operational Manager."
-                    }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET Live Fuel Price",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/master-data/fuel-price?location=Maharashtra&location_type=state",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "master-data",
+                                "fuel-price"
+                            ],
+                            "query": [
+                                {
+                                    "key": "location",
+                                    "value": "Maharashtra",
+                                    "description": "Optional: State or City name"
+                                },
+                                {
+                                    "key": "location_type",
+                                    "value": "state",
+                                    "description": "Optional: state or city"
+                                }
+                            ]
+                        },
+                        "description": "Exposes the secure live diesel and petrol prices for a given location, wrapping the third-party Fuel Price API with a local mock fallback configuration."
+                    },
+                    "response": []
                 },
                 {
                     "name": "AGENTS",

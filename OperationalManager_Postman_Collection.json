@@ -963,7 +963,45 @@
                             ]
                         },
                         "description": "NEW — Fetches all users with the role of Munshi.\n\nUse this to populate the 'Assign Munshi' dropdown during the logistics dispatch process (POST /api/logistics/assign).\n\nReturns array of Munshi users with: _id, firstName, lastName, mobileNo, role."
-                    }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET Live Fuel Price",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/master-data/fuel-price?location=Maharashtra&location_type=state",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "master-data",
+                                "fuel-price"
+                            ],
+                            "query": [
+                                {
+                                    "key": "location",
+                                    "value": "Maharashtra",
+                                    "description": "Optional: State or City name"
+                                },
+                                {
+                                    "key": "location_type",
+                                    "value": "state",
+                                    "description": "Optional: state or city"
+                                }
+                            ]
+                        },
+                        "description": "Exposes the secure live diesel and petrol prices for a given location, wrapping the third-party Fuel Price API with a local mock fallback configuration."
+                    },
+                    "response": []
                 }
             ]
         },
