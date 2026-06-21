@@ -302,6 +302,18 @@
                                     "description": "Odometer photo at end of day — REQUIRED. Attach an image file.",
                                     "type": "file",
                                     "src": []
+                                },
+                                {
+                                    "key": "petrolAdvance",
+                                    "value": "1500",
+                                    "description": "Optional petrol advance taken during the day if not recorded at morning login.",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "petrolReceiptPhoto",
+                                    "description": "Optional petrol receipt photo file. Attach an image file.",
+                                    "type": "file",
+                                    "src": []
                                 }
                             ]
                         },

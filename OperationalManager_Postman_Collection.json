@@ -1271,6 +1271,54 @@
                 "description": "Fetches dynamic app configuration (e.g. screenshot restrictions)."
             },
             "response": []
+        },
+        {
+            "name": "8. Reports (NEW June 2026)",
+            "description": "New dedicated reporting endpoints. Require Operational Manager token.",
+            "item": [
+                {
+                    "name": "GET Driver Payout Report",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/driver/reports?driverId={{driverId}}&month=6&year=2026",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "driver",
+                                "reports"
+                            ],
+                            "query": [
+                                {
+                                    "key": "driverId",
+                                    "value": "{{driverId}}",
+                                    "description": "Required for Admin/OM to query a specific driver's reports"
+                                },
+                                {
+                                    "key": "month",
+                                    "value": "6",
+                                    "description": "Calendar month (1-12)"
+                                },
+                                {
+                                    "key": "year",
+                                    "value": "2026",
+                                    "description": "Calendar year (e.g. 2026)"
+                                }
+                            ]
+                        },
+                        "description": "Fetches monthly payout reports and day-wise details for a specific driver (Eicher or Pickup). Requires driverId query parameter for Admin/OM."
+                    },
+                    "response": []
+                }
+            ]
         }
     ]
 }
