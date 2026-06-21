@@ -24,14 +24,25 @@ const getOmDashboard = async (req, res) => {
         // Run all KPI queries in parallel for best performance
         const [
             fixedPlotsCount,       // Enquiries at RATE_FIXED (ready to assign)
-            teamsAssigned,         // Total logistics assignments created
+            teamsAssigned,         // Total logistics assignments created today (scheduled for today OR created today)
             activeTripsCount,      // Active assignments (dispatched trips)
-            pendingReviewCount,    // Packing reports Munshi submitted → OM hasn't acted yet
-            approvedCount,         // Packing reports OM has approved
+            pendingReviewCount,    // Packing reports Munshi submitted today
+            approvedCount,         // Logistics assignments OM approved/completed today
             recentAssignments,     // Latest 5 assignments for activity feed
         ] = await Promise.all([
             Enquiry.countDocuments({ status: 'RATE_FIXED', _id: { $nin: assignedEnquiryIds } }),
-            Logistics.countDocuments(),
+            Logistics.countDocuments({
+                assignmentStatus: { $ne: 'CANCELLED' },
+                $or: [
+                    { scheduledDate: { $gte: startOfTodayIst, $lt: endOfTodayIst } },
+                    {
+                        $and: [
+                            { $or: [{ scheduledDate: null }, { scheduledDate: { $exists: false } }] },
+                            { createdAt: { $gte: startOfTodayIst, $lt: endOfTodayIst } }
+                        ]
+                    }
+                ]
+            }),
             Logistics.countDocuments({
                 assignmentStatus: { $ne: 'CANCELLED' },
                 $or: [
@@ -45,8 +56,31 @@ const getOmDashboard = async (req, res) => {
                     }
                 ]
             }),
-            Packing.countDocuments({ status: 'SUBMITTED' }),   // Munshi done, OM pending
-            Logistics.countDocuments({ assignmentStatus: 'APPROVED' }),    // OM approved logistics assignments
+            // pendingReviewCount: Count Packing reports with status 'SUBMITTED' associated with today's assignments
+            (async () => {
+                const todayAssignments = await Logistics.find({
+                    assignmentStatus: { $ne: 'CANCELLED' },
+                    $or: [
+                        { scheduledDate: { $gte: startOfTodayIst, $lt: endOfTodayIst } },
+                        {
+                            $and: [
+                                { $or: [{ scheduledDate: null }, { scheduledDate: { $exists: false } }] },
+                                { createdAt: { $gte: startOfTodayIst, $lt: endOfTodayIst } }
+                            ]
+                        }
+                    ]
+                }).select('_id').lean();
+                const assignmentIds = todayAssignments.map(a => a._id);
+                return Packing.countDocuments({
+                    status: 'SUBMITTED',
+                    assignmentId: { $in: assignmentIds }
+                });
+            })(),
+            // approvedCount: Count Logistics assignments approved/completed today
+            Logistics.countDocuments({
+                assignmentStatus: { $in: ['APPROVED', 'COMPLETED'] },
+                updatedAt: { $gte: startOfTodayIst, $lt: endOfTodayIst }
+            }),
             Logistics.find()
                 .select('-purchaseRate')
                 .sort({ createdAt: -1 })
@@ -340,8 +374,7 @@ const getOmPlots = async (req, res) => {
         // ---- Stage: Complete = Assignments with assignmentStatus COMPLETED, REJECTED, or APPROVED ----
         if (stage === 'Complete') {
             const assignmentQuery = {
-                // assignmentStatus: { $in: ['COMPLETED', 'REJECTED', 'APPROVED'] },
-                assignmentStatus: { $in: ['COMPLETED'] },
+                assignmentStatus: { $in: ['COMPLETED', 'APPROVED', 'REJECTED'] },
             };
 
             if (date) {
@@ -638,7 +671,7 @@ const getApprovedPlots = async (req, res) => {
         const skip = (Number(page) - 1) * Number(limit);
  
         const assignmentQuery = {
-            assignmentStatus: 'APPROVED',
+            assignmentStatus: { $in: ['APPROVED', 'COMPLETED'] },
         };
 
         if (date) {
