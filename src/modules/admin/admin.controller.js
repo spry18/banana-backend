@@ -57,7 +57,7 @@ const getAdminStats = async (req, res) => {
             }),
             Enquiry.countDocuments({ status: 'RESCHEDULED', ...todayFilter }),
             // Unassigned: total unassigned enquiries count (all-time / cumulative)
-            Enquiry.countDocuments({ status: 'PENDING', assignedSelectorId: null }),
+            Enquiry.countDocuments({ status: { $in: ['PENDING', 'RESCHEDULED'] }, assignedSelectorId: null }),
         ]);
 
         const alertsCount = missedFieldsCount + eodIssuesCount;

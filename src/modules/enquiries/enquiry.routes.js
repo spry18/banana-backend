@@ -11,6 +11,7 @@ const {
     runSlaTimeoutCheck,
     getMissedPlots,
     getFarmerEnquiryHistory,
+    eolEnquiry,
 } = require('./enquiry.controller');
 const { protect, authorize } = require('../../middlewares/auth.middleware');
 
@@ -22,6 +23,7 @@ router.get('/reports/missed', authorize('Admin', 'Field Owner'), getMissedPlots)
 router.post('/run-sla-check', authorize('Admin', 'Field Owner'), runSlaTimeoutCheck);
 router.get('/farmer-history', authorize('Admin', 'Field Owner'), getFarmerEnquiryHistory);
 router.put('/:id/reschedule', authorize('Field Owner', 'Admin'), foRescheduleEnquiry);
+router.patch('/:id/eol', authorize('Field Owner', 'Admin'), eolEnquiry);
 router.patch('/reschedule/:id', authorize('Admin', 'Field Owner'), rescheduleEnquiry);
 router.patch('/fix-rate/:id', authorize('Admin', 'Field Owner'), fixRate);
 

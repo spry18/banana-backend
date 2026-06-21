@@ -21,7 +21,7 @@ const getAdminStats = async (req, res) => {
         const totalEnquiries = await Enquiry.countDocuments(todayFilter);
         const pendingEnquiries = await Enquiry.countDocuments({ status: { $in: ['PENDING', 'SELECTED'] } });
         const completedEnquiries = await Enquiry.countDocuments({ status: 'DELIVERED', ...todayFilter }); // Or whatever constitutes completed
-        const unassignedEnquiries = await Enquiry.countDocuments({ status: 'PENDING', assignedSelectorId: null });
+        const unassignedEnquiries = await Enquiry.countDocuments({ status: { $in: ['PENDING', 'RESCHEDULED'] }, assignedSelectorId: null });
 
         // Packing Stats
         const packingStats = await Packing.aggregate([

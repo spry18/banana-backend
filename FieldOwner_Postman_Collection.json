@@ -769,7 +769,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"rescheduleDate\": \"2026-04-15\",\n  \"reason\": \"Farmer requested delay due to sudden rain and harvesting issues.\"\n}"
+                            "raw": "{\n  \"rescheduleDate\": \"2026-04-15\",\n  \"reason\": \"Farmer requested delay due to sudden rain and harvesting issues.\",\n  \"assignedSelectorId\": \"\"\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/enquiries/{{enquiryId}}/reschedule",
@@ -783,7 +783,40 @@
                                 "reschedule"
                             ]
                         },
-                        "description": "When FO reviews a SELECTED plot, they can either Fix Rate OR Reschedule. This API sets status to 'RESCHEDULED', updates rescheduleDate, clears assignedSelectorId, and logs the reason in rescheduleHistory."
+                        "description": "When FO reviews a SELECTED or REJECTED plot, they can either Fix Rate OR Reschedule. This API sets status to 'RESCHEDULED', updates rescheduleDate, clears assignedSelectorId, and logs the reason in rescheduleHistory. Optionally, providing assignedSelectorId will directly reassign the plot to that selector and set status to 'ASSIGNED'."
+                    }
+                },
+                {
+                    "name": "PATCH End of Life (EOL) (Field Owner)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{foToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"remark\": \"Field owner closed this plot permanently due to disease/quality issues.\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries/{{enquiryId}}/eol",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries",
+                                "{{enquiryId}}",
+                                "eol"
+                            ]
+                        },
+                        "description": "Marks a rejected/selected/rescheduled plot as End of Life (CANCELLED). Stores the remark and clears assignedSelectorId."
                     }
                 }
             ]

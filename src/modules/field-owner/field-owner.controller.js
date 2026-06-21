@@ -77,7 +77,7 @@ const getFODashboard = async (req, res) => {
             Enquiry.countDocuments({ ...base, createdAt: { $gte: startOfWeek } }),
             Enquiry.countDocuments({ ...base, createdAt: { $gte: startOfMonth } }),
             // Unassigned: total unassigned enquiries count (all-time / cumulative)
-            Enquiry.countDocuments({ status: 'PENDING', assignedSelectorId: null }),
+            Enquiry.countDocuments({ status: { $in: ['PENDING', 'RESCHEDULED'] }, assignedSelectorId: null }),
             // Selected breakdown
             Enquiry.countDocuments({ ...base, status: 'SELECTED', createdAt: { $gte: startOfDay } }),
             Enquiry.countDocuments({ ...base, status: 'SELECTED', createdAt: { $gte: startOfWeek } }),
@@ -440,12 +440,12 @@ const getFOPlots = async (req, res) => {
 
             // Map rejectReason:
             // 1. If REJECTED, it's field selector reject reason (insp.generalNotes)
-            // 2. If CANCELLED, it's Munshi's cancellationReason (pack.cancellationReason)
+            // 2. If CANCELLED, it can be Munshi's cancellationReason (pack.cancellationReason) or EOL reason (enq.remarks)
             let rejectReason = null;
             if (enq.status === 'REJECTED' && insp) {
                 rejectReason = insp.generalNotes || null;
-            } else if (enq.status === 'CANCELLED' && pack) {
-                rejectReason = pack.cancellationReason || null;
+            } else if (enq.status === 'CANCELLED') {
+                rejectReason = (pack && pack.cancellationReason) || enq.remarks || null;
             }
 
             return {
@@ -681,7 +681,7 @@ const getUnassignedPlots = async (req, res) => {
 
         const andFilters = [
             { assignedSelectorId: null },
-            { status: 'PENDING' }
+            { status: { $in: ['PENDING', 'RESCHEDULED'] } }
         ];
 
         if (date) {

@@ -505,9 +505,9 @@ const fixRate = async (req, res) => {
 
         // Global Shared Pool: any Field Owner can fix the rate on any enquiry — no ownership guard
 
-        if (enquiry.status !== 'SELECTED') {
+        if (!['SELECTED', 'REJECTED'].includes(enquiry.status)) {
             return res.status(400).json({
-                message: `Rate can only be fixed for enquiries with status 'SELECTED'. Current status: '${enquiry.status}'`,
+                message: `Rate can only be fixed for enquiries with status 'SELECTED' or 'REJECTED'. Current status: '${enquiry.status}'`,
             });
         }
 
@@ -569,7 +569,7 @@ const fixRate = async (req, res) => {
 // @access  Protected (Field Owner, Admin)
 const foRescheduleEnquiry = async (req, res) => {
     try {
-        const { rescheduleDate, reason } = req.body;
+        const { rescheduleDate, reason, assignedSelectorId } = req.body;
 
         if (!rescheduleDate || !reason) {
             return res.status(400).json({ message: 'rescheduleDate and reason are required' });
@@ -580,13 +580,13 @@ const foRescheduleEnquiry = async (req, res) => {
             return res.status(404).json({ message: 'Enquiry not found' });
         }
 
-        if (enquiry.status !== 'SELECTED') {
+        if (!['SELECTED', 'REJECTED'].includes(enquiry.status)) {
             return res.status(400).json({
-                message: `Only 'SELECTED' enquiries can be rescheduled. Current status: '${enquiry.status}'`,
+                message: `Only 'SELECTED' or 'REJECTED' enquiries can be rescheduled. Current status: '${enquiry.status}'`,
             });
         }
 
-        const before = { status: enquiry.status, rescheduleDate: enquiry.rescheduleDate, assignedSelectorId: enquiry.assignedSelectorId };
+        const before = { status: enquiry.status, rescheduleDate: enquiry.rescheduleDate, assignedSelectorId: enquiry.assignedSelectorId, scheduledDate: enquiry.scheduledDate };
 
         // Record the history
         enquiry.rescheduleHistory.push({
@@ -595,13 +595,52 @@ const foRescheduleEnquiry = async (req, res) => {
             rescheduledBy: req.user._id,
         });
 
-        enquiry.status = 'RESCHEDULED';
-        enquiry.rescheduleDate = new Date(rescheduleDate);
-        enquiry.assignedSelectorId = null;
         // Reset the 24-hour edit window so FO/Admin can edit again after reschedule
         enquiry.editableUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
+        let selectorChanged = false;
+        let newSelectorId = null;
+
+        if (assignedSelectorId && assignedSelectorId !== 'null' && assignedSelectorId !== '') {
+            const User = require('../users/user.model');
+            const selector = await User.findOne({ _id: assignedSelectorId, role: 'Field Selector' });
+            if (!selector) {
+                return res.status(404).json({ message: 'Selector not found or invalid role' });
+            }
+            enquiry.status = 'ASSIGNED';
+            enquiry.assignedSelectorId = assignedSelectorId;
+            enquiry.scheduledDate = new Date(rescheduleDate);
+            enquiry.rescheduleDate = null;
+            newSelectorId = assignedSelectorId;
+            selectorChanged = true;
+        } else {
+            enquiry.status = 'RESCHEDULED';
+            enquiry.rescheduleDate = new Date(rescheduleDate);
+            enquiry.assignedSelectorId = null;
+            enquiry.scheduledDate = null;
+        }
+
         await enquiry.save();
+
+        // If a new selector was assigned during reschedule, trigger notifications
+        if (selectorChanged && newSelectorId) {
+            const User = require('../users/user.model');
+            const newSelector = await User.findById(newSelectorId).select('firstName lastName mobileNo');
+            if (newSelector) {
+                const selectorFullName = `${newSelector.firstName} ${newSelector.lastName}`;
+                // Flow 1b — WhatsApp: notify farmer + new selector
+                NotificationService.sendVisitScheduled(enquiry.farmerMobile, selectorFullName, newSelector.mobileNo);
+                NotificationService.sendSelectorAssigned(newSelector.mobileNo, enquiry.farmerFirstName, enquiry.farmerLastName, enquiry.location, enquiry.enquiryId);
+            }
+            // Flow 2 — In-app notification
+            await createNotification(
+                newSelectorId,
+                'FIELD_SELECTOR_ASSIGNED',
+                `You have been assigned to inspect a plot for farmer ${enquiry.farmerFirstName} ${enquiry.farmerLastName} at ${enquiry.location}. Ref: ${enquiry.enquiryId}`,
+                enquiry._id,
+                'Enquiry'
+            );
+        }
 
         await logSystemAction(
             req.user._id,
@@ -610,7 +649,7 @@ const foRescheduleEnquiry = async (req, res) => {
             enquiry._id,
             `Field Owner rescheduled Enquiry ${enquiry.enquiryId}`,
             before,
-            { status: 'RESCHEDULED', rescheduleDate: enquiry.rescheduleDate, assignedSelectorId: null }
+            { status: enquiry.status, rescheduleDate: enquiry.rescheduleDate, assignedSelectorId: enquiry.assignedSelectorId, scheduledDate: enquiry.scheduledDate }
         );
 
         res.json({ message: 'Enquiry rescheduled successfully', enquiry });
@@ -739,6 +778,58 @@ const getFarmerEnquiryHistory = async (req, res) => {
     }
 };
 
+// @desc    Field Owner marks a rejected plot as End of Life (status = CANCELLED)
+// @route   PATCH /api/enquiries/:id/eol
+// @access  Private (Field Owner, Admin)
+const eolEnquiry = async (req, res) => {
+    try {
+        const { remark } = req.body;
+
+        if (!remark) {
+            return res.status(400).json({ message: 'remark is required' });
+        }
+
+        const enquiry = await Enquiry.findById(req.params.id);
+        if (!enquiry) {
+            return res.status(404).json({ message: 'Enquiry not found' });
+        }
+
+        if (!['REJECTED', 'SELECTED', 'RESCHEDULED'].includes(enquiry.status)) {
+            return res.status(400).json({
+                message: `Deal can only be closed for enquiries in 'REJECTED', 'SELECTED', or 'RESCHEDULED' status. Current status: '${enquiry.status}'`,
+            });
+        }
+
+        const before = { status: enquiry.status, remarks: enquiry.remarks, assignedSelectorId: enquiry.assignedSelectorId };
+
+        enquiry.status = 'CANCELLED';
+        enquiry.remarks = remark;
+        enquiry.assignedSelectorId = null;
+
+        await enquiry.save();
+
+        // Flow 1 — WhatsApp: commercial rejection notification
+        NotificationService.sendDealCancelled(enquiry.farmerMobile, enquiry.farmerFirstName);
+
+        await logSystemAction(
+            req.user._id,
+            'UPDATE',
+            'Enquiries',
+            enquiry._id,
+            `Field Owner marked Enquiry ${enquiry.enquiryId} as End of Life (CANCELLED)`,
+            before,
+            { status: 'CANCELLED', remarks: remark, assignedSelectorId: null }
+        );
+
+        res.json({ message: 'Plot marked as End of Life (CANCELLED) successfully', enquiry });
+    } catch (error) {
+        if (error.name === 'CastError') {
+            return res.status(400).json({ message: `Invalid ID: ${error.path}` });
+        }
+        console.error('Error closing deal (EOL):', error);
+        res.status(500).json({ message: 'Server error while closing deal', error: error.message });
+    }
+};
 
 module.exports = {
     createEnquiry,
@@ -751,4 +842,5 @@ module.exports = {
     runSlaTimeoutCheck,
     getMissedPlots,
     getFarmerEnquiryHistory,
+    eolEnquiry,
 };

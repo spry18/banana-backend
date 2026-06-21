@@ -576,7 +576,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"purchaseRate\": 918,\n  \"packingType\": \"5H\",\n  \"estimatedBoxes\": 312,\n  \"remarks\": \"E2E Apr 2026: FO rate lock aligned to Verdant Ridge 5H program.\"\n}"
+                            "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"purchaseRate\": 920,\n  \"packingType\": \"4H\",\n  \"estimatedBoxes\": 1500,\n  \"remarks\": \"Good quality G9 Cavendish. OM notes E2E: commercial OK for cold-chain handoff Apr 2026.\"\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/enquiries/fix-rate/{{enquiryId}}",
@@ -590,7 +590,73 @@
                                 "{{enquiryId}}"
                             ]
                         },
-                        "description": "Enquiry must be SELECTED. Sets companyId, purchaseRate, remarks, and status → RATE_FIXED.\n\n**New Optional Fields (2026-03-29):**\n- packingType: Enum — '4H', '5H', '6H', '8H', 'CL', '7Kg', 'Other'\n- estimatedBoxes: Number — planned harvest quantity\n\nThese planning fields are stored on the Enquiry and can be further overridden by the OM during team assignment."
+                        "description": "Enquiry must be SELECTED or REJECTED. Sets companyId, purchaseRate, remarks, and status → RATE_FIXED.\n\n**New Optional Fields (2026-03-29):**\n- packingType: Enum — '4H', '5H', '6H', '8H', 'CL', '7Kg', 'Other'\n- estimatedBoxes: Number — planned harvest quantity\n\nThese planning fields are stored on the Enquiry and can be further overridden by the OM during team assignment."
+                    }
+                },
+                {
+                    "name": "PUT Reschedule Enquiry (Admin)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"rescheduleDate\": \"2026-04-15\",\n  \"reason\": \"Farmer requested delay due to sudden rain and harvesting issues.\",\n  \"assignedSelectorId\": \"\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries/{{enquiryId}}/reschedule",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries",
+                                "{{enquiryId}}",
+                                "reschedule"
+                            ]
+                        },
+                        "description": "When Admin/FO reviews a SELECTED or REJECTED plot, they can either Fix Rate OR Reschedule. This API sets status to 'RESCHEDULED', updates rescheduleDate, clears assignedSelectorId, and logs the reason in rescheduleHistory. Optionally, providing assignedSelectorId will directly reassign the plot to that selector and set status to 'ASSIGNED'."
+                    }
+                },
+                {
+                    "name": "PATCH End of Life (EOL) (Admin)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"remark\": \"Admin closed this plot permanently due to quality issues.\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries/{{enquiryId}}/eol",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries",
+                                "{{enquiryId}}",
+                                "eol"
+                            ]
+                        },
+                        "description": "Marks a rejected/selected/rescheduled plot as End of Life (CANCELLED). Stores the remark and clears assignedSelectorId."
                     }
                 },
                 {
