@@ -418,6 +418,36 @@ const getDriverReports = async (req, res) => {
             userId = req.query.driverId;
         }
 
+        const User = require('../users/user.model');
+        const driverUser = await User.findById(userId).select('role');
+        if (!driverUser) {
+            return res.status(404).json({ message: 'Driver not found' });
+        }
+        const isPickup = driverUser.role === 'driver pickup';
+
+        // Resolve current diesel price
+        const apiKey = process.env.FUEL_API_KEY;
+        let dieselPrice = 92.50; // Mock fallback for Maharashtra
+        if (apiKey) {
+            try {
+                // Fetch State prices (MH is our primary region)
+                const fuelRes = await fetch(`https://fuel.indianapi.in/live_fuel_price?fuel_type=diesel&location_type=state`, {
+                    headers: { 'x-api-key': apiKey }
+                });
+                if (fuelRes.status === 200) {
+                    const fuelData = await fuelRes.json();
+                    if (Array.isArray(fuelData)) {
+                        const mhRecord = fuelData.find(item => item.state && item.state.toLowerCase() === 'maharashtra');
+                        if (mhRecord) {
+                            dieselPrice = parseFloat(mhRecord.price) || 92.50;
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('Error fetching live diesel price in getDriverReports:', err.message);
+            }
+        }
+
         const now = new Date();
         const month = Number(req.query.month) || (now.getMonth() + 1);
         const year = Number(req.query.year) || now.getFullYear();
@@ -425,43 +455,48 @@ const getDriverReports = async (req, res) => {
         const startDate = new Date(year, month - 1, 1);
         const endDate = new Date(year, month, 1);
 
-        // All trips for this driver in the month
-        const trips = await Trip.find({
-            driverId: userId,
-            createdAt: { $gte: startDate, $lt: endDate },
-        })
-            .populate({
-                path: 'assignmentId',
-                populate: [
-                    { path: 'enquiryId', select: 'enquiryId farmerFirstName farmerLastName location' },
-                    { path: 'companyId', select: 'companyName' },
-                ],
+        // Fetch trips and advances in parallel
+        const [trips, advances] = await Promise.all([
+            Trip.find({
+                driverId: userId,
+                createdAt: { $gte: startDate, $lt: endDate },
             })
-            .lean();
+                .populate({
+                    path: 'assignmentId',
+                    populate: [
+                        { path: 'enquiryId', select: 'enquiryId farmerFirstName farmerLastName location' },
+                        { path: 'companyId', select: 'companyName' },
+                    ],
+                })
+                .lean(),
+            DieselAdvance.find({
+                driverId: userId,
+                createdAt: { $gte: startDate, $lt: endDate },
+            }).lean()
+        ]);
 
-        // Diesel advances for this driver in the month
-        const advances = await DieselAdvance.find({
-            driverId: userId,
-            createdAt: { $gte: startDate, $lt: endDate },
-        }).lean();
+        const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
 
-        // Aggregate
-        let totalKm = 0;
-        let totalToll = 0;
-        let totalHaults = 0;
-        let totalLineCancels = 0;
+        // Group trips by dayKey
         const dailyLog = {};
-
         trips.forEach(t => {
-            totalKm += t.totalKm || 0;
-            totalToll += t.tollExpense || 0;
-            if (t.isHault) totalHaults++;
-            if (t.isLineCancel) totalLineCancels++;
+            const tIst = new Date(new Date(t.createdAt).getTime() + IST_OFFSET_MS);
+            const dayKey = tIst.toISOString().slice(0, 10);
 
-            const dayKey = new Date(t.createdAt).toISOString().slice(0, 10);
             if (!dailyLog[dayKey]) {
-                dailyLog[dayKey] = { date: dayKey, trips: [], dayKm: 0, dayToll: 0 };
+                dailyLog[dayKey] = {
+                    date: dayKey,
+                    trips: [],
+                    dayKm: 0,
+                    dayToll: 0,
+                    dayHaults: 0,
+                    dayLineCancels: 0,
+                    dayAdvance: 0,
+                    dailyEarning: 0,
+                    monthlyEarning: 0
+                };
             }
+
             dailyLog[dayKey].trips.push({
                 tripId: t._id,
                 driverType: t.driverType,
@@ -472,7 +507,8 @@ const getDriverReports = async (req, res) => {
                 totalKm: t.totalKm,
                 tollExpense: t.tollExpense,
                 reviewStatus: t.reviewStatus,
-                // Photo URLs
+                isHault: t.isHault,
+                isLineCancel: t.isLineCancel,
                 weightSlipUrl: t.weightSlipUrl ? getFullUrl(req, t.weightSlipUrl) : null,
                 dieselSlipUrl: t.dieselSlipUrl ? getFullUrl(req, t.dieselSlipUrl) : null,
                 unloadSlipUrl: t.unloadSlipUrl ? getFullUrl(req, t.unloadSlipUrl) : null,
@@ -481,17 +517,88 @@ const getDriverReports = async (req, res) => {
                 tollSlipUrl: t.tollSlipUrl ? getFullUrl(req, t.tollSlipUrl) : null,
                 endKmPhotoUrl: t.endKmPhotoUrl ? getFullUrl(req, t.endKmPhotoUrl) : null,
             });
+
             dailyLog[dayKey].dayKm += t.totalKm || 0;
             dailyLog[dayKey].dayToll += t.tollExpense || 0;
+            if (t.isHault) dailyLog[dayKey].dayHaults += 1;
+            if (t.isLineCancel) dailyLog[dayKey].dayLineCancels += 1;
         });
 
-        const totalFuelAdvance = advances.reduce((sum, a) => sum + (a.amount || 0), 0);
+        // Group advances by dayKey
+        advances.forEach(a => {
+            const aIst = new Date(new Date(a.createdAt).getTime() + IST_OFFSET_MS);
+            const dayKey = aIst.toISOString().slice(0, 10);
 
+            if (!dailyLog[dayKey]) {
+                dailyLog[dayKey] = {
+                    date: dayKey,
+                    trips: [],
+                    dayKm: 0,
+                    dayToll: 0,
+                    dayHaults: 0,
+                    dayLineCancels: 0,
+                    dayAdvance: 0,
+                    dailyEarning: 0,
+                    monthlyEarning: 0
+                };
+            }
+            dailyLog[dayKey].dayAdvance += a.amount || 0;
+        });
+
+        // Sort day keys chronologically (oldest to newest) to calculate cumulative metrics
+        const sortedDayKeys = Object.keys(dailyLog).sort((a, b) => a.localeCompare(b));
+
+        let cumulativeGross = 0;
+        let cumulativeAdvance = 0;
+
+        sortedDayKeys.forEach(dayKey => {
+            const day = dailyLog[dayKey];
+            const tripsCount = day.trips.length;
+
+            // Calculate Day Earnings
+            if (isPickup) {
+                // Formula: trip * 1200 + total km/10 * current diesel rate + toll
+                day.dailyEarning = (tripsCount * 1200) + ((day.dayKm / 10) * dieselPrice) + day.dayToll;
+            } else {
+                // Formula: total trip * 2500 + if hault (1500) + if line cancle (1500) + total km/5 * current diesel price + toll
+                day.dailyEarning = (tripsCount * 2500) + (day.dayHaults * 1500) + (day.dayLineCancels * 1500) + ((day.dayKm / 5) * dieselPrice) + day.dayToll;
+            }
+
+            // Round to 2 decimal places
+            day.dailyEarning = parseFloat(day.dailyEarning.toFixed(2));
+
+            cumulativeGross += day.dailyEarning;
+            cumulativeAdvance += day.dayAdvance;
+
+            // monthlyEarning represents cumulative gross earnings - cumulative advances
+            day.monthlyEarning = parseFloat((cumulativeGross - cumulativeAdvance).toFixed(2));
+        });
+
+        // Total summary KPIs for the month
+        const totalFuelAdvance = advances.reduce((sum, a) => sum + (a.amount || 0), 0);
+        const totalKm = trips.reduce((sum, t) => sum + (t.totalKm || 0), 0);
+        const totalToll = trips.reduce((sum, t) => sum + (t.tollExpense || 0), 0);
+        const totalHaults = trips.reduce((sum, t) => sum + (t.isHault ? 1 : 0), 0);
+        const totalLineCancels = trips.reduce((sum, t) => sum + (t.isLineCancel ? 1 : 0), 0);
+
+        let totalEarnings = 0;
+        if (isPickup) {
+            totalEarnings = (trips.length * 1200) + ((totalKm / 10) * dieselPrice) + totalToll;
+        } else {
+            totalEarnings = (trips.length * 2500) + (totalHaults * 1500) + (totalLineCancels * 1500) + ((totalKm / 5) * dieselPrice) + totalToll;
+        }
+
+        totalEarnings = parseFloat(totalEarnings.toFixed(2));
+        const netPayout = parseFloat((totalEarnings - totalFuelAdvance).toFixed(2));
+
+        // Sort back to reverse chronological order (newest first) for UI display
         const dailyTripLog = Object.values(dailyLog).sort((a, b) => b.date.localeCompare(a.date));
 
         res.status(200).json({
             month,
             year,
+            driverType: isPickup ? 'Pickup' : 'Eicher',
+            dieselPrice,
             summary: {
                 totalTrips: trips.length,
                 totalKm,
@@ -499,6 +606,8 @@ const getDriverReports = async (req, res) => {
                 totalFuelAdvance,
                 totalHaults,
                 totalLineCancels,
+                totalEarnings,
+                netPayout
             },
             dailyTripLog,
         });
