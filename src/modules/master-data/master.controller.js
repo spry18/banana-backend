@@ -290,11 +290,35 @@ const deleteGeneration = async (req, res) => {
 
 const getDrivers = async (req, res) => {
     try {
+        const { date } = req.query;
+        const assignedDriverIds = new Set();
+
+        if (date) {
+            const { getIstDayRange } = require('../../utils/dateHelper');
+            const { startOfDay, endOfDay } = getIstDayRange(date);
+            const Logistics = require('../logistics/logistics.model');
+            const activeAssignments = await Logistics.find({
+                scheduledDate: { $gte: startOfDay, $lt: endOfDay },
+                assignmentStatus: { $ne: 'CANCELLED' }
+            }).select('driverId pickupDriverId').lean();
+
+            activeAssignments.forEach(a => {
+                if (a.driverId) assignedDriverIds.add(a.driverId.toString());
+                if (a.pickupDriverId) assignedDriverIds.add(a.pickupDriverId.toString());
+            });
+        }
+
         const drivers = await User.find({ role: { $regex: /driver/i }, isActive: true })
             .select('_id firstName lastName mobileNo role vehicleId')
             .populate('vehicleId', 'vehicleNumber vehicleType')
             .lean();
-        res.json(drivers);
+
+        const mappedDrivers = drivers.map(d => ({
+            ...d,
+            alreadyAssigned: assignedDriverIds.has(d._id.toString()),
+        }));
+
+        res.json(mappedDrivers);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -306,6 +330,26 @@ const getDrivers = async (req, res) => {
 // @access  Protected (Admin, Field Owner, Operational Manager)
 const getFormDropdowns = async (req, res) => {
     try {
+        const { date } = req.query;
+        const assignedMunshiIds = new Set();
+        const assignedDriverIds = new Set();
+
+        if (date) {
+            const { getIstDayRange } = require('../../utils/dateHelper');
+            const { startOfDay, endOfDay } = getIstDayRange(date);
+            const Logistics = require('../logistics/logistics.model');
+            const activeAssignments = await Logistics.find({
+                scheduledDate: { $gte: startOfDay, $lt: endOfDay },
+                assignmentStatus: { $ne: 'CANCELLED' }
+            }).select('munshiId driverId pickupDriverId').lean();
+
+            activeAssignments.forEach(a => {
+                if (a.munshiId) assignedMunshiIds.add(a.munshiId.toString());
+                if (a.driverId) assignedDriverIds.add(a.driverId.toString());
+                if (a.pickupDriverId) assignedDriverIds.add(a.pickupDriverId.toString());
+            });
+        }
+
         // Run all queries in parallel for best performance
         const [companies, agents, generations, selectors, brands, munshis, eicherDrivers, pickupDrivers, locations] = await Promise.all([
             Company.find({ isActive: true }).select('_id companyName legalName headquarters').lean(),
@@ -319,15 +363,30 @@ const getFormDropdowns = async (req, res) => {
             Enquiry.distinct('location'),
         ]);
 
+        const mappedMunshis = munshis.map(m => ({
+            ...m,
+            alreadyAssigned: assignedMunshiIds.has(m._id.toString()),
+        }));
+
+        const mappedEicherDrivers = eicherDrivers.map(d => ({
+            ...d,
+            alreadyAssigned: assignedDriverIds.has(d._id.toString()),
+        }));
+
+        const mappedPickupDrivers = pickupDrivers.map(d => ({
+            ...d,
+            alreadyAssigned: assignedDriverIds.has(d._id.toString()),
+        }));
+
         res.status(200).json({
             companies,
             agents,
             generations,
             selectors,
             brands,
-            munshis,
-            eicherDrivers,
-            pickupDrivers,
+            munshis: mappedMunshis,
+            eicherDrivers: mappedEicherDrivers,
+            pickupDrivers: mappedPickupDrivers,
             locations: locations.filter(Boolean),
         });
     } catch (error) {
