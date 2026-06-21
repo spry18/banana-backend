@@ -126,6 +126,82 @@
                         },
                         "description": "Writes a LOGOUT audit log entry. Client must delete the stored token after this call (JWT is stateless)."
                     }
+                },
+                {
+                    "name": "POST Register FCM Token",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"your-device-fcm-token-here\",\n  \"deviceType\": \"Android\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/fcm-token",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "fcm-token"
+                            ]
+                        },
+                        "description": "Registers or updates the FCM push registration token for this user."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "DELETE Deregister FCM Token",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{munshiToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"your-device-fcm-token-here\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/fcm-token",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "fcm-token"
+                            ]
+                        },
+                        "description": "Deregisters/removes the FCM push registration token for this user."
+                    },
+                    "response": []
                 }
             ]
         },
