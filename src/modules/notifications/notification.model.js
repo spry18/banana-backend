@@ -28,6 +28,7 @@ const notificationSchema = new mongoose.Schema(
                 'PACKING_SUBMITTED',        // Operational Manager / Admin: Munshi submitted packing report
                 'PACKING_APPROVED',         // Munshi / Driver / Field Owner: packing report approved
                 'PACKING_REJECTED',         // Munshi: packing report rejected, resubmission required
+                'TRIP_REJECTED',            // Driver: trip report rejected, resubmission required
                 'TRIP_COMPLETED',           // Field Owner: harvest fully complete and approved
 
                 // ── General ───────────────────────────────────
