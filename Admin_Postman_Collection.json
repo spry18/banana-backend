@@ -928,45 +928,6 @@
                     "response": []
                 },
                 {
-                    "name": "POST Add Extra Vehicle (Overflow)",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{adminToken}}"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"driverId\": \"REPLACE_WITH_EXTRA_DRIVER_ID\",\n  \"munshiId\": \"OPTIONAL_DIFFERENT_MUNSHI_ID\",\n  \"companyId\": \"OPTIONAL_OVERRIDE_COMPANY_ID\",\n  \"purchaseRate\": 918,\n  \"totalBoxes\": 200,\n  \"priority\": \"HIGH\",\n  \"lightInTime\": \"05:00 AM\",\n  \"lightOutTime\": \"07:00 AM\",\n  \"teamName\": \"Overflow Crew-01\",\n  \"scheduledDate\": \"2026-04-30\"\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/logistics/REPLACE_WITH_ASSIGNMENT_ID/add-vehicle",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "logistics",
-                                "REPLACE_WITH_ASSIGNMENT_ID",
-                                "add-vehicle"
-                            ]
-                        },
-                        "description": "Add an extra vehicle to an existing assignment when the original vehicle is full. Creates a new overflow Logistics record with isOverflow=true, parentAssignmentId pointing to the original.\n\nRequired: driverId\nOptional (defaults to original assignment values if omitted): munshiId, companyId, purchaseRate, totalBoxes, priority, lightInTime, lightOutTime, teamName, scheduledDate\n\nWhatsApp notifications sent to: extra driver, assigned munshi, and original driver.\n\nAccess: Admin, Operational Manager, Munshi.\nAlso available via: POST /api/munshi/assignments/:id/add-vehicle"
-                    },
-                    "response": []
-                },
-                {
                     "name": "GET Related Assignments (Original + Rollovers + Overflows)",
                     "request": {
                         "method": "GET",
@@ -989,6 +950,74 @@
                             ]
                         },
                         "description": "Returns the full chain for any assignment: the root original assignment, all rollovers (extra days), and all overflows (extra vehicles). Walks up parentAssignmentId to find the root, then fetches all descendants.\n\nResponse: { original, rollovers[], overflows[], totalRelated }"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "PATCH Assign Eicher Driver",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"driverId\": \"{{driverId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/logistics/{{assignmentId}}/eicher",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "logistics",
+                                "{{assignmentId}}",
+                                "eicher"
+                            ]
+                        },
+                        "description": "Assigns or updates the main Eicher driver for this assignment. Resolves the driver's vehicle and updates both driverId and vehicleId in the logistics record.\n\nAccess: Admin, Operational Manager"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "PATCH Assign Pickup Driver",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"pickupDriverId\": \"{{pickupDriverId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/logistics/{{assignmentId}}/pickup",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "logistics",
+                                "{{assignmentId}}",
+                                "pickup"
+                            ]
+                        },
+                        "description": "Assigns or updates the secondary pickup driver for this assignment.\n\nAccess: Admin, Operational Manager"
                     },
                     "response": []
                 }

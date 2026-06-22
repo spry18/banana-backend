@@ -4,6 +4,7 @@ const {
     getMunshiDashboard,
     getMunshiAssignments,
     assignPickupDriver,
+    assignEicherDriver,
     submitPackingReport,
     getMunshiReports,
     rolloverAssignment,
@@ -13,7 +14,6 @@ const {
 } = require('./munshi.controller');
 const { protect, authorize } = require('../../middlewares/auth.middleware');
 const upload = require('../../middlewares/upload.middleware');
-const { addExtraVehicle } = require('../logistics/logistics.controller');
 
 // Apply protect to all routes
 router.use(protect);
@@ -24,8 +24,8 @@ const roles = ['Munshi', 'Admin', 'Operational Manager'];
 router.get('/dashboard', authorize(...roles), getMunshiDashboard);
 router.get('/assignments', authorize(...roles), getMunshiAssignments);
 router.patch('/assignments/:id/pickup', authorize(...roles), assignPickupDriver);
+router.patch('/assignments/:id/eicher', authorize(...roles), assignEicherDriver);
 router.post('/assignments/:id/rollover', authorize(...roles), rolloverAssignment);
-router.post('/assignments/:id/add-vehicle', authorize(...roles), addExtraVehicle);
 
 // Phase 3 routes
 router.post(

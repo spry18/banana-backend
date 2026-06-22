@@ -135,7 +135,7 @@ const assignPickupDriver = async (req, res) => {
             return res.status(404).json({ message: 'Assignment not found' });
         }
 
-        if (assignment.munshiId.toString() !== munshiId.toString() && req.user.role !== 'Admin') {
+        if (assignment.munshiId.toString() !== munshiId.toString() && !['Admin', 'Operational Manager'].includes(req.user.role)) {
             return res.status(403).json({ message: 'You can only update assignments assigned to you' });
         }
 
@@ -700,10 +700,80 @@ const startHarvesting = async (req, res) => {
     }
 };
 
+// @desc    Assign or update the main Eicher driver and auto-resolve their vehicle
+// @route   PATCH /api/munshi/assignments/:id/eicher
+// @access  Protected (Munshi, Admin, Operational Manager)
+const assignEicherDriver = async (req, res) => {
+    try {
+        const { driverId } = req.body;
+        const munshiId = req.user._id;
+
+        if (!driverId) {
+            return res.status(400).json({ message: 'driverId is required' });
+        }
+
+        // Verify assignment exists and belongs to this Munshi
+        const assignment = await Logistics.findById(req.params.id);
+        if (!assignment) {
+            return res.status(404).json({ message: 'Assignment not found' });
+        }
+
+        if (assignment.munshiId.toString() !== munshiId.toString() && !['Admin', 'Operational Manager'].includes(req.user.role)) {
+            return res.status(403).json({ message: 'You can only update assignments assigned to you' });
+        }
+
+        if (['COMPLETED', 'CANCELLED'].includes(assignment.assignmentStatus)) {
+            return res.status(400).json({ message: `Cannot update a ${assignment.assignmentStatus} assignment` });
+        }
+
+        // Validate the Eicher driver exists and has the driver role
+        const driver = await User.findById(driverId).populate('vehicleId', 'vehicleNumber vehicleType');
+        if (!driver) {
+            return res.status(404).json({ message: 'Eicher driver not found' });
+        }
+        
+        const roleNorm = (driver.role || '').toLowerCase();
+        if (!roleNorm.includes('driver')) {
+            return res.status(400).json({ message: 'The provided user does not have a Driver role' });
+        }
+
+        if (!driver.vehicleId) {
+            return res.status(400).json({
+                message: `Driver "${driver.firstName} ${driver.lastName}" has no vehicle linked. Please link a vehicle first.`
+            });
+        }
+
+        assignment.driverId = driverId;
+        assignment.vehicleId = driver.vehicleId._id;
+        await assignment.save();
+
+        // Notify the new Eicher driver
+        if (driver.mobileNo) {
+            NotificationService.sendLogisticsAlert(
+                driver.mobileNo,
+                'Eicher Driver',
+                `You have been assigned as the main driver for assignment ${assignment._id}. Please coordinate with the Munshi.`
+            );
+        }
+
+        res.status(200).json({
+            message: 'Eicher driver and vehicle updated successfully',
+            assignment,
+        });
+    } catch (error) {
+        console.error('Error assigning Eicher driver:', error);
+        if (error.name === 'CastError') {
+            return res.status(400).json({ message: `Invalid ID format for field: ${error.path}` });
+        }
+        res.status(500).json({ message: 'Server error while assigning Eicher driver' });
+    }
+};
+
 module.exports = {
     getMunshiDashboard,
     getMunshiAssignments,
     assignPickupDriver,
+    assignEicherDriver,
     submitPackingReport,
     getMunshiReports,
     getPackingByAssignmentId,
