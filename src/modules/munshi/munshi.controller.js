@@ -165,9 +165,23 @@ const assignPickupDriver = async (req, res) => {
             );
         }
 
+        const populatedAssignment = await Logistics.findById(assignment._id)
+            .populate({
+                path: 'enquiryId',
+                populate: [
+                    { path: 'fieldOwnerId', select: 'firstName lastName mobileNo role' },
+                    { path: 'assignedSelectorId', select: 'firstName lastName mobileNo role' },
+                ],
+            })
+            .populate('companyId')
+            .populate({ path: 'munshiId', select: 'firstName lastName mobileNo' })
+            .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
+            .populate({ path: 'pickupDriverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
+            .populate('vehicleId');
+
         res.status(200).json({
             message: 'Pickup driver assigned successfully',
-            assignment,
+            assignment: populatedAssignment || assignment,
         });
     } catch (error) {
         console.error('Error assigning pickup driver:', error);
@@ -756,9 +770,23 @@ const assignEicherDriver = async (req, res) => {
             );
         }
 
+        const populatedAssignment = await Logistics.findById(assignment._id)
+            .populate({
+                path: 'enquiryId',
+                populate: [
+                    { path: 'fieldOwnerId', select: 'firstName lastName mobileNo role' },
+                    { path: 'assignedSelectorId', select: 'firstName lastName mobileNo role' },
+                ],
+            })
+            .populate('companyId')
+            .populate({ path: 'munshiId', select: 'firstName lastName mobileNo' })
+            .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
+            .populate({ path: 'pickupDriverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
+            .populate('vehicleId');
+
         res.status(200).json({
             message: 'Eicher driver and vehicle updated successfully',
-            assignment,
+            assignment: populatedAssignment || assignment,
         });
     } catch (error) {
         console.error('Error assigning Eicher driver:', error);

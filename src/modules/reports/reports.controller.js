@@ -192,7 +192,7 @@ const getExecutionDetailedReport = async (req, res) => {
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(Number(limit))
-                .populate('enquiryId', 'farmerMobile location')
+                .populate('enquiryId', 'farmerMobile location subLocation')
                 .populate('driverId', 'firstName lastName')
                 .populate('munshiId', 'firstName lastName')
                 .lean(),

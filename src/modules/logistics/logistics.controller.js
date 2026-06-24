@@ -191,6 +191,7 @@ const getAssignments = async (req, res) => {
             .populate('companyId')
             .populate('munshiId', 'firstName lastName mobileNo')
             .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
+            .populate({ path: 'pickupDriverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
             .populate('vehicleId', 'vehicleNumber vehicleType');
 
         res.status(200).json(assignments);
@@ -216,6 +217,7 @@ const getAssignmentById = async (req, res) => {
             .populate('companyId')
             .populate({ path: 'munshiId', select: 'firstName lastName mobileNo' })
             .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
+            .populate({ path: 'pickupDriverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
             .populate('vehicleId');
 
         if (!assignment) {
@@ -255,7 +257,7 @@ const getRelatedAssignments = async (req, res) => {
         }
 
         const populateFields = [
-            { path: 'enquiryId', select: 'enquiryId farmerFirstName farmerLastName location' },
+            { path: 'enquiryId', select: 'enquiryId farmerFirstName farmerLastName location subLocation' },
             { path: 'companyId', select: 'companyName' },
             { path: 'munshiId', select: 'firstName lastName mobileNo' },
             { path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } },

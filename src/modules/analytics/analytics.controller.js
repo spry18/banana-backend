@@ -216,7 +216,7 @@ const getAnalyticsDashboard = async (req, res) => {
                 .limit(5)
                 .populate({
                     path: 'enquiryId',
-                    select: 'enquiryId farmerFirstName farmerLastName location',
+                    select: 'enquiryId farmerFirstName farmerLastName location subLocation',
                 })
                 .populate('companyId', 'companyName')
                 .populate('munshiId', 'firstName lastName')

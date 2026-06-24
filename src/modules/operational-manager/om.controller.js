@@ -85,7 +85,7 @@ const getOmDashboard = async (req, res) => {
                 .select('-purchaseRate')
                 .sort({ createdAt: -1 })
                 .limit(5)
-                .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName location packingType')
+                .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName location subLocation packingType')
                 .populate({ path: 'driverId', select: 'firstName lastName vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
                 .populate('munshiId', 'firstName lastName')
                 .lean(),
@@ -146,6 +146,7 @@ const getOmPlots = async (req, res) => {
                     { farmerLastName: { $regex: search, $options: 'i' } },
                     { enquiryId: { $regex: search, $options: 'i' } },
                     { location: { $regex: search, $options: 'i' } },
+                    { subLocation: { $regex: search, $options: 'i' } },
                 ];
             }
  
@@ -168,6 +169,7 @@ const getOmPlots = async (req, res) => {
                 .select('-purchaseRate')
                 .populate('munshiId', 'firstName lastName mobileNo')
                 .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
+                .populate({ path: 'pickupDriverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
                 .populate('vehicleId', 'vehicleNumber')
                 .lean();
  
@@ -216,6 +218,7 @@ const getOmPlots = async (req, res) => {
                     { farmerLastName: { $regex: search, $options: 'i' } },
                     { enquiryId: { $regex: search, $options: 'i' } },
                     { location: { $regex: search, $options: 'i' } },
+                    { subLocation: { $regex: search, $options: 'i' } },
                 ];
             }
 
@@ -265,6 +268,7 @@ const getOmPlots = async (req, res) => {
                         { farmerLastName: { $regex: search, $options: 'i' } },
                         { enquiryId: { $regex: search, $options: 'i' } },
                         { location: { $regex: search, $options: 'i' } },
+                        { subLocation: { $regex: search, $options: 'i' } },
                     ],
                 }).select('_id');
                 assignmentQuery.enquiryId = { $in: matchingEnquiries.map(e => e._id) };
@@ -278,7 +282,7 @@ const getOmPlots = async (req, res) => {
                     .limit(Number(limit))
                     .populate({
                         path: 'enquiryId',
-                        select: 'enquiryId farmerFirstName farmerLastName farmerMobile location packingType fieldOwnerId assignedSelectorId',
+                        select: 'enquiryId farmerFirstName farmerLastName farmerMobile location subLocation packingType fieldOwnerId assignedSelectorId',
                         populate: [
                             { path: 'fieldOwnerId', select: 'firstName lastName mobileNo' },
                             { path: 'assignedSelectorId', select: 'firstName lastName mobileNo bikeNumber' }
@@ -287,6 +291,7 @@ const getOmPlots = async (req, res) => {
                     .populate('companyId', 'companyName')
                     .populate('munshiId', 'firstName lastName mobileNo')
                     .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
+                    .populate({ path: 'pickupDriverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
                     .populate('vehicleId', 'vehicleNumber')
                     .lean(),
                 Logistics.countDocuments(assignmentQuery),
@@ -321,6 +326,7 @@ const getOmPlots = async (req, res) => {
                         { farmerLastName: { $regex: search, $options: 'i' } },
                         { enquiryId: { $regex: search, $options: 'i' } },
                         { location: { $regex: search, $options: 'i' } },
+                        { subLocation: { $regex: search, $options: 'i' } },
                     ],
                 }).select('_id');
                 assignmentQuery.enquiryId = { $in: matchingEnquiries.map(e => e._id) };
@@ -334,7 +340,7 @@ const getOmPlots = async (req, res) => {
                     .limit(Number(limit))
                     .populate({
                         path: 'enquiryId',
-                        select: 'enquiryId farmerFirstName farmerLastName farmerMobile location packingType fieldOwnerId assignedSelectorId',
+                        select: 'enquiryId farmerFirstName farmerLastName farmerMobile location subLocation packingType fieldOwnerId assignedSelectorId',
                         populate: [
                             { path: 'fieldOwnerId', select: 'firstName lastName mobileNo' },
                             { path: 'assignedSelectorId', select: 'firstName lastName mobileNo bikeNumber' }
@@ -343,6 +349,7 @@ const getOmPlots = async (req, res) => {
                     .populate('companyId', 'companyName')
                     .populate('munshiId', 'firstName lastName mobileNo')
                     .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
+                    .populate({ path: 'pickupDriverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
                     .populate('vehicleId', 'vehicleNumber')
                     .lean(),
                 Logistics.countDocuments(assignmentQuery),
@@ -391,6 +398,7 @@ const getOmPlots = async (req, res) => {
                         { farmerLastName: { $regex: search, $options: 'i' } },
                         { enquiryId: { $regex: search, $options: 'i' } },
                         { location: { $regex: search, $options: 'i' } },
+                        { subLocation: { $regex: search, $options: 'i' } },
                     ],
                 }).select('_id');
                 assignmentQuery.enquiryId = { $in: matchingEnquiries.map(e => e._id) };
@@ -404,7 +412,7 @@ const getOmPlots = async (req, res) => {
                     .limit(Number(limit))
                     .populate({
                         path: 'enquiryId',
-                        select: 'enquiryId farmerFirstName farmerLastName farmerMobile location packingType fieldOwnerId assignedSelectorId',
+                        select: 'enquiryId farmerFirstName farmerLastName farmerMobile location subLocation packingType fieldOwnerId assignedSelectorId',
                         populate: [
                             { path: 'fieldOwnerId', select: 'firstName lastName mobileNo' },
                             { path: 'assignedSelectorId', select: 'firstName lastName mobileNo bikeNumber' }
@@ -413,6 +421,7 @@ const getOmPlots = async (req, res) => {
                     .populate('companyId', 'companyName')
                     .populate('munshiId', 'firstName lastName mobileNo')
                     .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
+                    .populate({ path: 'pickupDriverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
                     .populate('vehicleId', 'vehicleNumber')
                     .lean(),
                 Logistics.countDocuments(assignmentQuery),
@@ -461,6 +470,7 @@ const getOmPlots = async (req, res) => {
                         { farmerLastName: { $regex: search, $options: 'i' } },
                         { enquiryId: { $regex: search, $options: 'i' } },
                         { location: { $regex: search, $options: 'i' } },
+                        { subLocation: { $regex: search, $options: 'i' } },
                     ],
                 }).select('_id');
                 assignmentQuery.enquiryId = { $in: matchingEnquiries.map(e => e._id) };
@@ -474,7 +484,7 @@ const getOmPlots = async (req, res) => {
                     .limit(Number(limit))
                     .populate({
                         path: 'enquiryId',
-                        select: 'enquiryId farmerFirstName farmerLastName farmerMobile location packingType fieldOwnerId assignedSelectorId',
+                        select: 'enquiryId farmerFirstName farmerLastName farmerMobile location subLocation packingType fieldOwnerId assignedSelectorId',
                         populate: [
                             { path: 'fieldOwnerId', select: 'firstName lastName mobileNo' },
                             { path: 'assignedSelectorId', select: 'firstName lastName mobileNo bikeNumber' }
@@ -601,7 +611,7 @@ const approvePackingReport = async (req, res) => {
 
         // Update parent logistics assignment status to APPROVED
         const assignment = await Logistics.findById(assignmentId)
-            .populate('enquiryId', 'fieldOwnerId farmerFirstName enquiryId location')
+            .populate('enquiryId', 'fieldOwnerId farmerFirstName enquiryId location subLocation')
             .populate('driverId', '_id firstName lastName')
             .populate('munshiId', '_id firstName lastName');
 
@@ -688,6 +698,7 @@ const getApprovedPlots = async (req, res) => {
                     { farmerLastName: { $regex: search, $options: 'i' } },
                     { enquiryId: { $regex: search, $options: 'i' } },
                     { location: { $regex: search, $options: 'i' } },
+                    { subLocation: { $regex: search, $options: 'i' } },
                 ],
             }).select('_id');
             assignmentQuery.enquiryId = { $in: matchingEnquiries.map(e => e._id) };
@@ -701,7 +712,7 @@ const getApprovedPlots = async (req, res) => {
                 .limit(Number(limit))
                 .populate({
                     path: 'enquiryId',
-                    select: 'enquiryId farmerFirstName farmerLastName farmerMobile location packingType fieldOwnerId assignedSelectorId',
+                    select: 'enquiryId farmerFirstName farmerLastName farmerMobile location subLocation packingType fieldOwnerId assignedSelectorId',
                     populate: [
                         { path: 'fieldOwnerId', select: 'firstName lastName mobileNo' },
                         { path: 'assignedSelectorId', select: 'firstName lastName mobileNo bikeNumber' }

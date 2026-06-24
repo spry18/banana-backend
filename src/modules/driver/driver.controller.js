@@ -99,7 +99,7 @@ const getDriverHistory = async (req, res) => {
                 .populate({
                     path: 'assignmentId',
                     populate: [
-                        { path: 'enquiryId', select: 'enquiryId farmerFirstName farmerLastName location' },
+                        { path: 'enquiryId', select: 'enquiryId farmerFirstName farmerLastName location subLocation' },
                         { path: 'companyId', select: 'companyName' },
                         { path: 'munshiId', select: 'firstName lastName' },
                     ],
@@ -385,7 +385,7 @@ const updateTripReport = async (req, res) => {
             .populate({
                 path: 'assignmentId',
                 populate: [
-                    { path: 'enquiryId', select: 'enquiryId farmerFirstName farmerLastName location' },
+                    { path: 'enquiryId', select: 'enquiryId farmerFirstName farmerLastName location subLocation' },
                     { path: 'companyId', select: 'companyName' },
                     { path: 'munshiId', select: 'firstName lastName' },
                 ],
@@ -464,7 +464,7 @@ const getDriverReports = async (req, res) => {
                 .populate({
                     path: 'assignmentId',
                     populate: [
-                        { path: 'enquiryId', select: 'enquiryId farmerFirstName farmerLastName location' },
+                        { path: 'enquiryId', select: 'enquiryId farmerFirstName farmerLastName location subLocation' },
                         { path: 'companyId', select: 'companyName' },
                     ],
                 })
