@@ -45,6 +45,7 @@ const app = express();
 app.set("trust proxy", 1);
 
 // Apply Global Middlewares
+app.set('trust proxy', 1);
 app.use(responseInterceptor);
 app.use(express.json());
 // app.use(mongoSanitize()); comment it due to version issue
@@ -62,10 +63,15 @@ app.use(helmet({
 }));
 
 // Rate Limiter
+// Updated Rate Limiter for Cloudflare (Real IP Tracking)
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 200, // Limit each IP to 100 requests per windowMs
-    message: 'Too many requests from this IP, please try again after 15 minutes'
+    windowMs: 15 * 60 * 1000,
+    max: 1500,
+    keyGenerator: (req) => {
+        // Use Cloudflare's real user IP, otherwise the default IP
+        return req.headers['cf-connecting-ip'] || req.ip;
+    },
+    message: 'Too many attempts. Please try again after 15 minutes.'
 });
 app.use('/api', limiter);
 
