@@ -1,6 +1,7 @@
 const Logistics = require('../logistics/logistics.model');
 const Trip = require('./trip.model');
 const Packing = require('./packing.model');
+const Enquiry = require('../enquiries/enquiry.model');
 const { logSystemAction } = require('../../utils/auditLogger');
 const { createNotification } = require('../../utils/notificationHelper');
 
@@ -128,9 +129,13 @@ const reviewExecution = async (req, res) => {
         );
 
         // Also update the main Logistics assignment status to COMPLETED if necessary
-        await Logistics.findByIdAndUpdate(assignmentId, {
+        const assignment = await Logistics.findByIdAndUpdate(assignmentId, {
           assignmentStatus: "COMPLETED",
         });
+
+        if (assignment && assignment.enquiryId) {
+            await Enquiry.findByIdAndUpdate(assignment.enquiryId, { status: 'COMPLETED' });
+        }
 
         await logSystemAction(
           req.user._id,

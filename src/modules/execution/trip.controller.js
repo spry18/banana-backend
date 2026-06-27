@@ -9,6 +9,7 @@ const createTrip = async (req, res) => {
     try {
         const {
             assignmentId,
+            driverType,
             isBackupTrip,
             parentTripId,
             teamMembers,
@@ -58,6 +59,7 @@ const createTrip = async (req, res) => {
         const trip = await Trip.create({
             driverId,
             assignmentId,
+            driverType,
             isBackupTrip,
             parentTripId,
             teamMembers,
@@ -73,9 +75,13 @@ const createTrip = async (req, res) => {
             isLocked
         });
 
-        const reportUrl = await PdfService.generateTripReport(trip);
-        trip.systemReportUrl = reportUrl;
-        await trip.save();
+        try {
+            const reportUrl = await PdfService.generateTripReport(trip);
+            trip.systemReportUrl = reportUrl;
+            await trip.save();
+        } catch (pdfError) {
+            console.error('Failed to generate or upload system PDF report:', pdfError.message);
+        }
 
         res.status(201).json(trip);
     } catch (error) {
