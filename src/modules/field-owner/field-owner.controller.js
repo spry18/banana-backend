@@ -496,7 +496,7 @@ const _buildSelectorsPerformance = async (startDate, endDate) => {
     // Filter out null values (enquiries with no selector assigned) to prevent CastError
     const rawIds = await Enquiry.find({}).distinct('assignedSelectorId');
     const selectorIds = rawIds.filter((id) => id != null);
-    if (!selectorIds.length) return [];
+    if (!selectorIds.length) return { data: [], todayTotalAssigned: 0 };
 
     // KM aggregation from DailyLog
     const logMatch = { userId: { $in: selectorIds }, status: 'COMPLETED' };
@@ -529,6 +529,26 @@ const _buildSelectorsPerformance = async (startDate, endDate) => {
         },
     ]);
 
+    // Today's assignments count per selector in IST
+    const { getIstDayRange } = require('../../utils/dateHelper');
+    const { startOfDay: startOfToday, endOfDay: endOfToday } = getIstDayRange();
+
+    const todayAssignedStats = await Enquiry.aggregate([
+        {
+            $match: {
+                assignedSelectorId: { $in: selectorIds },
+                scheduledDate: { $gte: startOfToday, $lt: endOfToday }
+            }
+        },
+        {
+            $group: {
+                _id: '$assignedSelectorId',
+                count: { $sum: 1 }
+            }
+        }
+    ]);
+    const todayAssignedMap = Object.fromEntries(todayAssignedStats.map((s) => [s._id.toString(), s.count]));
+
     const kmMap = Object.fromEntries(kmStats.map((s) => [s._id.toString(), s]));
     const plotMap = Object.fromEntries(plotStats.map((s) => [s._id.toString(), s]));
     const selectors = await User.find({ _id: { $in: selectorIds } }).select('firstName lastName mobileNo role');
@@ -545,10 +565,14 @@ const _buildSelectorsPerformance = async (startDate, endDate) => {
             visitedPlots: plotMap[id]?.visitedPlots || 0,
             approvedPlots: plotMap[id]?.approved || 0,
             rejectedPlots: plotMap[id]?.rejected || 0,
+            todayAssignedPlots: todayAssignedMap[id] || 0,
         };
     });
     data.sort((a, b) => b.visitedPlots - a.visitedPlots);
-    return data;
+
+    const todayTotalAssigned = Object.values(todayAssignedMap).reduce((sum, count) => sum + count, 0);
+
+    return { data, todayTotalAssigned };
 };
 
 // @desc    Aggregate KM and visited plots for selectors — custom date range
@@ -557,8 +581,8 @@ const _buildSelectorsPerformance = async (startDate, endDate) => {
 const getSelectorsPerformance = async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
-        const data = await _buildSelectorsPerformance(startDate, endDate);
-        res.json({ period: 'custom', startDate, endDate, data });
+        const { data, todayTotalAssigned } = await _buildSelectorsPerformance(startDate, endDate);
+        res.json({ period: 'custom', startDate, endDate, todayTotalAssigned, data });
     } catch (error) {
         console.error('Selectors performance error:', error);
         res.status(500).json({ message: 'Server error fetching selectors performance', error: error.message });
@@ -580,11 +604,12 @@ const getSelectorsPerformanceWeekly = async (req, res) => {
         sunday.setDate(monday.getDate() + 6);
         sunday.setHours(23, 59, 59, 999);
 
-        const data = await _buildSelectorsPerformance(monday, sunday);
+        const { data, todayTotalAssigned } = await _buildSelectorsPerformance(monday, sunday);
         res.json({
             period: 'weekly',
             startDate: monday.toISOString().slice(0, 10),
             endDate: sunday.toISOString().slice(0, 10),
+            todayTotalAssigned,
             data,
         });
     } catch (error) {
@@ -602,11 +627,12 @@ const getSelectorsPerformanceMonthly = async (req, res) => {
         const firstDay = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
         const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
-        const data = await _buildSelectorsPerformance(firstDay, lastDay);
+        const { data, todayTotalAssigned } = await _buildSelectorsPerformance(firstDay, lastDay);
         res.json({
             period: 'monthly',
             startDate: firstDay.toISOString().slice(0, 10),
             endDate: lastDay.toISOString().slice(0, 10),
+            todayTotalAssigned,
             data,
         });
     } catch (error) {
