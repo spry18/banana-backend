@@ -349,7 +349,7 @@
                                 "dashboard"
                             ]
                         },
-                        "description": "Returns KPIs scoped to the logged-in Munshi: pickups (PENDING), completed, cancelled, total. Also returns activeAssignments[] populated with farmer, company, driver, vehicle, and light-in/out times."
+                        "description": "Returns daily-reset KPIs scoped to the logged-in Munshi for today: pickups (PENDING, IN_PROGRESS, REJECTED), completed, cancelled, total. Also returns activeAssignments[] populated with farmer, company, driver, vehicle, and light-in/out times."
                     }
                 }
             ]

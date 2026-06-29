@@ -16,6 +16,8 @@ const { getFullUrl } = require('../../utils/urlHelper');
 const getMunshiDashboard = async (req, res) => {
     try {
         const munshiId = req.user._id;
+        const { getIstDayRange } = require('../../utils/dateHelper');
+        const { startOfDay: startOfTodayIst, endOfDay: endOfTodayIst } = getIstDayRange();
 
         // KPIs scoped to logged-in Munshi
         const [
@@ -24,9 +26,29 @@ const getMunshiDashboard = async (req, res) => {
             cancelledCount,       // Assignments CANCELLED
             activeAssignments,    // Active list for the UI
         ] = await Promise.all([
-            Logistics.countDocuments({ munshiId, assignmentStatus: { $in: ['PENDING', 'IN_PROGRESS', 'REJECTED'] } }),
-            Logistics.countDocuments({ munshiId, assignmentStatus: 'COMPLETED' }),
-            Logistics.countDocuments({ munshiId, assignmentStatus: 'CANCELLED' }),
+            Logistics.countDocuments({
+                munshiId,
+                assignmentStatus: { $in: ['PENDING', 'IN_PROGRESS', 'REJECTED'] },
+                $or: [
+                    { scheduledDate: { $gte: startOfTodayIst, $lt: endOfTodayIst } },
+                    {
+                        $and: [
+                            { $or: [{ scheduledDate: null }, { scheduledDate: { $exists: false } }] },
+                            { createdAt: { $gte: startOfTodayIst, $lt: endOfTodayIst } }
+                        ]
+                    }
+                ]
+            }),
+            Logistics.countDocuments({
+                munshiId,
+                assignmentStatus: 'COMPLETED',
+                updatedAt: { $gte: startOfTodayIst, $lt: endOfTodayIst }
+            }),
+            Logistics.countDocuments({
+                munshiId,
+                assignmentStatus: 'CANCELLED',
+                updatedAt: { $gte: startOfTodayIst, $lt: endOfTodayIst }
+            }),
             Logistics.find({
                 munshiId,
                 assignmentStatus: { $in: ['PENDING', 'IN_PROGRESS', 'REJECTED'] },
