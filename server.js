@@ -8,7 +8,7 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const mongoSanitize = require('express-mongo-sanitize');
 const connectDB = require('./src/config/db');
 const { notFound, errorHandler } = require('./src/middlewares/error.middleware');
@@ -66,10 +66,13 @@ app.use(helmet({
 // Updated Rate Limiter for Cloudflare (Real IP Tracking)
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 1500,
-    keyGenerator: (req) => {
+    max: 1500,  
+    keyGenerator: (req, res) => {
+        // First, check if Cloudflare header exists
+        const cloudflareIp = req.headers['cf-connecting-ip'] || req.ip;
+
         // Use Cloudflare's real user IP, otherwise the default IP
-        return req.headers['cf-connecting-ip'] || req.ip;
+        return cloudflareIp || ipKeyGenerator(req, res);
     },
     message: 'Too many attempts. Please try again after 15 minutes.'
 });
