@@ -921,7 +921,7 @@
                                 "selectors-performance"
                             ]
                         },
-                        "description": "Returns all selectors assigned to this FO's enquiries with: totalKm, totalDays, visitedPlots, approvedPlots, rejectedPlots, todayAssignedPlots. Response also contains todayTotalAssigned at the top level."
+                        "description": "Returns all selectors assigned to this FO's enquiries with: totalKm, totalDays, visitedPlots, approvedPlots, rejectedPlots, todayAssignedPlots, periodAssignedPlots. Response also contains todayTotalAssigned and periodTotalAssigned at the top level."
                     }
                 },
                 {
@@ -946,7 +946,7 @@
                                 "weekly"
                             ]
                         },
-                        "description": "Returns selector performance aggregated for the **current ISO week** (Monday 00:00 → Sunday 23:59, auto-calculated by the backend). No query params required.\n\nResponse includes `period: 'weekly'`, `startDate`, `endDate`, `todayTotalAssigned` (top-level today's assigned total count), and the `data[]` array containing selector objects with `todayAssignedPlots` counts."
+                        "description": "Returns selector performance aggregated for the **current ISO week** (Monday 00:00 → Sunday 23:59, auto-calculated by the backend). No query params required.\n\nResponse includes `period: 'weekly'`, `startDate`, `endDate`, `todayTotalAssigned`, `weeklyTotalAssigned`, and the `data[]` array containing selector objects with `todayAssignedPlots` and `periodAssignedPlots` counts."
                     }
                 },
                 {
@@ -971,7 +971,7 @@
                                 "monthly"
                             ]
                         },
-                        "description": "Returns selector performance aggregated for the **current calendar month** (1st 00:00 → last day 23:59, auto-calculated by the backend). No query params required.\n\nResponse includes `period: 'monthly'`, `startDate`, `endDate`, `todayTotalAssigned` (top-level today's assigned total count), and the `data[]` array containing selector objects with `todayAssignedPlots` counts."
+                        "description": "Returns selector performance aggregated for the **current calendar month** (1st 00:00 → last day 23:59, auto-calculated by the backend). No query params required.\n\nResponse includes `period: 'monthly'`, `startDate`, `endDate`, `todayTotalAssigned`, `monthlyTotalAssigned`, and the `data[]` array containing selector objects with `todayAssignedPlots` and `periodAssignedPlots` counts."
                     }
                 },
                 {
@@ -1005,7 +1005,7 @@
                                 }
                             ]
                         },
-                        "description": "Filter performance stats by date range (month-wise or custom). Response includes `todayTotalAssigned` at the top level and `todayAssignedPlots` inside the data array."
+                        "description": "Filter performance stats by date range (month-wise or custom). Response includes `todayTotalAssigned` and `periodTotalAssigned` at the top level, and `todayAssignedPlots` and `periodAssignedPlots` inside the data array."
                     }
                 },
                 {
