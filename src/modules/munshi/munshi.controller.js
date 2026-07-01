@@ -409,7 +409,7 @@ const getMunshiReports = async (req, res) => {
                 select: 'purchaseRate companyId enquiryId',
                 populate: {
                     path: 'enquiryId',
-                    select: 'enquiryId farmerFirstName farmerLastName location subLocation farmerMobile'
+                    select: 'enquiryId farmerFirstName farmerLastName location subLocation farmerMobile packingType'
                 }
             })
             .populate('brandId', 'brandName')
@@ -419,6 +419,7 @@ const getMunshiReports = async (req, res) => {
         let totalBoxes = 0;
         let totalWaste = 0;
         const boxBreakdown = { box4H: 0, box5H: 0, box6H: 0, box8H: 0, boxCL: 0, box7Kg: 0, boxOther: 0, box5Kg: 0, box13Kg: 0, box13_5Kg: 0, box14Kg: 0, box16Kg: 0 };
+        const packingTypeTotals = {};
         const dailyLog = {};  // grouped by date string
 
         const getIstDateString = (d) => {
@@ -436,6 +437,11 @@ const getMunshiReports = async (req, res) => {
             ['box4H', 'box5H', 'box6H', 'box8H', 'boxCL', 'box7Kg', 'boxOther', 'box5Kg', 'box13Kg', 'box13_5Kg', 'box14Kg', 'box16Kg'].forEach(key => {
                 boxBreakdown[key] += p[key] || 0;
             });
+
+            // Calculate packing type totals: Total Boxes = 4H + 5H + 6H + 8H + CL
+            const packingType = p.assignmentId?.enquiryId?.packingType || 'Other';
+            const recordTotalBoxes = (p.box4H || 0) + (p.box5H || 0) + (p.box6H || 0) + (p.box8H || 0) + (p.boxCL || 0);
+            packingTypeTotals[packingType] = (packingTypeTotals[packingType] || 0) + recordTotalBoxes;
 
             // Group by day for daily harvesting log (aligned with IST calendar day)
             const dayKey = getIstDateString(p.createdAt);
@@ -491,6 +497,7 @@ const getMunshiReports = async (req, res) => {
                 totalBoxes,
                 totalWasteKg: totalWaste,
                 boxBreakdown,
+                packingTypeTotals,
             },
             dailyHarvestingLog,
         });

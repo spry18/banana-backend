@@ -13,6 +13,7 @@ const {
     getFarmerEnquiryHistory,
     eolEnquiry,
     finalApproveEnquiry,
+    reassignSelector,
 } = require('./enquiry.controller');
 const { protect, authorize } = require('../../middlewares/auth.middleware');
 
@@ -28,6 +29,7 @@ router.patch('/:id/eol', authorize('Field Owner', 'Admin'), eolEnquiry);
 router.patch('/reschedule/:id', authorize('Admin', 'Field Owner'), rescheduleEnquiry);
 router.patch('/fix-rate/:id', authorize('Admin', 'Field Owner'), fixRate);
 router.post('/:id/final-approve', authorize('Admin'), finalApproveEnquiry);
+router.put('/:id/reassign-selector', authorize('Field Owner', 'Admin'), reassignSelector);
 
 // --- Standard CRUD ---
 router

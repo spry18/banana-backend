@@ -49,6 +49,18 @@ const notificationSchema = new mongoose.Schema(
             type: String,
             enum: ['Enquiry', 'Logistics', 'Trip', 'Inspection', 'Packing'],
         },
+        farmerName: {
+            type: String,
+            default: null,
+        },
+        location: {
+            type: String,
+            default: null,
+        },
+        status: {
+            type: String,
+            default: null,
+        },
     },
     { timestamps: true }
 );

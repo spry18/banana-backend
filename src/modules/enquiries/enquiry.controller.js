@@ -927,6 +927,100 @@ const finalApproveEnquiry = async (req, res) => {
     }
 };
 
+// @desc    Field Owner or Admin reassigns a Field Selector before work starts
+// @route   PUT /api/enquiries/:id/reassign-selector
+// @access  Private (Field Owner, Admin)
+const reassignSelector = async (req, res) => {
+    try {
+        const { assignedSelectorId } = req.body;
+        const enquiry = await Enquiry.findById(req.params.id);
+
+        if (!enquiry) {
+            return res.status(404).json({ message: 'Enquiry not found' });
+        }
+
+        // 1. Enforce ownership for Field Owner
+        if (req.user.role !== 'Admin' && enquiry.fieldOwnerId.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Not authorized to edit this enquiry' });
+        }
+
+        // 2. Enforce "before work starts" (status must be PENDING or ASSIGNED)
+        if (!['PENDING', 'ASSIGNED'].includes(enquiry.status)) {
+            return res.status(400).json({
+                message: `Cannot reassign selector once enquiry is in '${enquiry.status}' status.`
+            });
+        }
+
+        // 3. Validate new selector if provided
+        let selector = null;
+        let sanitizedSelectorId = assignedSelectorId;
+        if (
+            assignedSelectorId === null ||
+            assignedSelectorId === 'null' ||
+            assignedSelectorId === 'undefined' ||
+            (typeof assignedSelectorId === 'string' && assignedSelectorId.trim() === '')
+        ) {
+            sanitizedSelectorId = null;
+        }
+
+        if (sanitizedSelectorId) {
+            if (typeof sanitizedSelectorId === 'string' && mongoose.Types.ObjectId.isValid(sanitizedSelectorId)) {
+                selector = await User.findById(sanitizedSelectorId);
+                if (!selector) {
+                    return res.status(404).json({ message: 'Assigned Selector not found with the provided ID' });
+                }
+                if (selector.role !== 'Field Selector') {
+                    return res.status(400).json({ message: 'Invalid Role: Assigned user must be a Field Selector' });
+                }
+            } else {
+                return res.status(400).json({ message: 'Invalid ID format for Assigned Selector' });
+            }
+        }
+
+        const before = { assignedSelectorId: enquiry.assignedSelectorId, status: enquiry.status };
+
+        // 4. Update Enquiry
+        enquiry.assignedSelectorId = selector ? sanitizedSelectorId : null;
+        enquiry.status = selector ? 'ASSIGNED' : 'PENDING';
+        await enquiry.save();
+
+        // 5. Send notifications if a new selector was assigned
+        if (selector) {
+            const selectorFullName = `${selector.firstName} ${selector.lastName}`;
+            const farmerName = `${enquiry.farmerFirstName} ${enquiry.farmerLastName}`;
+            const location = enquiry.location;
+
+            // WhatsApp alerts
+            NotificationService.sendVisitScheduled(enquiry.farmerMobile, selectorFullName, selector.mobileNo);
+            NotificationService.sendSelectorAssigned(selector.mobileNo, enquiry.farmerFirstName, enquiry.farmerLastName, enquiry.location, enquiry.enquiryId);
+
+            // In-app notifications
+            const selectorMsg = `Field Selector assigned for farmer ${farmerName} at ${location}.`;
+            await createNotification(sanitizedSelectorId, 'FIELD_SELECTOR_ASSIGNED', selectorMsg, enquiry._id, 'Enquiry');
+            await createNotification(enquiry.fieldOwnerId, 'FIELD_SELECTOR_ASSIGNED', selectorMsg, enquiry._id, 'Enquiry');
+        }
+
+        // 6. Audit Logging
+        await logSystemAction(
+            req.user._id,
+            'UPDATE',
+            'Enquiries',
+            enquiry._id,
+            `Selector reassigned for Enquiry ${enquiry.enquiryId}`,
+            before,
+            { assignedSelectorId: enquiry.assignedSelectorId, status: enquiry.status }
+        );
+
+        res.status(200).json({
+            message: 'Selector reassigned successfully',
+            enquiry
+        });
+    } catch (error) {
+        console.error('Error in reassignSelector:', error);
+        res.status(500).json({ message: 'Server error while reassigning selector' });
+    }
+};
+
 module.exports = {
     createEnquiry,
     getEnquiries,
@@ -940,4 +1034,5 @@ module.exports = {
     getFarmerEnquiryHistory,
     eolEnquiry,
     finalApproveEnquiry,
+    reassignSelector,
 };

@@ -39,30 +39,11 @@ const getDashboard = async (req, res) => {
             visited,
             recentActivity,
         ] = await Promise.all([
-            // Assigned = Any plot assigned to this selector scheduled for today (regardless of status),
-            // OR assigned plots with no scheduled date (still pending),
-            // OR plots visited/inspected by this selector today (so they are counted in assigned even after selection/rejection).
-            (async () => {
-                const inspectedEnquiryIds = await Inspection.distinct('enquiryId', {
-                    selectorId,
-                    createdAt: { $gte: startOfTodayIst, $lt: endOfTodayIst }
-                });
-                return Enquiry.countDocuments({
-                    assignedSelectorId: selectorId,
-                    $or: [
-                        { scheduledDate: { $gte: startOfTodayIst, $lt: endOfTodayIst } },
-                        { _id: { $in: inspectedEnquiryIds } },
-                        {
-                            status: { $ne: 'CANCELLED' },
-                            purchaseRate: null,
-                            $or: [
-                                { scheduledDate: null },
-                                { scheduledDate: { $exists: false } },
-                            ]
-                        }
-                    ]
-                });
-            })(),
+            // Assigned = Any plot assigned to this selector scheduled for today (IST)
+            Enquiry.countDocuments({
+                assignedSelectorId: selectorId,
+                scheduledDate: { $gte: startOfTodayIst, $lt: endOfTodayIst }
+            }),
 
             // Selector marked the plot as SELECTED (inspection approved) — today (polled from Inspection)
             Inspection.countDocuments({
