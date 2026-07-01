@@ -508,6 +508,38 @@
                         },
                         "description": "Returns assignments where assignmentStatus is APPROVED. These represent all assignments that have been finally approved by the OM and are ready for Finance."
                     }
+                },
+                {
+                    "name": "GET Plots — Pending Admin Approval (OM)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{omToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/operational-manager/plots/pending-admin-approval?date=today",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "operational-manager",
+                                "plots",
+                                "pending-admin-approval"
+                            ],
+                            "query": [
+                                {
+                                    "key": "date",
+                                    "value": "today",
+                                    "description": "Date filter: today, yesterday, or YYYY-MM-DD"
+                                }
+                            ]
+                        },
+                        "description": "Returns assignments where the OM approved the packing report, but the Admin has not yet marked the final approval. These plots are currently in PENDING_ADMIN_APPROVAL status."
+                    }
                 }
             ]
         },

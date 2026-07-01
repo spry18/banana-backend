@@ -12,6 +12,7 @@ const {
     getMissedPlots,
     getFarmerEnquiryHistory,
     eolEnquiry,
+    finalApproveEnquiry,
 } = require('./enquiry.controller');
 const { protect, authorize } = require('../../middlewares/auth.middleware');
 
@@ -26,6 +27,7 @@ router.put('/:id/reschedule', authorize('Field Owner', 'Admin'), foRescheduleEnq
 router.patch('/:id/eol', authorize('Field Owner', 'Admin'), eolEnquiry);
 router.patch('/reschedule/:id', authorize('Admin', 'Field Owner'), rescheduleEnquiry);
 router.patch('/fix-rate/:id', authorize('Admin', 'Field Owner'), fixRate);
+router.post('/:id/final-approve', authorize('Admin'), finalApproveEnquiry);
 
 // --- Standard CRUD ---
 router

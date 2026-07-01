@@ -28,6 +28,7 @@ const getAdminStats = async (req, res) => {
             ratFixedPlots,
             assignedPlots,
             completedPlots,
+            pendingAdminApprovalPlots,
             tripsCompleted,
             missedFieldsCount,
             eodIssuesCount,
@@ -41,6 +42,7 @@ const getAdminStats = async (req, res) => {
             Enquiry.countDocuments({ status: 'RATE_FIXED', ...todayFilter }),
             Enquiry.countDocuments({ status: 'ASSIGNED', ...todayFilter }),
             Enquiry.countDocuments({ status: 'COMPLETED', ...todayFilter }),
+            Enquiry.countDocuments({ status: 'PENDING_ADMIN_APPROVAL' }),
             // Trips: locked trips = completed (Trip model has no status field)
             Trip.countDocuments({ isLocked: true }),
             // Missed Fields: scheduledDate passed AND no inspection yet (alert for today's created plots)
@@ -71,6 +73,7 @@ const getAdminStats = async (req, res) => {
                 ratFixed: ratFixedPlots,
                 assigned: assignedPlots,
                 completed: completedPlots,
+                pendingAdminApproval: pendingAdminApprovalPlots,
                 missedPlots: missedFieldsCount,
                 rescheduled: rescheduledPlots,
                 unassigned: unassignedEnquiries,

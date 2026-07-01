@@ -264,9 +264,8 @@ const updateEnquiry = async (req, res) => {
             return res.status(404).json({ message: 'Enquiry not found' });
         }
 
-        // 24-hour edit guard: enquiry is locked after editableUntil expires
-        // The clock is reset every time the enquiry is rescheduled (except when status is PENDING)
-        if (enquiry.status !== 'PENDING' && enquiry.editableUntil && new Date() > enquiry.editableUntil) {
+        // 24-hour edit guard: enquiry is locked after editableUntil expires (Admin bypasses this guard)
+        if (req.user.role !== 'Admin' && enquiry.status !== 'PENDING' && enquiry.editableUntil && new Date() > enquiry.editableUntil) {
             return res.status(403).json({ message: 'Edit window of 24 hours has expired. Reschedule the enquiry to unlock editing.' });
         }
 
@@ -877,6 +876,57 @@ const eolEnquiry = async (req, res) => {
     }
 };
 
+// @desc    Admin final approval of an enquiry
+// @route   POST /api/enquiries/:id/final-approve
+// @access  Protected (Admin only)
+const finalApproveEnquiry = async (req, res) => {
+    try {
+        const enquiry = await Enquiry.findById(req.params.id);
+        if (!enquiry) {
+            return res.status(404).json({ message: 'Enquiry not found' });
+        }
+
+        if (enquiry.status !== 'PENDING_ADMIN_APPROVAL') {
+            return res.status(400).json({
+                message: `Cannot approve enquiry with status: ${enquiry.status}. Enquiry must be in PENDING_ADMIN_APPROVAL status.`
+            });
+        }
+
+        const before = { status: enquiry.status };
+        enquiry.status = 'COMPLETED';
+        await enquiry.save();
+
+        // Flow 2 — In-app: notify Field Owner (their plot harvest is fully done)
+        if (enquiry.fieldOwnerId) {
+            await createNotification(
+                enquiry.fieldOwnerId,
+                'TRIP_COMPLETED',
+                `Harvest for farmer ${enquiry.farmerFirstName} ${enquiry.farmerLastName} at ${enquiry.location} has been completed and approved. Enquiry: ${enquiry.enquiryId}.`,
+                enquiry._id,
+                'Enquiry'
+            );
+        }
+
+        await logSystemAction(
+            req.user._id,
+            'UPDATE',
+            'Enquiries',
+            enquiry._id,
+            `Admin marked final approval for Enquiry ${enquiry.enquiryId}`,
+            before,
+            { status: 'COMPLETED' }
+        );
+
+        res.status(200).json({
+            message: 'Enquiry final approved successfully. Status is now COMPLETED.',
+            enquiry
+        });
+    } catch (error) {
+        console.error('Error in finalApproveEnquiry:', error);
+        res.status(500).json({ message: 'Server error while marking final approval' });
+    }
+};
+
 module.exports = {
     createEnquiry,
     getEnquiries,
@@ -889,4 +939,5 @@ module.exports = {
     getMissedPlots,
     getFarmerEnquiryHistory,
     eolEnquiry,
+    finalApproveEnquiry,
 };

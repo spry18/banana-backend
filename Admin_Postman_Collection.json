@@ -604,6 +604,43 @@
                     }
                 },
                 {
+                    "name": "GET Enquiries Awaiting Admin Approval",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries?page=1&limit=10&status=PENDING_ADMIN_APPROVAL",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                },
+                                {
+                                    "key": "status",
+                                    "value": "PENDING_ADMIN_APPROVAL"
+                                }
+                            ]
+                        },
+                        "description": "Returns a paginated list of all enquiries currently in PENDING_ADMIN_APPROVAL status, awaiting final review and approval by the Admin."
+                    }
+                },
+                {
                     "name": "PATCH Reschedule Enquiry (Admin)",
                     "request": {
                         "method": "PATCH",
@@ -733,6 +770,31 @@
                             ]
                         },
                         "description": "Marks a rejected/selected/rescheduled plot as End of Life (CANCELLED). Stores the remark and clears assignedSelectorId."
+                    }
+                },
+                {
+                    "name": "POST Final Approve Enquiry (Admin)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries/{{enquiryId}}/final-approve",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries",
+                                "{{enquiryId}}",
+                                "final-approve"
+                            ]
+                        },
+                        "description": "Marks an enquiry as completed after the Admin has reviewed and made final edits. Moves status from PENDING_ADMIN_APPROVAL to COMPLETED."
                     }
                 },
                 {

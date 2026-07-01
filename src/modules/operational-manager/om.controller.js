@@ -619,7 +619,7 @@ const approvePackingReport = async (req, res) => {
             assignment.assignmentStatus = 'APPROVED';
             await assignment.save();
             if (assignment.enquiryId) {
-                await Enquiry.findByIdAndUpdate(assignment.enquiryId._id || assignment.enquiryId, { status: 'COMPLETED' });
+                await Enquiry.findByIdAndUpdate(assignment.enquiryId._id || assignment.enquiryId, { status: 'PENDING_ADMIN_APPROVAL' });
             }
 
             // Flow 2 — In-app: notify Munshi (their report was approved)
@@ -644,20 +644,19 @@ const approvePackingReport = async (req, res) => {
                 );
             }
 
-            // Flow 2 — In-app: notify Field Owner (their plot harvest is fully done)
-            if (assignment.enquiryId?.fieldOwnerId) {
-                await createNotification(
-                    assignment.enquiryId.fieldOwnerId,
-                    'TRIP_COMPLETED',
-                    `Harvest for farmer ${assignment.enquiryId?.farmerFirstName || ''} at ${assignment.enquiryId?.location || ''} has been completed and approved. Enquiry: ${assignment.enquiryId?.enquiryId || ''}.`,
-                    assignment.enquiryId._id || assignment.enquiryId,
-                    'Enquiry'
-                );
-            }
+            // Flow 2 — In-app: notify all Admins that final approval is needed
+            const { broadcastToRole } = require('../../utils/broadcastToRole');
+            await broadcastToRole(
+                'Admin',
+                'SYSTEM',
+                `Enquiry ${assignment.enquiryId?.enquiryId || ''} is awaiting final admin approval.`,
+                assignment.enquiryId?._id || assignment.enquiryId,
+                'Enquiry'
+            );
         }
 
         res.status(200).json({
-            message: 'Packing report approved successfully. Assignment is now locked for Finance processing. Parent enquiry marked COMPLETED.',
+            message: 'Packing report approved successfully. Assignment is now locked for Finance processing. Parent enquiry marked PENDING_ADMIN_APPROVAL.',
             assignment,
             packing,
             approvalNote: approvalNote || null,
@@ -753,10 +752,93 @@ const getApprovedPlots = async (req, res) => {
     }
 };
 
+// @desc    Get OM approved plots awaiting Admin final approval
+// @route   GET /api/operational-manager/plots/pending-admin-approval
+// @access  Protected (Admin, Operational Manager)
+const getPendingAdminApprovalPlots = async (req, res) => {
+    try {
+        const { search, page = 1, limit = 20, date } = req.query;
+        const skip = (Number(page) - 1) * Number(limit);
+
+        const enquiryMatchQuery = { status: 'PENDING_ADMIN_APPROVAL' };
+        if (search) {
+            enquiryMatchQuery.$or = [
+                { farmerFirstName: { $regex: search, $options: 'i' } },
+                { farmerLastName: { $regex: search, $options: 'i' } },
+                { enquiryId: { $regex: search, $options: 'i' } },
+                { location: { $regex: search, $options: 'i' } },
+                { subLocation: { $regex: search, $options: 'i' } },
+            ];
+        }
+
+        const matchingEnquiries = await Enquiry.find(enquiryMatchQuery).select('_id');
+        const matchingEnquiryIds = matchingEnquiries.map(e => e._id);
+
+        const assignmentQuery = {
+            assignmentStatus: 'APPROVED',
+            enquiryId: { $in: matchingEnquiryIds }
+        };
+
+        if (date) {
+            const { getIstDayRange } = require('../../utils/dateHelper');
+            const { startOfDay, endOfDay } = getIstDayRange(date);
+            assignmentQuery.updatedAt = { $gte: startOfDay, $lt: endOfDay };
+        }
+
+        const [assignments, total] = await Promise.all([
+            Logistics.find(assignmentQuery)
+                .select('-purchaseRate')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(Number(limit))
+                .populate({
+                    path: 'enquiryId',
+                    select: 'enquiryId farmerFirstName farmerLastName farmerMobile location subLocation packingType fieldOwnerId assignedSelectorId status',
+                    populate: [
+                        { path: 'fieldOwnerId', select: 'firstName lastName mobileNo' },
+                        { path: 'assignedSelectorId', select: 'firstName lastName mobileNo bikeNumber' }
+                    ]
+                })
+                .populate('companyId', 'companyName')
+                .populate('munshiId', 'firstName lastName mobileNo')
+                .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
+                .populate('vehicleId', 'vehicleNumber')
+                .lean(),
+            Logistics.countDocuments(assignmentQuery),
+        ]);
+
+        // Attach Packing Details
+        const assignmentIds = assignments.map(a => a._id);
+        const packingRecords = await Packing.find({ assignmentId: { $in: assignmentIds } }).lean();
+        const packingMap = packingRecords.reduce((map, packing) => {
+            map[packing.assignmentId.toString()] = packing;
+            return map;
+        }, {});
+
+        const data = assignments.map(a => ({
+            ...a,
+            packingDetails: packingMap[a._id.toString()] || null,
+        }));
+
+        return res.status(200).json({
+            stage: 'Pending Admin Approval',
+            total,
+            page: Number(page),
+            pages: Math.ceil(total / Number(limit)),
+            data,
+        });
+
+    } catch (error) {
+        console.error('Error fetching pending admin approval plots:', error);
+        res.status(500).json({ message: 'Server error while fetching pending admin approval plots' });
+    }
+};
+
 module.exports = {
     getOmDashboard,
     getOmPlots,
     rejectPackingReport,
     approvePackingReport,
     getApprovedPlots,
+    getPendingAdminApprovalPlots,
 };
