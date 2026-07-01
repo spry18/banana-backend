@@ -13,8 +13,18 @@ const getNotifications = async (req, res) => {
         const { page = 1, limit = 20 } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
 
+        const recipientId = req.user?._id || req.user?.id;
+        if (!recipientId) {
+            return res.status(200).json({
+                total: 0,
+                page: Number(page),
+                pages: 0,
+                data: [],
+            });
+        }
+
         // Scope strictly to the logged-in user
-        const filter = { recipientId: req.user._id };
+        const filter = { recipientId };
 
         const [notifications, total] = await Promise.all([
             Notification.find(filter)

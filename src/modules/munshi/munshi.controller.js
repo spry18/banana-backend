@@ -695,17 +695,18 @@ const startHarvesting = async (req, res) => {
         await assignment.save();
 
         if (nextState) {
-            // Trigger in-app notifications to OM and Field Owner
+            // Trigger in-app notifications to OM, Field Owner, and Admin
             const enquiry = assignment.enquiryId;
             const farmerName = enquiry ? `${enquiry.farmerFirstName} ${enquiry.farmerLastName}`.trim() : 'Unknown';
             const location = enquiry ? enquiry.location : 'Unknown';
+            const harvestMsg = `Harvesting started for ${farmerName} at ${location}.`;
 
             // 1. Notify Operational Manager (omId)
             if (assignment.omId) {
                 await createNotification(
                     assignment.omId,
                     'HARVESTING_STARTED',
-                    `Munshi has started harvesting at ${farmerName}'s farm in ${location}.`,
+                    harvestMsg,
                     assignment._id,
                     'Logistics'
                 );
@@ -716,11 +717,21 @@ const startHarvesting = async (req, res) => {
                 await createNotification(
                     enquiry.fieldOwnerId,
                     'HARVESTING_STARTED',
-                    `Munshi has started harvesting at ${farmerName}'s farm in ${location}.`,
+                    harvestMsg,
                     enquiry._id,
                     'Enquiry'
                 );
             }
+
+            // 3. Broadcast to all Admins
+            const { broadcastToRole } = require('../../utils/broadcastToRole');
+            await broadcastToRole(
+                'Admin',
+                'HARVESTING_STARTED',
+                harvestMsg,
+                assignment._id,
+                'Logistics'
+            );
         }
 
         res.status(200).json({

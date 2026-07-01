@@ -56,6 +56,31 @@ const createAdvance = async (req, res) => {
             );
         }
 
+        // Send In-App Notifications
+        try {
+            let fieldOwnerId = null;
+            if (assignmentId) {
+                const Logistics = require('../logistics/logistics.model');
+                const assignment = await Logistics.findById(assignmentId).populate('enquiryId', 'fieldOwnerId');
+                if (assignment && assignment.enquiryId) {
+                    fieldOwnerId = assignment.enquiryId.fieldOwnerId;
+                }
+            }
+
+            const driverName = `${driver.firstName} ${driver.lastName}`;
+            const advanceMsg = `Advance amount ₹${amount} issued to driver ${driverName}.`;
+            const { createNotification } = require('../../utils/notificationHelper');
+            const { broadcastToRole } = require('../../utils/broadcastToRole');
+
+            await createNotification(driverId, 'SYSTEM', advanceMsg, assignmentId || null, assignmentId ? 'Logistics' : undefined);
+            if (fieldOwnerId) {
+                await createNotification(fieldOwnerId, 'SYSTEM', advanceMsg, assignmentId || null, assignmentId ? 'Logistics' : undefined);
+            }
+            await broadcastToRole('Admin', 'SYSTEM', advanceMsg, assignmentId || null, assignmentId ? 'Logistics' : undefined);
+        } catch (notifErr) {
+            console.error('Error triggering diesel advance in-app notifications:', notifErr.message);
+        }
+
         await logSystemAction(
             req.user._id,
             'CREATE',

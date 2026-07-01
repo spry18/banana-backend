@@ -125,12 +125,17 @@ const createAssignment = async (req, res) => {
                     munshi.mobileNo
                 );
 
+                const Company = require('../master-data/company.model');
+                const companyDoc = await Company.findById(companyId || enquiry.companyId);
+                const companyName = companyDoc ? companyDoc.companyName : 'N/A';
+                const farmerFullName = `${enquiry.farmerFirstName} ${enquiry.farmerLastName}`;
+                const teamMsg = `Farmer: ${farmerFullName}, Location: ${enquiry.location}, Team: ${teamName || 'N/A'}, Company: ${companyName}`;
+
                 // Flow 2 — In-app: notify Munshi
-                const timeWindow2 = lightInTime && lightOutTime ? `${lightInTime} – ${lightOutTime}` : 'TBD';
                 await createNotification(
                     munshiId,
                     'LOGISTICS_ASSIGNED',
-                    `You have a new packing assignment at ${enquiry.location} for farmer ${enquiry.farmerFirstName}. Time window: ${timeWindow2}.`,
+                    teamMsg,
                     assignment._id,
                     'Logistics'
                 );
@@ -141,11 +146,17 @@ const createAssignment = async (req, res) => {
             NotificationService.sendLogisticsAlert(driver.mobileNo, 'Driver', 'You have a new route assigned.');
         }
 
+        const Company = require('../master-data/company.model');
+        const companyDoc = await Company.findById(companyId || enquiry.companyId);
+        const companyName = companyDoc ? companyDoc.companyName : 'N/A';
+        const farmerFullName = `${enquiry.farmerFirstName} ${enquiry.farmerLastName}`;
+        const teamMsg = `Farmer: ${farmerFullName}, Location: ${enquiry.location}, Team: ${teamName || 'N/A'}, Company: ${companyName}`;
+
         // Flow 2 — In-app: notify Driver
         await createNotification(
             driverId,
             'LOGISTICS_ASSIGNED',
-            `You have a new route assignment for farmer ${enquiry.farmerFirstName} at ${enquiry.location}. Time: ${lightInTime && lightOutTime ? `${lightInTime} – ${lightOutTime}` : 'TBD'}.`,
+            teamMsg,
             assignment._id,
             'Logistics'
         );
@@ -155,11 +166,21 @@ const createAssignment = async (req, res) => {
             await createNotification(
                 enquiry.fieldOwnerId,
                 'TEAM_ASSIGNED',
-                `A harvest team has been assigned for farmer ${enquiry.farmerFirstName} at ${enquiry.location}. Enquiry: ${enquiry.enquiryId}.`,
+                teamMsg,
                 assignment._id,
                 'Logistics'
             );
         }
+
+        // Flow 2 — In-app: notify all Admins
+        const { broadcastToRole } = require('../../utils/broadcastToRole');
+        await broadcastToRole(
+            'Admin',
+            'TEAM_ASSIGNED',
+            teamMsg,
+            assignment._id,
+            'Logistics'
+        );
 
         res.status(201).json(assignment);
     } catch (error) {

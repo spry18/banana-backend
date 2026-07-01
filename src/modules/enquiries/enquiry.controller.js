@@ -104,21 +104,39 @@ const createEnquiry = async (req, res) => {
         }
 
         // Flow 2 — In-app: notify the assigned Field Selector (only if assigned)
+        const farmerName = `${farmerFirstName} ${farmerLastName}`;
+        // Flow 2 — In-app: notify the assigned Field Selector and Field Owner
         if (selector) {
+            const selectorMsg = `Field Selector assigned for farmer ${farmerName} at ${location}.`;
             await createNotification(
                 sanitizedSelectorId,
                 'FIELD_SELECTOR_ASSIGNED',
-                `You have been assigned to inspect a plot for farmer ${farmerFirstName} ${farmerLastName} at ${location}. Ref: ${enquiry.enquiryId}`,
+                selectorMsg,
+                enquiry._id,
+                'Enquiry'
+            );
+            await createNotification(
+                fieldOwnerId,
+                'FIELD_SELECTOR_ASSIGNED',
+                selectorMsg,
                 enquiry._id,
                 'Enquiry'
             );
         }
 
-        // Flow 2 — In-app: notify all Admins
+        // Flow 2 — In-app: notify all Admins and the Field Owner
+        const createdMsg = `New enquiry created for farmer ${farmerName} at ${location}.`;
+        await createNotification(
+            fieldOwnerId,
+            'ENQUIRY_CREATED',
+            createdMsg,
+            enquiry._id,
+            'Enquiry'
+        );
         await broadcastToRole(
             'Admin',
             'ENQUIRY_CREATED',
-            `New enquiry ${enquiry.enquiryId} created for farmer ${farmerFirstName} ${farmerLastName} at ${location}.`,
+            createdMsg,
             enquiry._id,
             'Enquiry'
         );
@@ -323,15 +341,25 @@ const updateEnquiry = async (req, res) => {
             }
         }
 
-        // Flow 2 — In-app: notify new Field Selector when selector changes
+        // Flow 2 — In-app: notify new Field Selector and Field Owner when selector changes
         if (selectorChanged) {
+            const selectorMsg = `Field Selector assigned for farmer ${updatedEnquiry.farmerFirstName} ${updatedEnquiry.farmerLastName} at ${updatedEnquiry.location}.`;
             await createNotification(
                 newSelectorId,
                 'FIELD_SELECTOR_ASSIGNED',
-                `You have been assigned to inspect a plot for farmer ${updatedEnquiry.farmerFirstName} ${updatedEnquiry.farmerLastName} at ${updatedEnquiry.location}. Ref: ${updatedEnquiry.enquiryId}`,
+                selectorMsg,
                 updatedEnquiry._id,
                 'Enquiry'
             );
+            if (updatedEnquiry.fieldOwnerId) {
+                await createNotification(
+                    updatedEnquiry.fieldOwnerId,
+                    'FIELD_SELECTOR_ASSIGNED',
+                    selectorMsg,
+                    updatedEnquiry._id,
+                    'Enquiry'
+                );
+            }
         }
 
         res.status(200).json(updatedEnquiry);
@@ -539,11 +567,19 @@ const fixRate = async (req, res) => {
 
         await enquiry.save();
 
-        // Flow 2 — In-app: notify all Operational Managers and Admins that this plot is ready for logistics
-        const rateMsgAdmin = `Rate fixed at ₹${purchaseRate} for enquiry ${enquiry.enquiryId} (${enquiry.farmerFirstName} ${enquiry.farmerLastName}, ${enquiry.location}). Ready for logistics assignment.`;
-        const rateMsgOM = `Rate fixed for enquiry ${enquiry.enquiryId} (${enquiry.farmerFirstName} ${enquiry.farmerLastName}, ${enquiry.location}). Ready for logistics assignment.`;
-        await broadcastToRole('Admin', 'RATE_FIXED', rateMsgAdmin, enquiry._id, 'Enquiry');
-        await broadcastToRole('Operational Manager', 'RATE_FIXED', rateMsgOM, enquiry._id, 'Enquiry');
+        // Flow 2 — In-app: notify all Operational Managers, Admins, and the Field Owner
+        const rateMsg = `${enquiry.farmerFirstName} ${enquiry.farmerLastName}, ${enquiry.location} rate fixed.`;
+        await broadcastToRole('Admin', 'RATE_FIXED', rateMsg, enquiry._id, 'Enquiry');
+        await broadcastToRole('Operational Manager', 'RATE_FIXED', rateMsg, enquiry._id, 'Enquiry');
+        if (enquiry.fieldOwnerId) {
+            await createNotification(
+                enquiry.fieldOwnerId,
+                'RATE_FIXED',
+                rateMsg,
+                enquiry._id,
+                'Enquiry'
+            );
+        }
 
         await logSystemAction(
             req.user._id,
@@ -633,13 +669,23 @@ const foRescheduleEnquiry = async (req, res) => {
                 NotificationService.sendSelectorAssigned(newSelector.mobileNo, enquiry.farmerFirstName, enquiry.farmerLastName, enquiry.location, enquiry.enquiryId);
             }
             // Flow 2 — In-app notification
+            const selectorMsg = `Field Selector assigned for farmer ${enquiry.farmerFirstName} ${enquiry.farmerLastName} at ${enquiry.location}.`;
             await createNotification(
                 newSelectorId,
                 'FIELD_SELECTOR_ASSIGNED',
-                `You have been assigned to inspect a plot for farmer ${enquiry.farmerFirstName} ${enquiry.farmerLastName} at ${enquiry.location}. Ref: ${enquiry.enquiryId}`,
+                selectorMsg,
                 enquiry._id,
                 'Enquiry'
             );
+            if (enquiry.fieldOwnerId) {
+                await createNotification(
+                    enquiry.fieldOwnerId,
+                    'FIELD_SELECTOR_ASSIGNED',
+                    selectorMsg,
+                    enquiry._id,
+                    'Enquiry'
+                );
+            }
         }
 
         await logSystemAction(

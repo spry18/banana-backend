@@ -304,8 +304,8 @@ const createInspection = async (req, res) => {
       dbDecision === "APPROVED" ? "VISIT_SCHEDULED" : "ENQUIRY_REJECTED";
     const notifMessage =
       dbDecision === "APPROVED"
-        ? `Plot for farmer ${enquiry.farmerFirstName} ${enquiry.farmerLastName} at ${enquiry.location} has been SELECTED. Ready for rate fixing. Ref: ${enquiry.enquiryId}`
-        : `Plot for farmer ${enquiry.farmerFirstName} ${enquiry.farmerLastName} at ${enquiry.location} was REJECTED. Ref: ${enquiry.enquiryId}`;
+        ? `Plot selected for farmer ${enquiry.farmerFirstName} ${enquiry.farmerLastName} at ${enquiry.location}.`
+        : `Plot rejected for farmer ${enquiry.farmerFirstName} ${enquiry.farmerLastName} at ${enquiry.location}.`;
 
     // Notify the Field Owner who raised this enquiry
     if (enquiry.fieldOwnerId) {

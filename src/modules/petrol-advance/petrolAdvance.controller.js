@@ -48,6 +48,29 @@ const createAdvance = async (req, res) => {
             );
         }
 
+        // Send In-App Notifications
+        try {
+            const Enquiry = require('../enquiries/enquiry.model');
+            const activeEnquiries = await Enquiry.find({
+                assignedSelectorId: fieldSelectorId,
+                status: { $in: ['ASSIGNED', 'VISIT_SCHEDULED'] }
+            });
+            const foIds = [...new Set(activeEnquiries.map(e => e.fieldOwnerId.toString()))];
+
+            const selectorName = `${fieldSelector.firstName} ${fieldSelector.lastName}`;
+            const advanceMsg = `Advance amount ₹${amount} issued to field selector ${selectorName}.`;
+            const { createNotification } = require('../../utils/notificationHelper');
+            const { broadcastToRole } = require('../../utils/broadcastToRole');
+
+            await createNotification(fieldSelectorId, 'SYSTEM', advanceMsg, null, undefined);
+            for (const foId of foIds) {
+                await createNotification(foId, 'SYSTEM', advanceMsg, null, undefined);
+            }
+            await broadcastToRole('Admin', 'SYSTEM', advanceMsg, null, undefined);
+        } catch (notifErr) {
+            console.error('Error triggering petrol advance in-app notifications:', notifErr.message);
+        }
+
         await logSystemAction(
             req.user._id,
             'CREATE',
