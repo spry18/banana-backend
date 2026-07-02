@@ -787,11 +787,11 @@ const getMissedPlots = async (req, res) => {
 // @query   ?farmerMobile=9999999999 OR ?farmerName=Ramesh
 const getFarmerEnquiryHistory = async (req, res) => {
     try {
-        const { farmerMobile, farmerName, page = 1, limit = 20 } = req.query;
+        const { farmerMobile, farmerName, page = 1, limit = 20, fieldOwnerId, assignedSelectorId } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
 
-        if (!farmerMobile && !farmerName) {
-            return res.status(400).json({ message: 'Provide at least farmerMobile or farmerName as a query param' });
+        if (!farmerMobile && !farmerName && !fieldOwnerId && !assignedSelectorId) {
+            return res.status(400).json({ message: 'Provide at least farmerMobile, farmerName, fieldOwnerId, or assignedSelectorId as a query param' });
         }
 
         // History includes: COMPLETED (successful harvest), REJECTED (selector rejected the plot)
@@ -807,12 +807,22 @@ const getFarmerEnquiryHistory = async (req, res) => {
             ];
         }
 
+        if (fieldOwnerId) {
+            query.fieldOwnerId = fieldOwnerId;
+        }
+
+        if (assignedSelectorId) {
+            query.assignedSelectorId = assignedSelectorId;
+        }
+
         const [enquiries, total] = await Promise.all([
             Enquiry.find(query)
                 .sort({ updatedAt: -1 })
                 .skip(skip)
                 .limit(Number(limit))
-                .select('enquiryId farmerFirstName farmerLastName farmerMobile status location updatedAt purchaseRate assignedSelectorId companyId')
+                .select('enquiryId farmerFirstName farmerLastName farmerMobile status location updatedAt purchaseRate assignedSelectorId fieldOwnerId companyId')
+                .populate('fieldOwnerId', 'firstName lastName')
+                .populate('assignedSelectorId', 'firstName lastName')
                 .lean(),
             Enquiry.countDocuments(query),
         ]);
@@ -830,6 +840,8 @@ const getFarmerEnquiryHistory = async (req, res) => {
                     location: enq.location,
                     fieldStatus: enq.status,  // 'COMPLETED' | 'REJECTED' | 'SELECTED' | etc
                     purchaseRate: enq.purchaseRate || null,
+                    fieldOwnerName: enq.fieldOwnerId ? `${enq.fieldOwnerId.firstName} ${enq.fieldOwnerId.lastName}` : null,
+                    fieldSelectorName: enq.assignedSelectorId ? `${enq.assignedSelectorId.firstName} ${enq.assignedSelectorId.lastName}` : null,
                 };
 
                 if (enq.status === 'REJECTED') {
@@ -1053,6 +1065,138 @@ const reassignSelector = async (req, res) => {
     }
 };
 
+// @desc    Edit a fixed rate plot
+// @route   PUT /api/enquiries/:id/fixed-plot
+// @access  Private (Admin, Operational Manager)
+const editFixedPlot = async (req, res) => {
+    try {
+        const { purchaseRate, companyId, packingType, estimatedBoxes, remarks } = req.body;
+        const enquiry = await Enquiry.findById(req.params.id);
+
+        if (!enquiry) {
+            return res.status(404).json({ message: 'Enquiry not found' });
+        }
+
+        if (enquiry.status !== 'RATE_FIXED') {
+            return res.status(400).json({ message: 'Can only edit rate on rate-fixed plots.' });
+        }
+
+        // Validate company exists if provided
+        if (companyId) {
+            const Company = require('../master-data/company.model');
+            const company = await Company.findById(companyId);
+            if (!company) {
+                return res.status(404).json({ message: 'Company not found with the provided ID' });
+            }
+            enquiry.companyId = companyId;
+        }
+
+        const before = {
+            purchaseRate: enquiry.purchaseRate,
+            companyId: enquiry.companyId,
+            packingType: enquiry.packingType,
+            estimatedBoxes: enquiry.estimatedBoxes,
+            remarks: enquiry.remarks
+        };
+
+        if (purchaseRate !== undefined) enquiry.purchaseRate = Number(purchaseRate);
+        if (packingType !== undefined) enquiry.packingType = packingType;
+        if (estimatedBoxes !== undefined) enquiry.estimatedBoxes = Number(estimatedBoxes);
+        if (remarks !== undefined) enquiry.remarks = remarks;
+
+        await enquiry.save();
+
+        // Audit Logging
+        await logSystemAction(
+            req.user._id,
+            'UPDATE',
+            'Enquiries',
+            enquiry._id,
+            `Fixed plot rate details updated for Enquiry ${enquiry.enquiryId}`,
+            before,
+            {
+                purchaseRate: enquiry.purchaseRate,
+                companyId: enquiry.companyId,
+                packingType: enquiry.packingType,
+                estimatedBoxes: enquiry.estimatedBoxes,
+                remarks: enquiry.remarks
+            }
+        );
+
+        res.status(200).json({
+            message: 'Fixed plot updated successfully',
+            enquiry
+        });
+    } catch (error) {
+        console.error('Error in editFixedPlot:', error);
+        res.status(500).json({ message: 'Server error while editing fixed plot' });
+    }
+};
+
+// @desc    Delete/Reset a fixed rate plot (returns it to SELECTED)
+// @route   DELETE /api/enquiries/:id/fixed-plot
+// @access  Private (Admin, Operational Manager)
+const deleteFixedPlot = async (req, res) => {
+    try {
+        const enquiry = await Enquiry.findById(req.params.id);
+
+        if (!enquiry) {
+            return res.status(404).json({ message: 'Enquiry not found' });
+        }
+
+        if (enquiry.status !== 'RATE_FIXED') {
+            return res.status(400).json({ message: 'Can only delete rate on rate-fixed plots.' });
+        }
+
+        // Prevent delete if logistics assignment exists
+        const Logistics = require('../logistics/logistics.model');
+        const logisticsExists = await Logistics.findOne({ enquiryId: enquiry._id });
+        if (logisticsExists) {
+            return res.status(400).json({
+                message: 'Cannot reset fixed rate. A logistics assignment already exists for this plot. Delete/Cancel the logistics assignment first.'
+            });
+        }
+
+        const before = {
+            status: enquiry.status,
+            purchaseRate: enquiry.purchaseRate,
+            companyId: enquiry.companyId,
+            rateFixedBy: enquiry.rateFixedBy
+        };
+
+        enquiry.status = 'SELECTED';
+        enquiry.purchaseRate = undefined;
+        enquiry.companyId = undefined;
+        enquiry.rateFixedBy = undefined;
+
+        await enquiry.save();
+
+        // Audit Logging
+        await logSystemAction(
+            req.user._id,
+            'UPDATE',
+            'Enquiries',
+            enquiry._id,
+            `Fixed plot rate reset back to SELECTED status for Enquiry ${enquiry.enquiryId}`,
+            before,
+            {
+                status: enquiry.status,
+                purchaseRate: enquiry.purchaseRate,
+                companyId: enquiry.companyId,
+                rateFixedBy: enquiry.rateFixedBy
+            }
+        );
+
+        res.status(200).json({
+            message: 'Fixed plot rate deleted and reset back to SELECTED status successfully',
+            enquiry
+        });
+    } catch (error) {
+        console.error('Error in deleteFixedPlot:', error);
+        res.status(500).json({ message: 'Server error while deleting fixed plot' });
+    }
+};
+
 module.exports = {
     createEnquiry,
     getEnquiries,
@@ -1067,4 +1211,6 @@ module.exports = {
     eolEnquiry,
     finalApproveEnquiry,
     reassignSelector,
+    editFixedPlot,
+    deleteFixedPlot,
 };

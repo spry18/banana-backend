@@ -15,12 +15,17 @@ const getFieldSelectionReport = async (req, res) => {
             search,
             location,
             companyId,
+            dateFilter,
+            startDate,
+            endDate,
+            fieldOwnerId,
+            assignedSelectorId,
+            date,
         } = req.query;
 
         const skip = (Number(page) - 1) * Number(limit);
 
         // ── 1. Calculate Stats ──
-        // totalBoxes, totalWastage, lineRejected come from Packing
         const packingStats = await Packing.aggregate([
             {
                 $group: {
@@ -35,11 +40,7 @@ const getFieldSelectionReport = async (req, res) => {
         ]);
 
         const pStats = packingStats[0] || { totalBoxes: 0, totalWastage: 0, lineRejected: 0 };
-
-        // totalRejected from Enquiry
         const totalRejected = await Enquiry.countDocuments({ status: 'REJECTED' });
-
-        // totalTrips from Logistics
         const totalTrips = await Logistics.countDocuments();
 
         const stats = {
@@ -59,13 +60,46 @@ const getFieldSelectionReport = async (req, res) => {
             query.companyId = companyId;
         }
 
-        // We find Enquiries matching the filters first
+        if (fieldOwnerId) {
+            query.fieldOwnerId = fieldOwnerId;
+        }
+        if (assignedSelectorId) {
+            query.assignedSelectorId = assignedSelectorId;
+        }
+
         if (search) {
             query.$or = [
                 { farmerFirstName: { $regex: search, $options: 'i' } },
                 { farmerLastName: { $regex: search, $options: 'i' } },
                 { farmerMobile: { $regex: search, $options: 'i' } },
             ];
+        }
+
+        // Apply common date filters
+        if (dateFilter || date) {
+            const { getIstDayRange } = require('../../utils/dateHelper');
+            let dateRange = null;
+            if (dateFilter === 'daily' || dateFilter === 'today' || date === 'today') {
+                dateRange = getIstDayRange('today');
+            } else if (dateFilter === 'yesterday' || date === 'yesterday') {
+                dateRange = getIstDayRange('yesterday');
+            } else if (dateFilter === 'weekly') {
+                const start = new Date();
+                start.setDate(start.getDate() - 7);
+                dateRange = { startOfDay: start, endOfDay: new Date() };
+            } else if (dateFilter === 'monthly') {
+                const start = new Date();
+                start.setMonth(start.getMonth() - 1);
+                dateRange = { startOfDay: start, endOfDay: new Date() };
+            } else if (dateFilter === 'custom' && startDate && endDate) {
+                dateRange = { startOfDay: new Date(startDate), endOfDay: new Date(new Date(endDate).getTime() + 24 * 60 * 60 * 1000) };
+            } else if (date) {
+                dateRange = getIstDayRange(date);
+            }
+
+            if (dateRange) {
+                query.createdAt = { $gte: dateRange.startOfDay, $lt: dateRange.endOfDay };
+            }
         }
 
         const enquiries = await Enquiry.find(query)
@@ -76,7 +110,6 @@ const getFieldSelectionReport = async (req, res) => {
 
         const enquiryIds = enquiries.map(e => e._id);
 
-        // Find Inspections for these Enquiries
         const [inspections, total] = await Promise.all([
             Inspection.find({ enquiryId: { $in: enquiryIds } })
                 .sort({ createdAt: -1 })
@@ -91,8 +124,24 @@ const getFieldSelectionReport = async (req, res) => {
             return acc;
         }, {});
 
+        const associatedLogistics = await Logistics.find({ enquiryId: { $in: enquiryIds } }).lean();
+        const logisticsMap = associatedLogistics.reduce((acc, log) => {
+            acc[log.enquiryId.toString()] = log;
+            return acc;
+        }, {});
+
+        const logisticsIds = associatedLogistics.map(l => l._id);
+        const associatedPackings = await Packing.find({ assignmentId: { $in: logisticsIds } }).lean();
+        const packingMap = associatedPackings.reduce((acc, pack) => {
+            acc[pack.assignmentId.toString()] = pack;
+            return acc;
+        }, {});
+
         const tableData = inspections.map(ins => {
             const e = enquiryMap[ins.enquiryId.toString()] || {};
+            const logistics = logisticsMap[e._id?.toString()];
+            const packing = logistics ? packingMap[logistics._id.toString()] : null;
+
             return {
                 date: ins.createdAt,
                 farmerName: e.farmerFirstName ? `${e.farmerFirstName} ${e.farmerLastName}` : 'Unknown',
@@ -103,7 +152,13 @@ const getFieldSelectionReport = async (req, res) => {
                 fieldSelector: e.assignedSelectorId ? `${e.assignedSelectorId.firstName} ${e.assignedSelectorId.lastName}` : null,
                 fieldSelectorBike: e.assignedSelectorId ? (e.assignedSelectorId.bikeNumber || null) : null,
                 company: e.companyId ? e.companyId.companyName : null,
-                weight: e.estimatedBoxes || e.plantCount || 0, // Fallback for "weight"
+                weight: e.estimatedBoxes || e.plantCount || 0, 
+
+                // Additional response fields
+                status: e.status || null,
+                fieldOwnerName: e.fieldOwnerId ? `${e.fieldOwnerId.firstName} ${e.fieldOwnerId.lastName}` : null,
+                fieldSelectorName: e.assignedSelectorId ? `${e.assignedSelectorId.firstName} ${e.assignedSelectorId.lastName}` : null,
+                totalBoxes: packing ? (packing.totalBoxes || 0) : (e.estimatedBoxes || 0),
             };
         });
 
@@ -304,8 +359,225 @@ const getMunshiHarvestingReport = async (req, res) => {
     }
 };
 
+// @desc    Export Field Selection Report to Excel
+// @route   GET /api/reports/field-selection/export
+// @access  Private (Admin, Operational Manager)
+const exportFieldSelectionReport = async (req, res) => {
+    try {
+        const {
+            search,
+            location,
+            companyId,
+            dateFilter,
+            startDate,
+            endDate,
+            fieldOwnerId,
+            assignedSelectorId,
+            date,
+        } = req.query;
+
+        // ── 2. Query Data (no pagination limit) ──
+        const query = {};
+        if (location) {
+            query.location = { $regex: location, $options: 'i' };
+        }
+        if (companyId) {
+            query.companyId = companyId;
+        }
+
+        if (fieldOwnerId) {
+            query.fieldOwnerId = fieldOwnerId;
+        }
+        if (assignedSelectorId) {
+            query.assignedSelectorId = assignedSelectorId;
+        }
+
+        if (search) {
+            query.$or = [
+                { farmerFirstName: { $regex: search, $options: 'i' } },
+                { farmerLastName: { $regex: search, $options: 'i' } },
+                { farmerMobile: { $regex: search, $options: 'i' } },
+            ];
+        }
+
+        if (dateFilter || date) {
+            const { getIstDayRange } = require('../../utils/dateHelper');
+            let dateRange = null;
+            if (dateFilter === 'daily' || dateFilter === 'today' || date === 'today') {
+                dateRange = getIstDayRange('today');
+            } else if (dateFilter === 'yesterday' || date === 'yesterday') {
+                dateRange = getIstDayRange('yesterday');
+            } else if (dateFilter === 'weekly') {
+                const start = new Date();
+                start.setDate(start.getDate() - 7);
+                dateRange = { startOfDay: start, endOfDay: new Date() };
+            } else if (dateFilter === 'monthly') {
+                const start = new Date();
+                start.setMonth(start.getMonth() - 1);
+                dateRange = { startOfDay: start, endOfDay: new Date() };
+            } else if (dateFilter === 'custom' && startDate && endDate) {
+                dateRange = { startOfDay: new Date(startDate), endOfDay: new Date(new Date(endDate).getTime() + 24 * 60 * 60 * 1000) };
+            } else if (date) {
+                dateRange = getIstDayRange(date);
+            }
+
+            if (dateRange) {
+                query.createdAt = { $gte: dateRange.startOfDay, $lt: dateRange.endOfDay };
+            }
+        }
+
+        const enquiries = await Enquiry.find(query)
+            .populate('fieldOwnerId', 'firstName lastName')
+            .populate('assignedSelectorId', 'firstName lastName bikeNumber')
+            .populate('companyId', 'companyName')
+            .lean();
+
+        const enquiryIds = enquiries.map(e => e._id);
+
+        const inspections = await Inspection.find({ enquiryId: { $in: enquiryIds } })
+            .sort({ createdAt: -1 })
+            .lean();
+
+        const enquiryMap = enquiries.reduce((acc, e) => {
+            acc[e._id.toString()] = e;
+            return acc;
+        }, {});
+
+        const associatedLogistics = await Logistics.find({ enquiryId: { $in: enquiryIds } }).lean();
+        const logisticsMap = associatedLogistics.reduce((acc, log) => {
+            acc[log.enquiryId.toString()] = log;
+            return acc;
+        }, {});
+
+        const logisticsIds = associatedLogistics.map(l => l._id);
+        const associatedPackings = await Packing.find({ assignmentId: { $in: logisticsIds } }).lean();
+        const packingMap = associatedPackings.reduce((acc, pack) => {
+            acc[pack.assignmentId.toString()] = pack;
+            return acc;
+        }, {});
+
+        // Build Excel Workbook
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('Field Selection Report');
+
+        sheet.columns = [
+            { header: 'Date', key: 'date', width: 15 },
+            { header: 'Farmer Name', key: 'farmerName', width: 20 },
+            { header: 'Mobile Number', key: 'mobileNumber', width: 15 },
+            { header: 'Location', key: 'location', width: 15 },
+            { header: 'Rate (₹)', key: 'rate', width: 10 },
+            { header: 'Field Owner', key: 'fieldOwner', width: 20 },
+            { header: 'Field Selector', key: 'fieldSelector', width: 20 },
+            { header: 'Company', key: 'company', width: 20 },
+            { header: 'Status', key: 'status', width: 15 },
+            { header: 'Total Boxes', key: 'totalBoxes', width: 12 },
+        ];
+
+        inspections.forEach(ins => {
+            const e = enquiryMap[ins.enquiryId.toString()] || {};
+            const logistics = logisticsMap[e._id?.toString()];
+            const packing = logistics ? packingMap[logistics._id.toString()] : null;
+
+            sheet.addRow({
+                date: new Date(ins.createdAt).toLocaleDateString('en-IN'),
+                farmerName: e.farmerFirstName ? `${e.farmerFirstName} ${e.farmerLastName}` : 'Unknown',
+                mobileNumber: e.farmerMobile || 'N/A',
+                location: e.location || 'N/A',
+                rate: e.purchaseRate || null,
+                fieldOwner: e.fieldOwnerId ? `${e.fieldOwnerId.firstName} ${e.fieldOwnerId.lastName}` : null,
+                fieldSelector: e.assignedSelectorId ? `${e.assignedSelectorId.firstName} ${e.assignedSelectorId.lastName}` : null,
+                company: e.companyId ? e.companyId.companyName : null,
+                status: e.status || 'N/A',
+                totalBoxes: packing ? (packing.totalBoxes || 0) : (e.estimatedBoxes || 0),
+            });
+        });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=field_selection_report.xlsx');
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (error) {
+        console.error('Error exporting Field Selection Report:', error);
+        res.status(500).json({ message: 'Server error during report export' });
+    }
+};
+
+// @desc    Export Munshi Harvesting Report to Excel
+// @route   GET /api/reports/munshi-harvesting/export
+// @access  Private (Admin, Operational Manager)
+const exportMunshiHarvestingReport = async (req, res) => {
+    try {
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const startOfQuarter = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+
+        const packings = await Packing.find({
+            status: { $in: ['SUBMITTED', 'APPROVED'] },
+            createdAt: { $gte: startOfQuarter },
+        })
+            .populate('munshiId', 'firstName lastName')
+            .lean();
+
+        const munshiStats = {};
+        packings.forEach(p => {
+            const munshiIdStr = p.munshiId ? p.munshiId._id.toString() : 'unknown';
+            if (munshiIdStr === 'unknown') return;
+
+            if (!munshiStats[munshiIdStr]) {
+                munshiStats[munshiIdStr] = {
+                    munshiName: `${p.munshiId.firstName} ${p.munshiId.lastName}`,
+                    totalBoxesQuarter: 0,
+                    totalBoxesMonth: 0,
+                    daysActiveInMonth: new Set(),
+                };
+            }
+
+            const isCurrentMonth = p.createdAt >= startOfMonth;
+            munshiStats[munshiIdStr].totalBoxesQuarter += (p.totalBoxes || 0);
+            if (isCurrentMonth) {
+                munshiStats[munshiIdStr].totalBoxesMonth += (p.totalBoxes || 0);
+                const dayString = new Date(p.createdAt).toISOString().split('T')[0];
+                munshiStats[munshiIdStr].daysActiveInMonth.add(dayString);
+            }
+        });
+
+        // Build Excel Workbook
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('Munshi Harvesting Report');
+
+        sheet.columns = [
+            { header: 'Munshi Name', key: 'munshiName', width: 25 },
+            { header: 'Per Day (Avg)', key: 'perDay', width: 15 },
+            { header: 'Per Month (Total)', key: 'perMonth', width: 18 },
+            { header: 'Quarterly (Total)', key: 'quarterly', width: 18 },
+        ];
+
+        Object.values(munshiStats).forEach(stats => {
+            const daysActive = stats.daysActiveInMonth.size || 1;
+            const perDay = Math.round(stats.totalBoxesMonth / daysActive);
+
+            sheet.addRow({
+                munshiName: stats.munshiName,
+                perDay: perDay,
+                perMonth: stats.totalBoxesMonth,
+                quarterly: stats.totalBoxesQuarter,
+            });
+        });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=munshi_harvesting_report.xlsx');
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (error) {
+        console.error('Error exporting Munshi Harvesting Report:', error);
+        res.status(500).json({ message: 'Server error during report export' });
+    }
+};
+
 module.exports = {
     getFieldSelectionReport,
     getExecutionDetailedReport,
     getMunshiHarvestingReport,
+    exportFieldSelectionReport,
+    exportMunshiHarvestingReport,
 };

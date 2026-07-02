@@ -8,6 +8,12 @@ const {
     getStaffPerformance,
     getMonitoringDashboard,
     getFieldSelectionDashboard,
+    getAllUsersHistory,
+    getFuelHistory,
+    getMunshiHistory,
+    getEicherHistory,
+    getPickupHistory,
+    masterSearch,
 } = require('./admin.controller');
 
 router.use(protect);
@@ -27,5 +33,15 @@ router.get('/field-visit-monitoring', getMonitoringDashboard);       // new URL 
 
 // Requirement 2: Field Selection Management consolidated dashboard
 router.get('/field-selection-dashboard', getFieldSelectionDashboard);
+
+// Operations History APIs
+router.get('/history/all-users', getAllUsersHistory);
+router.get('/history/fuel', getFuelHistory);
+router.get('/history/munshi', getMunshiHistory);
+router.get('/history/eicher', getEicherHistory);
+router.get('/history/pickup', getPickupHistory);
+
+// Master Search
+router.get('/master-search', masterSearch);
 
 module.exports = router;

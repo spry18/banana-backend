@@ -14,6 +14,8 @@ const {
     eolEnquiry,
     finalApproveEnquiry,
     reassignSelector,
+    editFixedPlot,
+    deleteFixedPlot,
 } = require('./enquiry.controller');
 const { protect, authorize } = require('../../middlewares/auth.middleware');
 
@@ -30,6 +32,8 @@ router.patch('/reschedule/:id', authorize('Admin', 'Field Owner'), rescheduleEnq
 router.patch('/fix-rate/:id', authorize('Admin', 'Field Owner'), fixRate);
 router.post('/:id/final-approve', authorize('Admin'), finalApproveEnquiry);
 router.put('/:id/reassign-selector', authorize('Field Owner', 'Admin'), reassignSelector);
+router.put('/:id/fixed-plot', authorize('Admin', 'Operational Manager'), editFixedPlot);
+router.delete('/:id/fixed-plot', authorize('Admin', 'Operational Manager'), deleteFixedPlot);
 
 // --- Standard CRUD ---
 router

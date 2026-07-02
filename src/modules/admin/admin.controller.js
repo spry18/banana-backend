@@ -4,6 +4,10 @@ const Trip = require('../execution/trip.model');
 const DailyLog = require('../auditing/dailyLog.model');
 const User = require('../users/user.model');
 const Logistics = require('../logistics/logistics.model');
+const SystemAudit = require('../auditing/systemAudit.model');
+const DieselAdvance = require('../diesel-advance/dieselAdvance.model');
+const PetrolAdvance = require('../petrol-advance/petrolAdvance.model');
+const Packing = require('../execution/packing.model');
 
 // @desc    Get comprehensive Admin dashboard KPIs
 // @route   GET /api/admin/dashboard-stats
@@ -342,6 +346,10 @@ const getMonitoringDashboard = async (req, res) => {
             selector,          // frontend sends ?selector=id
             date,              // frontend sends ?date=YYYY-MM-DD
             companyId,
+            search,
+            dateFilter,
+            startDate,
+            endDate,
         } = req.query;
 
         const skip = (Number(page) - 1) * Number(limit);
@@ -405,11 +413,56 @@ const getMonitoringDashboard = async (req, res) => {
             query.assignedSelectorId = selector;
         }
 
-        if (date) {
-            const start = new Date(date);
-            const end = new Date(date);
-            end.setDate(end.getDate() + 1);
-            query.scheduledDate = { $gte: start, $lt: end };
+        // Expanded Search query
+        if (search) {
+            const matchingUsers = await User.find({
+                $or: [
+                    { firstName: { $regex: search, $options: 'i' } },
+                    { lastName: { $regex: search, $options: 'i' } }
+                ]
+            }).select('_id');
+
+            const Company = require('../master-data/company.model');
+            const matchingCompanies = await Company.find({
+                companyName: { $regex: search, $options: 'i' }
+            }).select('_id');
+
+            query.$or = [
+                { farmerFirstName: { $regex: search, $options: 'i' } },
+                { farmerLastName: { $regex: search, $options: 'i' } },
+                { farmerMobile: { $regex: search, $options: 'i' } },
+                { location: { $regex: search, $options: 'i' } },
+                { fieldOwnerId: { $in: matchingUsers.map(u => u._id) } },
+                { assignedSelectorId: { $in: matchingUsers.map(u => u._id) } },
+                { companyId: { $in: matchingCompanies.map(c => c._id) } }
+            ];
+        }
+
+        // Common date filters
+        if (dateFilter || date) {
+            const { getIstDayRange } = require('../../utils/dateHelper');
+            let dateRange = null;
+            if (dateFilter === 'daily' || dateFilter === 'today' || date === 'today') {
+                dateRange = getIstDayRange('today');
+            } else if (dateFilter === 'yesterday' || date === 'yesterday') {
+                dateRange = getIstDayRange('yesterday');
+            } else if (dateFilter === 'weekly') {
+                const start = new Date();
+                start.setDate(start.getDate() - 7);
+                dateRange = { startOfDay: start, endOfDay: new Date() };
+            } else if (dateFilter === 'monthly') {
+                const start = new Date();
+                start.setMonth(start.getMonth() - 1);
+                dateRange = { startOfDay: start, endOfDay: new Date() };
+            } else if (dateFilter === 'custom' && startDate && endDate) {
+                dateRange = { startOfDay: new Date(startDate), endOfDay: new Date(new Date(endDate).getTime() + 24 * 60 * 60 * 1000) };
+            } else if (date) {
+                dateRange = getIstDayRange(date);
+            }
+
+            if (dateRange) {
+                query.scheduledDate = { $gte: dateRange.startOfDay, $lt: dateRange.endOfDay };
+            }
         }
 
         const total = await Enquiry.countDocuments(query);
@@ -420,12 +473,29 @@ const getMonitoringDashboard = async (req, res) => {
             .limit(Number(limit))
             .populate('fieldOwnerId', 'firstName lastName')
             .populate('assignedSelectorId', 'firstName lastName bikeNumber')
+            .populate('companyId', 'companyName')
             .lean();
 
         const tableEnquiryIds = rawTable.map(e => e._id);
-        const associatedInspections = await Inspection.find({ enquiryId: { $in: tableEnquiryIds } }).lean();
+        const [associatedInspections, associatedLogistics] = await Promise.all([
+            Inspection.find({ enquiryId: { $in: tableEnquiryIds } }).lean(),
+            Logistics.find({ enquiryId: { $in: tableEnquiryIds } }).lean(),
+        ]);
+
         const inspectionMap = associatedInspections.reduce((acc, ins) => {
             acc[ins.enquiryId.toString()] = ins;
+            return acc;
+        }, {});
+
+        const logisticsMap = associatedLogistics.reduce((acc, log) => {
+            acc[log.enquiryId.toString()] = log;
+            return acc;
+        }, {});
+
+        const logisticsIds = associatedLogistics.map(l => l._id);
+        const associatedPackings = await Packing.find({ assignmentId: { $in: logisticsIds } }).lean();
+        const packingMap = associatedPackings.reduce((acc, pack) => {
+            acc[pack.assignmentId.toString()] = pack;
             return acc;
         }, {});
 
@@ -450,6 +520,8 @@ const getMonitoringDashboard = async (req, res) => {
             };
 
             const inspection = inspectionMap[e._id.toString()];
+            const logistics = logisticsMap[e._id.toString()];
+            const packing = logistics ? packingMap[logistics._id.toString()] : null;
 
             return {
                 id: e._id,
@@ -468,18 +540,20 @@ const getMonitoringDashboard = async (req, res) => {
                 fieldSelectorBike: e.assignedSelectorId
                     ? (e.assignedSelectorId.bikeNumber || null)
                     : null,
-                // Requirement Fix: "Visited Date" should prioritize inspection time, then fallback to scheduled
                 visitDate: inspection 
                     ? new Date(inspection.createdAt).toLocaleDateString('en-IN') 
                     : (e.scheduledDate ? new Date(e.scheduledDate).toLocaleDateString('en-IN') : null),
-                // Requirement Fix: "Harvesting Time" should prioritize the choice made by the selector during inspection
                 harvestTime: inspection ? inspection.harvestingTime : (e.scheduledTime || null),
                 status: effectiveStatus,
-
                 action: buttonMap[effectiveStatus] || 'View Details',
+
+                // Additional response fields
+                boxCount: packing ? (packing.totalBoxes || 0) : (e.estimatedBoxes || null),
+                partnerName: e.companyId ? e.companyId.companyName : null,
+                packagingType: e.packingType || null,
+                assignmentStatus: logistics ? logistics.assignmentStatus : 'UNASSIGNED',
             };
         });
-
 
         const totalPages = Math.ceil(total / Number(limit));
 
@@ -532,7 +606,7 @@ const getFieldSelectionDashboard = async (req, res) => {
         }
 
         // ── Stats ─────────────────────────────────────────────────────────
-        const [
+                const [
             todayVisited,
             selectedCount,
             rejectedCount,
@@ -548,38 +622,6 @@ const getFieldSelectionDashboard = async (req, res) => {
             Enquiry.countDocuments({ scheduledDate: { $lt: now }, status: 'PENDING' }),
             Enquiry.countDocuments({ status: 'RATE_FIXED' }),
         ]);
-
-        // ── Today's Visited Plots ─────────────────────────────────────────
-        const todayInspections = await Inspection.find({
-            createdAt: { $gte: todayStart, $lt: todayEnd },
-        })
-            .populate({
-                path: 'enquiryId',
-                select: 'farmerFirstName farmerLastName location fieldOwnerId assignedSelectorId farmerMobile plantCount purchaseRate companyId',
-                populate: [
-                    { path: 'fieldOwnerId', select: 'firstName lastName' },
-                    { path: 'assignedSelectorId', select: 'firstName lastName bikeNumber' },
-                    { path: 'companyId', select: 'companyName' },
-                ],
-            })
-            .lean();
-
-        const todayVisitedPlots = todayInspections.map(ins => {
-            const e = ins.enquiryId || {};
-            return {
-                enquiryId: e._id || null,
-                farmerName: e.farmerFirstName ? `${e.farmerFirstName} ${e.farmerLastName}` : 'Unknown',
-                location: e.location || null,
-                fieldOwner: e.fieldOwnerId ? `${e.fieldOwnerId.firstName} ${e.fieldOwnerId.lastName}` : null,
-                fieldSelector: e.assignedSelectorId ? `${e.assignedSelectorId.firstName} ${e.assignedSelectorId.lastName}` : null,
-                fieldSelectorBike: e.assignedSelectorId ? (e.assignedSelectorId.bikeNumber || null) : null,
-                farmerMobile: e.farmerMobile || 'N/A',
-                plantCount: e.plantCount || 0,
-                company: e.companyId ? e.companyId.companyName : 'N/A',
-                rate: e.purchaseRate ? `₹${e.purchaseRate}/kg` : 'Not Fixed',
-                status: ins.decision === 'APPROVED' ? 'SELECTED' : ins.decision === 'REJECTED' ? 'REJECTED' : ins.decision,
-            };
-        });
 
         const kmMatch = { status: 'COMPLETED' };
         if (selectorDate) {
@@ -636,31 +678,6 @@ const getFieldSelectionDashboard = async (req, res) => {
             totalAssignedPlots: r.totalAssignedPlots,
         }));
 
-        // ── Enquiry Progress (recent SELECTED / RATE_FIXED enquiries) ─────
-        const progressEnquiries = await Enquiry.find({
-            status: { $in: ['SELECTED', 'RATE_FIXED', 'ASSIGNED'] },
-        })
-            .sort({ updatedAt: -1 })
-            .limit(50)
-            .populate('fieldOwnerId', 'firstName lastName')
-            .populate('assignedSelectorId', 'firstName lastName bikeNumber')
-            .populate('companyId', 'companyName')
-            .lean();
-
-        const enquiryProgress = progressEnquiries.map(e => ({
-            enquiryId: e._id,
-            farmerName: `${e.farmerFirstName} ${e.farmerLastName}`,
-            location: e.location,
-            rate: e.purchaseRate ? `₹${e.purchaseRate}/kg` : null,
-            company: e.companyId ? e.companyId.companyName : null,
-            fieldOwner: e.fieldOwnerId ? `${e.fieldOwnerId.firstName} ${e.fieldOwnerId.lastName}` : null,
-            fieldSelector: e.assignedSelectorId ? `${e.assignedSelectorId.firstName} ${e.assignedSelectorId.lastName}` : null,
-            fieldSelectorBike: e.assignedSelectorId ? (e.assignedSelectorId.bikeNumber || null) : null,
-            farmerMobile: e.farmerMobile,
-            plantCount: e.plantCount,
-            status: e.status,
-        }));
-
         res.json({
             stats: {
                 todayVisited,
@@ -670,14 +687,317 @@ const getFieldSelectionDashboard = async (req, res) => {
                 missed: missedCount,
                 fixRate: fixRateCount,
             },
-            todayVisitedPlots,
             fieldSelectorData,
             fieldOwnerData,
-            enquiryProgress,
         });
     } catch (error) {
         console.error('Field selection dashboard error:', error);
         res.status(500).json({ message: 'Server error while fetching field selection dashboard' });
+    }
+};
+
+// @desc    Get all users activity history (System Audits)
+// @route   GET /api/admin/history/all-users
+// @access  Private (Admin, Operational Manager)
+const getAllUsersHistory = async (req, res) => {
+    try {
+        const { search, moduleName, action, date, page = 1, limit = 20 } = req.query;
+        const skip = (Number(page) - 1) * Number(limit);
+
+        const query = {};
+
+        if (moduleName) {
+            query.moduleName = moduleName;
+        }
+        if (action) {
+            query.action = action.toUpperCase();
+        }
+        if (date) {
+            const { getIstDayRange } = require('../../utils/dateHelper');
+            const { startOfDay, endOfDay } = getIstDayRange(date);
+            query.createdAt = { $gte: startOfDay, $lt: endOfDay };
+        }
+        if (search) {
+            query.details = { $regex: search, $options: 'i' };
+        }
+
+        const [logs, total] = await Promise.all([
+            SystemAudit.find(query)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(Number(limit))
+                .populate('userId', 'firstName lastName role mobileNo')
+                .lean(),
+            SystemAudit.countDocuments(query),
+        ]);
+
+        res.json({
+            total,
+            page: Number(page),
+            pages: Math.ceil(total / Number(limit)),
+            data: logs,
+        });
+    } catch (error) {
+        console.error('All users history error:', error);
+        res.status(500).json({ message: 'Server error while fetching all users history' });
+    }
+};
+
+// @desc    Get unified fuel history (Diesel & Petrol advances)
+// @route   GET /api/admin/history/fuel
+// @access  Private (Admin, Operational Manager)
+const getFuelHistory = async (req, res) => {
+    try {
+        const { search, date, page = 1, limit = 20 } = req.query;
+
+        const dieselQuery = {};
+        const petrolQuery = {};
+
+        if (date) {
+            const { getIstDayRange } = require('../../utils/dateHelper');
+            const { startOfDay, endOfDay } = getIstDayRange(date);
+            dieselQuery.createdAt = { $gte: startOfDay, $lt: endOfDay };
+            petrolQuery.createdAt = { $gte: startOfDay, $lt: endOfDay };
+        }
+
+        const [dieselRecords, petrolRecords] = await Promise.all([
+            DieselAdvance.find(dieselQuery)
+                .populate('driverId', 'firstName lastName role mobileNo')
+                .populate('omId', 'firstName lastName role')
+                .lean(),
+            PetrolAdvance.find(petrolQuery)
+                .populate('fieldSelectorId', 'firstName lastName role mobileNo')
+                .populate('omId', 'firstName lastName role')
+                .lean(),
+        ]);
+
+        const dieselMapped = dieselRecords.map(r => ({
+            id: r._id,
+            type: 'Diesel',
+            recipientName: r.driverId ? `${r.driverId.firstName} ${r.driverId.lastName}` : 'Unknown',
+            recipientRole: r.driverId?.role || 'Driver',
+            recipientMobile: r.driverId?.mobileNo || '',
+            omName: r.omId ? `${r.omId.firstName} ${r.omId.lastName}` : 'System',
+            amount: r.amount,
+            vehicleNumber: r.vehicleNumber,
+            remark: r.remark,
+            receiptPhotoUrl: r.receiptPhotoUrl,
+            createdAt: r.createdAt,
+        }));
+
+        const petrolMapped = petrolRecords.map(r => ({
+            id: r._id,
+            type: 'Petrol',
+            recipientName: r.fieldSelectorId ? `${r.fieldSelectorId.firstName} ${r.fieldSelectorId.lastName}` : 'Unknown',
+            recipientRole: r.fieldSelectorId?.role || 'Field Selector',
+            recipientMobile: r.fieldSelectorId?.mobileNo || '',
+            omName: r.omId ? `${r.omId.firstName} ${r.omId.lastName}` : 'System',
+            amount: r.amount,
+            vehicleNumber: r.vehicleNumber || 'N/A',
+            remark: r.remark,
+            receiptPhotoUrl: r.receiptPhotoUrl || null,
+            createdAt: r.createdAt,
+        }));
+
+        let combined = [...dieselMapped, ...petrolMapped];
+
+        if (search) {
+            const regex = new RegExp(search, 'i');
+            combined = combined.filter(c => 
+                regex.test(c.recipientName) ||
+                regex.test(c.vehicleNumber) ||
+                regex.test(c.remark)
+            );
+        }
+
+        combined.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        const total = combined.length;
+        const skip = (Number(page) - 1) * Number(limit);
+        const paginated = combined.slice(skip, skip + Number(limit));
+
+        res.json({
+            total,
+            page: Number(page),
+            pages: Math.ceil(total / Number(limit)),
+            data: paginated,
+        });
+    } catch (error) {
+        console.error('Fuel history error:', error);
+        res.status(500).json({ message: 'Server error while fetching fuel history' });
+    }
+};
+
+// @desc    Get Munshi packing reports history
+// @route   GET /api/admin/history/munshi
+// @access  Private (Admin, Operational Manager)
+const getMunshiHistory = async (req, res) => {
+    try {
+        const { search, date, page = 1, limit = 20 } = req.query;
+        const skip = (Number(page) - 1) * Number(limit);
+
+        const query = {};
+
+        if (date) {
+            const { getIstDayRange } = require('../../utils/dateHelper');
+            const { startOfDay, endOfDay } = getIstDayRange(date);
+            query.createdAt = { $gte: startOfDay, $lt: endOfDay };
+        }
+
+        if (search) {
+            const matchingMunshis = await User.find({
+                $or: [
+                    { firstName: { $regex: search, $options: 'i' } },
+                    { lastName: { $regex: search, $options: 'i' } },
+                ]
+            }).select('_id');
+            query.munshiId = { $in: matchingMunshis.map(m => m._id) };
+        }
+
+        const [reports, total] = await Promise.all([
+            Packing.find(query)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(Number(limit))
+                .populate('munshiId', 'firstName lastName role mobileNo')
+                .populate('brandId', 'brandName')
+                .populate({
+                    path: 'assignmentId',
+                    select: 'enquiryId totalBoxes vehicleId driverId',
+                    populate: [
+                        { path: 'enquiryId', select: 'enquiryId farmerFirstName farmerLastName location' },
+                        { path: 'driverId', select: 'firstName lastName mobileNo' }
+                    ]
+                })
+                .lean(),
+            Packing.countDocuments(query),
+        ]);
+
+        res.json({
+            total,
+            page: Number(page),
+            pages: Math.ceil(total / Number(limit)),
+            data: reports,
+        });
+    } catch (error) {
+        console.error('Munshi history error:', error);
+        res.status(500).json({ message: 'Server error while fetching Munshi history' });
+    }
+};
+
+// Helper for logistics vehicle type history
+const getLogisticsHistoryByVehicleType = async (req, res, driverRole) => {
+    try {
+        const { search, date, page = 1, limit = 20 } = req.query;
+        const skip = (Number(page) - 1) * Number(limit);
+
+        const matchingDrivers = await User.find({ role: driverRole }).select('_id');
+
+        const query = {
+            driverId: { $in: matchingDrivers.map(d => d._id) }
+        };
+
+        if (date) {
+            const { getIstDayRange } = require('../../utils/dateHelper');
+            const { startOfDay, endOfDay } = getIstDayRange(date);
+            query.createdAt = { $gte: startOfDay, $lt: endOfDay };
+        }
+
+        if (search) {
+            const matchingEnquiries = await Enquiry.find({
+                $or: [
+                    { farmerFirstName: { $regex: search, $options: 'i' } },
+                    { farmerLastName: { $regex: search, $options: 'i' } },
+                    { location: { $regex: search, $options: 'i' } },
+                    { enquiryId: { $regex: search, $options: 'i' } }
+                ]
+            }).select('_id');
+            query.enquiryId = { $in: matchingEnquiries.map(e => e._id) };
+        }
+
+        const [assignments, total] = await Promise.all([
+            Logistics.find(query)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(Number(limit))
+                .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName location')
+                .populate('munshiId', 'firstName lastName mobileNo')
+                .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
+                .populate('vehicleId', 'vehicleNumber')
+                .lean(),
+            Logistics.countDocuments(query),
+        ]);
+
+        res.json({
+            total,
+            page: Number(page),
+            pages: Math.ceil(total / Number(limit)),
+            data: assignments,
+        });
+    } catch (error) {
+        console.error(`${driverRole} logistics history error:`, error);
+        res.status(500).json({ message: `Server error while fetching ${driverRole} logistics history` });
+    }
+};
+
+const getEicherHistory = async (req, res) => {
+    return getLogisticsHistoryByVehicleType(req, res, 'driver eicher');
+};
+
+const getPickupHistory = async (req, res) => {
+    return getLogisticsHistoryByVehicleType(req, res, 'driver pickup');
+};
+
+// @desc    Master Search across Enquiries, Users, and Logistics
+// @route   GET /api/admin/master-search
+// @access  Private (Admin, Operational Manager)
+const masterSearch = async (req, res) => {
+    try {
+        const { q } = req.query;
+        if (!q || q.trim() === '') {
+            return res.status(400).json({ message: 'Search query q is required.' });
+        }
+
+        const regex = new RegExp(q.trim(), 'i');
+
+        const [enquiries, users, logistics] = await Promise.all([
+            Enquiry.find({
+                $or: [
+                    { farmerFirstName: regex },
+                    { farmerLastName: regex },
+                    { farmerMobile: regex },
+                    { location: regex },
+                    { enquiryId: regex }
+                ]
+            }).limit(20).lean(),
+
+            User.find({
+                $or: [
+                    { firstName: regex },
+                    { lastName: regex },
+                    { mobileNo: regex },
+                    { role: regex }
+                ]
+            }).limit(20).select('firstName lastName mobileNo role bikeNumber').lean(),
+
+            Logistics.find({
+                $or: [
+                    { teamName: regex },
+                    { vehicleNumber: regex }
+                ]
+            }).limit(20)
+              .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName location')
+              .lean()
+        ]);
+
+        res.json({
+            enquiries,
+            users,
+            logistics
+        });
+    } catch (error) {
+        console.error('Master search error:', error);
+        res.status(500).json({ message: 'Server error during master search' });
     }
 };
 
@@ -688,4 +1008,10 @@ module.exports = {
     getStaffPerformance,
     getMonitoringDashboard,
     getFieldSelectionDashboard,
+    getAllUsersHistory,
+    getFuelHistory,
+    getMunshiHistory,
+    getEicherHistory,
+    getPickupHistory,
+    masterSearch,
 };
