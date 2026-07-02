@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getOmDashboard, getOmPlots, rejectPackingReport, approvePackingReport, getApprovedPlots, getPendingAdminApprovalPlots } = require('./om.controller');
+const { getOmDashboard, getOmPlots, rejectPackingReport, approvePackingReport, getApprovedPlots, getPendingAdminApprovalPlots, getPendingApprovalPlots } = require('./om.controller');
 const { protect, authorize } = require('../../middlewares/auth.middleware');
 
 // Apply protect to all routes
@@ -11,6 +11,9 @@ router.get('/dashboard', authorize('Admin', 'Operational Manager'), getOmDashboa
 
 // GET /api/operational-manager/plots/approved
 router.get('/plots/approved', authorize('Admin', 'Operational Manager'), getApprovedPlots);
+
+// GET /api/operational-manager/plots/pending-approval
+router.get('/plots/pending-approval', authorize('Admin', 'Operational Manager'), getPendingApprovalPlots);
 
 // GET /api/operational-manager/plots/pending-admin-approval
 router.get('/plots/pending-admin-approval', authorize('Admin', 'Operational Manager'), getPendingAdminApprovalPlots);
