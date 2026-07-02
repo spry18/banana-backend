@@ -419,7 +419,15 @@ const getMunshiReports = async (req, res) => {
         let totalBoxes = 0;
         let totalWaste = 0;
         const boxBreakdown = { box4H: 0, box5H: 0, box6H: 0, box8H: 0, boxCL: 0, box7Kg: 0, boxOther: 0, box5Kg: 0, box13Kg: 0, box13_5Kg: 0, box14Kg: 0, box16Kg: 0 };
-        const packingTypeTotals = {};
+        const packingTypeTotals = {
+            '5Kg': 0,
+            '7Kg': 0,
+            '13Kg': 0,
+            '13.5Kg': 0,
+            '14Kg': 0,
+            '16Kg': 0,
+            'Other': 0
+        };
         const dailyLog = {};  // grouped by date string
 
         const getIstDateString = (d) => {
@@ -438,10 +446,25 @@ const getMunshiReports = async (req, res) => {
                 boxBreakdown[key] += p[key] || 0;
             });
 
-            // Calculate packing type totals: Total Boxes = 4H + 5H + 6H + 8H + CL
+            // Calculate packing type totals: 13kg/13.5kg/14kg/16kg = 4H + 5H + 6H + 8H + CL
             const packingType = p.assignmentId?.enquiryId?.packingType || 'Other';
-            const recordTotalBoxes = (p.box4H || 0) + (p.box5H || 0) + (p.box6H || 0) + (p.box8H || 0) + (p.boxCL || 0);
-            packingTypeTotals[packingType] = (packingTypeTotals[packingType] || 0) + recordTotalBoxes;
+            const hSum = (p.box4H || 0) + (p.box5H || 0) + (p.box6H || 0) + (p.box8H || 0) + (p.boxCL || 0);
+
+            if (packingType === '13Kg') {
+                packingTypeTotals['13Kg'] += hSum;
+            } else if (packingType === '13.5Kg') {
+                packingTypeTotals['13.5Kg'] += hSum;
+            } else if (packingType === '14Kg') {
+                packingTypeTotals['14Kg'] += hSum;
+            } else if (packingType === '16Kg') {
+                packingTypeTotals['16Kg'] += hSum;
+            } else {
+                packingTypeTotals['Other'] += p.boxOther || 0;
+            }
+
+            // Always sum dedicated weights across all reports
+            packingTypeTotals['5Kg'] += p.box5Kg || 0;
+            packingTypeTotals['7Kg'] += p.box7Kg || 0;
 
             // Group by day for daily harvesting log (aligned with IST calendar day)
             const dayKey = getIstDateString(p.createdAt);
