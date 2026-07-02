@@ -314,6 +314,12 @@
                                     "description": "Optional petrol receipt photo file. Attach an image file.",
                                     "type": "file",
                                     "src": []
+                                },
+                                {
+                                    "key": "totalKm",
+                                    "value": "120",
+                                    "description": "Optional: Total daily KM calculated/entered by the user. If omitted, falls back to (endKm - startKm).",
+                                    "type": "text"
                                 }
                             ]
                         },

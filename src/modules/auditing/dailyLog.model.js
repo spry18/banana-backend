@@ -57,6 +57,10 @@ const dailyLogSchema = new mongoose.Schema(
             type: String,
             default: null,
         },
+        totalKm: {
+            type: Number,
+            default: null,
+        },
     },
     { timestamps: true }
 );

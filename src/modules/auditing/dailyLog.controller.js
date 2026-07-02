@@ -68,7 +68,7 @@ const startDay = async (req, res) => {
 // @access  Protected
 const endDay = async (req, res) => {
     try {
-        const { endKm, petrolAdvance } = req.body;
+        const { endKm, petrolAdvance, totalKm } = req.body;
 
         // req.files is an object keyed by field name (from upload.fields)
         const endKmPhotoFile = req.files?.endKmPhoto?.[0];
@@ -103,6 +103,7 @@ const endDay = async (req, res) => {
         log.endMeterPhotoUrl = endKmPhotoFile.location;
         log.endTime = Date.now();
         log.status = 'COMPLETED';
+        log.totalKm = totalKm !== undefined && totalKm !== null && totalKm !== '' ? Number(totalKm) : (Number(endKm) - log.startKm);
 
         // Optional petrol advance recorded at logout
         if (petrolAdvance !== undefined && petrolAdvance !== '') {
@@ -153,7 +154,7 @@ const getLogs = async (req, res) => {
                     $project: {
                         date: 1, startKm: 1, endKm: 1, startTime: 1, endTime: 1,
                         vehicleNumber: 1, status: 1, startMeterPhotoUrl: 1, endMeterPhotoUrl: 1,
-                        petrolAdvance: 1, createdAt: 1,
+                        petrolAdvance: 1, totalKm: 1, createdAt: 1,
                         userId: { _id: '$user._id', firstName: '$user.firstName', lastName: '$user.lastName', role: '$user.role', bikeNumber: '$user.bikeNumber' },
                     },
                 },

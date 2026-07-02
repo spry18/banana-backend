@@ -305,6 +305,12 @@
                                     "type": "file",
                                     "src": "",
                                     "description": "Odometer photo at end of day — REQUIRED. Attach an image file."
+                                },
+                                {
+                                    "key": "totalKm",
+                                    "value": "120",
+                                    "type": "text",
+                                    "description": "Optional: Total daily KM calculated/entered by the user. If omitted, falls back to (endKm - startKm)."
                                 }
                             ]
                         },
