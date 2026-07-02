@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Enquiry = require('./enquiry.model');
 const User = require('../users/user.model');
 const Agent = require('../master-data/agent.model');
+const Farmer = require('../farmers/farmer.model');
 const { logSystemAction } = require('../../utils/auditLogger');
 const NotificationService = require('../../services/notification.service');
 const { checkAndResetExpiredEnquiries } = require('../../utils/enquiryService');
@@ -90,6 +91,18 @@ const createEnquiry = async (req, res) => {
             status: selector ? 'ASSIGNED' : 'PENDING',
             editableUntil,
         });
+
+        // Sync to master Farmer collection
+        try {
+            const farmerNameStr = `${farmerFirstName} ${farmerLastName}`.trim();
+            await Farmer.findOneAndUpdate(
+                { mobile: farmerMobile },
+                { name: farmerNameStr, location: location },
+                { upsert: true, new: true, setDefaultsOnInsert: true }
+            );
+        } catch (farmerErr) {
+            console.error('Failed to sync created farmer to master collection:', farmerErr.message);
+        }
 
         // Flow 1 — WhatsApp: notify farmer that enquiry is received
         NotificationService.sendEnquiryReceived(enquiry.farmerMobile, enquiry.farmerFirstName, enquiry.enquiryId);
@@ -322,6 +335,25 @@ const updateEnquiry = async (req, res) => {
             updateData,
             { new: true, runValidators: true }
         );
+
+        // Sync to master Farmer collection if farmerFirstName, farmerLastName, farmerMobile, or location changed
+        if (req.body.farmerFirstName || req.body.farmerLastName || req.body.farmerMobile || req.body.location) {
+            try {
+                const fname = req.body.farmerFirstName || updatedEnquiry.farmerFirstName;
+                const lname = req.body.farmerLastName || updatedEnquiry.farmerLastName;
+                const mobileNo = req.body.farmerMobile || updatedEnquiry.farmerMobile;
+                const loc = req.body.location || updatedEnquiry.location;
+                const farmerNameStr = `${fname} ${lname}`.trim();
+                
+                await Farmer.findOneAndUpdate(
+                    { mobile: mobileNo },
+                    { name: farmerNameStr, location: loc },
+                    { upsert: true, new: true, setDefaultsOnInsert: true }
+                );
+            } catch (farmerErr) {
+                console.error('Failed to sync updated farmer to master collection:', farmerErr.message);
+            }
+        }
 
         // Flow 1 — WhatsApp: commercial rejection
         if (req.body.status && (req.body.status === 'CLOSED' || req.body.status === 'CANCELLED') && enquiry.status !== req.body.status) {
