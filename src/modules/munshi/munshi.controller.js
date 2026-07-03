@@ -462,7 +462,11 @@ const getMunshiReports = async (req, res) => {
                 packingTypeTotals['Other'] += p.boxOther || 0;
             }
 
-            // Always sum dedicated weights across all reports
+            // Always sum direct box quantities regardless of plot type
+            packingTypeTotals['13Kg'] += p.box13Kg || 0;
+            packingTypeTotals['13.5Kg'] += p.box13_5Kg || 0;
+            packingTypeTotals['14Kg'] += p.box14Kg || 0;
+            packingTypeTotals['16Kg'] += p.box16Kg || 0;
             packingTypeTotals['5Kg'] += p.box5Kg || 0;
             packingTypeTotals['7Kg'] += p.box7Kg || 0;
 
