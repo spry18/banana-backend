@@ -1077,7 +1077,7 @@ const editFixedPlot = async (req, res) => {
             return res.status(404).json({ message: 'Enquiry not found' });
         }
 
-        if (enquiry.status !== 'RATE_FIXED') {
+        if (enquiry.status !== 'RATE_FIXED' && !(enquiry.status === 'ASSIGNED' && enquiry.purchaseRate != null)) {
             return res.status(400).json({ message: 'Can only edit rate on rate-fixed plots.' });
         }
 
@@ -1144,7 +1144,7 @@ const deleteFixedPlot = async (req, res) => {
             return res.status(404).json({ message: 'Enquiry not found' });
         }
 
-        if (enquiry.status !== 'RATE_FIXED') {
+        if (enquiry.status !== 'RATE_FIXED' && !(enquiry.status === 'ASSIGNED' && enquiry.purchaseRate != null)) {
             return res.status(400).json({ message: 'Can only delete rate on rate-fixed plots.' });
         }
 
