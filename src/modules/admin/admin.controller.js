@@ -508,16 +508,18 @@ const getMonitoringDashboard = async (req, res) => {
             }
 
             // Dynamic button logic
-            const buttonMap = {
-                PENDING: 'View Details',
-                SELECTED: 'Fix Rate',
-                MISSED: 'Reassign',
-                RESCHEDULED: 'Reschedule',
-                ASSIGNED: 'View Details',
-                REJECTED: 'View Details',
-                RATE_FIXED: 'View Details',
-                COMPLETED: 'View Details',
-            };
+            let actionButton = 'View Details';
+            if (effectiveStatus === 'PENDING') {
+                actionButton = e.assignedSelectorId ? 'View Details' : 'Assign Selector';
+            } else if (effectiveStatus === 'SELECTED') {
+                actionButton = 'Fix Rate';
+            } else if (effectiveStatus === 'MISSED') {
+                actionButton = 'Reassign';
+            } else if (effectiveStatus === 'RESCHEDULED') {
+                actionButton = 'Reschedule';
+            } else if (effectiveStatus === 'RATE_FIXED') {
+                actionButton = 'Assign Team';
+            }
 
             const inspection = inspectionMap[e._id.toString()];
             const logistics = logisticsMap[e._id.toString()];
@@ -545,7 +547,7 @@ const getMonitoringDashboard = async (req, res) => {
                     : (e.scheduledDate ? new Date(e.scheduledDate).toLocaleDateString('en-IN') : null),
                 harvestTime: inspection ? inspection.harvestingTime : (e.scheduledTime || null),
                 status: effectiveStatus,
-                action: buttonMap[effectiveStatus] || 'View Details',
+                action: actionButton,
 
                 // Additional response fields
                 boxCount: packing ? (packing.totalBoxes || 0) : (e.estimatedBoxes || null),
@@ -574,11 +576,36 @@ const getMonitoringDashboard = async (req, res) => {
 // @access  Private (Admin, Operational Manager)
 const getFieldSelectionDashboard = async (req, res) => {
     try {
-        const { selectorDate, ownerDate, visitedDate } = req.query;
+        const { selectorDate, ownerDate, visitedDate, visitedFilter } = req.query;
 
         const now = new Date();
         let todayStart, todayEnd;
-        if (visitedDate) {
+
+        if (visitedFilter) {
+            const { getIstDayRange } = require('../../utils/dateHelper');
+            if (visitedFilter === 'daily') {
+                const range = getIstDayRange('today');
+                todayStart = range.startOfDay;
+                todayEnd = range.endOfDay;
+            } else if (visitedFilter === 'weekly') {
+                const start = new Date();
+                start.setDate(start.getDate() - 7);
+                todayStart = start;
+                todayEnd = now;
+            } else if (visitedFilter === 'monthly') {
+                const start = new Date();
+                start.setMonth(start.getMonth() - 1);
+                todayStart = start;
+                todayEnd = now;
+            } else if (visitedFilter === 'all') {
+                todayStart = new Date(0);
+                todayEnd = now;
+            } else {
+                const range = getIstDayRange('today');
+                todayStart = range.startOfDay;
+                todayEnd = range.endOfDay;
+            }
+        } else if (visitedDate) {
             const vDate = new Date(visitedDate);
             todayStart = new Date(vDate.getFullYear(), vDate.getMonth(), vDate.getDate());
             todayEnd = new Date(todayStart);
@@ -678,6 +705,25 @@ const getFieldSelectionDashboard = async (req, res) => {
             totalAssignedPlots: r.totalAssignedPlots,
         }));
 
+        const visitedPlotsRaw = await Inspection.find({ createdAt: { $gte: todayStart, $lt: todayEnd } })
+            .populate({
+                path: 'enquiryId',
+                select: 'enquiryId farmerFirstName farmerLastName location status fieldOwnerId',
+                populate: { path: 'fieldOwnerId', select: 'firstName lastName' }
+            })
+            .populate('selectorId', 'firstName lastName')
+            .lean();
+
+        const todayVisitedPlots = visitedPlotsRaw.map(ins => ({
+            _id: ins._id,
+            farmerName: ins.enquiryId ? `${ins.enquiryId.farmerFirstName} ${ins.enquiryId.farmerLastName}` : 'Unknown',
+            location: ins.enquiryId?.location || 'Unknown',
+            fieldOwner: ins.enquiryId?.fieldOwnerId ? `${ins.enquiryId.fieldOwnerId.firstName} ${ins.enquiryId.fieldOwnerId.lastName}` : 'N/A',
+            fieldSelector: ins.selectorId ? `${ins.selectorId.firstName} ${ins.selectorId.lastName}` : 'N/A',
+            status: ins.decision || ins.enquiryId?.status || 'COMPLETED',
+            enquiryId: ins.enquiryId?._id
+        }));
+
         res.json({
             stats: {
                 todayVisited,
@@ -689,6 +735,7 @@ const getFieldSelectionDashboard = async (req, res) => {
             },
             fieldSelectorData,
             fieldOwnerData,
+            todayVisitedPlots,
         });
     } catch (error) {
         console.error('Field selection dashboard error:', error);
@@ -701,7 +748,7 @@ const getFieldSelectionDashboard = async (req, res) => {
 // @access  Private (Admin, Operational Manager)
 const getAllUsersHistory = async (req, res) => {
     try {
-        const { search, moduleName, action, date, page = 1, limit = 20 } = req.query;
+        const { search, moduleName, action, date, dateFilter, page = 1, limit = 20 } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
 
         const query = {};
@@ -712,10 +759,25 @@ const getAllUsersHistory = async (req, res) => {
         if (action) {
             query.action = action.toUpperCase();
         }
-        if (date) {
+        if (dateFilter || date) {
             const { getIstDayRange } = require('../../utils/dateHelper');
-            const { startOfDay, endOfDay } = getIstDayRange(date);
-            query.createdAt = { $gte: startOfDay, $lt: endOfDay };
+            let dateRange = null;
+            if (dateFilter === 'daily' || dateFilter === 'today' || date === 'today') {
+                dateRange = getIstDayRange('today');
+            } else if (dateFilter === 'weekly') {
+                const start = new Date();
+                start.setDate(start.getDate() - 7);
+                dateRange = { startOfDay: start, endOfDay: new Date() };
+            } else if (dateFilter === 'monthly') {
+                const start = new Date();
+                start.setMonth(start.getMonth() - 1);
+                dateRange = { startOfDay: start, endOfDay: new Date() };
+            } else if (date) {
+                dateRange = getIstDayRange(date);
+            }
+            if (dateRange) {
+                query.createdAt = { $gte: dateRange.startOfDay, $lt: dateRange.endOfDay };
+            }
         }
         if (search) {
             query.details = { $regex: search, $options: 'i' };
@@ -748,16 +810,31 @@ const getAllUsersHistory = async (req, res) => {
 // @access  Private (Admin, Operational Manager)
 const getFuelHistory = async (req, res) => {
     try {
-        const { search, date, page = 1, limit = 20 } = req.query;
+        const { search, date, dateFilter, page = 1, limit = 20 } = req.query;
 
         const dieselQuery = {};
         const petrolQuery = {};
 
-        if (date) {
+        if (dateFilter || date) {
             const { getIstDayRange } = require('../../utils/dateHelper');
-            const { startOfDay, endOfDay } = getIstDayRange(date);
-            dieselQuery.createdAt = { $gte: startOfDay, $lt: endOfDay };
-            petrolQuery.createdAt = { $gte: startOfDay, $lt: endOfDay };
+            let dateRange = null;
+            if (dateFilter === 'daily' || dateFilter === 'today' || date === 'today') {
+                dateRange = getIstDayRange('today');
+            } else if (dateFilter === 'weekly') {
+                const start = new Date();
+                start.setDate(start.getDate() - 7);
+                dateRange = { startOfDay: start, endOfDay: new Date() };
+            } else if (dateFilter === 'monthly') {
+                const start = new Date();
+                start.setMonth(start.getMonth() - 1);
+                dateRange = { startOfDay: start, endOfDay: new Date() };
+            } else if (date) {
+                dateRange = getIstDayRange(date);
+            }
+            if (dateRange) {
+                dieselQuery.createdAt = { $gte: dateRange.startOfDay, $lt: dateRange.endOfDay };
+                petrolQuery.createdAt = { $gte: dateRange.startOfDay, $lt: dateRange.endOfDay };
+            }
         }
 
         const [dieselRecords, petrolRecords] = await Promise.all([
@@ -833,15 +910,30 @@ const getFuelHistory = async (req, res) => {
 // @access  Private (Admin, Operational Manager)
 const getMunshiHistory = async (req, res) => {
     try {
-        const { search, date, page = 1, limit = 20 } = req.query;
+        const { search, date, dateFilter, page = 1, limit = 20 } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
 
         const query = {};
 
-        if (date) {
+        if (dateFilter || date) {
             const { getIstDayRange } = require('../../utils/dateHelper');
-            const { startOfDay, endOfDay } = getIstDayRange(date);
-            query.createdAt = { $gte: startOfDay, $lt: endOfDay };
+            let dateRange = null;
+            if (dateFilter === 'daily' || dateFilter === 'today' || date === 'today') {
+                dateRange = getIstDayRange('today');
+            } else if (dateFilter === 'weekly') {
+                const start = new Date();
+                start.setDate(start.getDate() - 7);
+                dateRange = { startOfDay: start, endOfDay: new Date() };
+            } else if (dateFilter === 'monthly') {
+                const start = new Date();
+                start.setMonth(start.getMonth() - 1);
+                dateRange = { startOfDay: start, endOfDay: new Date() };
+            } else if (date) {
+                dateRange = getIstDayRange(date);
+            }
+            if (dateRange) {
+                query.createdAt = { $gte: dateRange.startOfDay, $lt: dateRange.endOfDay };
+            }
         }
 
         if (search) {
@@ -888,7 +980,7 @@ const getMunshiHistory = async (req, res) => {
 // Helper for logistics vehicle type history
 const getLogisticsHistoryByVehicleType = async (req, res, driverRole) => {
     try {
-        const { search, date, page = 1, limit = 20 } = req.query;
+        const { search, date, dateFilter, page = 1, limit = 20 } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
 
         const matchingDrivers = await User.find({ role: driverRole }).select('_id');
@@ -897,10 +989,25 @@ const getLogisticsHistoryByVehicleType = async (req, res, driverRole) => {
             driverId: { $in: matchingDrivers.map(d => d._id) }
         };
 
-        if (date) {
+        if (dateFilter || date) {
             const { getIstDayRange } = require('../../utils/dateHelper');
-            const { startOfDay, endOfDay } = getIstDayRange(date);
-            query.createdAt = { $gte: startOfDay, $lt: endOfDay };
+            let dateRange = null;
+            if (dateFilter === 'daily' || dateFilter === 'today' || date === 'today') {
+                dateRange = getIstDayRange('today');
+            } else if (dateFilter === 'weekly') {
+                const start = new Date();
+                start.setDate(start.getDate() - 7);
+                dateRange = { startOfDay: start, endOfDay: new Date() };
+            } else if (dateFilter === 'monthly') {
+                const start = new Date();
+                start.setMonth(start.getMonth() - 1);
+                dateRange = { startOfDay: start, endOfDay: new Date() };
+            } else if (date) {
+                dateRange = getIstDayRange(date);
+            }
+            if (dateRange) {
+                query.createdAt = { $gte: dateRange.startOfDay, $lt: dateRange.endOfDay };
+            }
         }
 
         if (search) {

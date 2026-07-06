@@ -168,7 +168,7 @@ const createEnquiry = async (req, res) => {
 // @access  Protected
 const getEnquiries = async (req, res) => {
     try {
-        const { page = 1, limit = 10, search, status, location, date } = req.query;
+        const { page = 1, limit = 10, search, status, location, date, fieldOwnerId, selectorId, dateFrom, dateTo } = req.query;
         const skip = (page - 1) * limit;
 
         let query = {};
@@ -179,6 +179,14 @@ const getEnquiries = async (req, res) => {
         } else {
             // Other roles: deny access
             query = { _id: null };
+        }
+
+        if (fieldOwnerId) {
+            query.fieldOwnerId = fieldOwnerId;
+        }
+
+        if (selectorId) {
+            query.assignedSelectorId = selectorId;
         }
 
         if (status) {
@@ -195,18 +203,34 @@ const getEnquiries = async (req, res) => {
             }
         }
 
-        if (date) {
+        if (date || dateFrom || dateTo) {
             const { getIstDayRange } = require('../../utils/dateHelper');
-            const { startOfDay, endOfDay } = getIstDayRange(date);
             const statusStr = status ? status.toUpperCase() : '';
             const isPendingQuery = statusStr.includes('PENDING') || statusStr.includes('RESCHEDULED') || statusStr.includes('MISSED') || statusStr.includes('UNASSIGNED');
             
-            if (isPendingQuery) {
-                query.scheduledDate = { $gte: startOfDay, $lt: endOfDay };
-            } else if (statusStr && statusStr !== 'ALL') {
-                query.updatedAt = { $gte: startOfDay, $lt: endOfDay };
+            let dateFilter = {};
+            if (date) {
+                const { startOfDay, endOfDay } = getIstDayRange(date);
+                dateFilter = { $gte: startOfDay, $lt: endOfDay };
             } else {
-                query.createdAt = { $gte: startOfDay, $lt: endOfDay };
+                if (dateFrom) {
+                    const { startOfDay } = getIstDayRange(dateFrom);
+                    dateFilter.$gte = startOfDay;
+                }
+                if (dateTo) {
+                    const { endOfDay } = getIstDayRange(dateTo);
+                    dateFilter.$lt = endOfDay;
+                }
+            }
+            
+            if (Object.keys(dateFilter).length > 0) {
+                if (isPendingQuery) {
+                    query.scheduledDate = dateFilter;
+                } else if (statusStr && statusStr !== 'ALL') {
+                    query.updatedAt = dateFilter;
+                } else {
+                    query.createdAt = dateFilter;
+                }
             }
         }
 
@@ -228,8 +252,10 @@ const getEnquiries = async (req, res) => {
             .limit(Number(limit))
             .sort({ createdAt: -1 })
             .populate('assignedSelectorId', 'firstName lastName mobileNo bikeNumber')
+            .populate('fieldOwnerId', 'firstName lastName')
             .populate('agentId', 'name')
             .populate('generation', 'name')
+            .populate('companyId', 'companyName')
             .lean();
 
         // Fetch related inspections to map rejectReason
