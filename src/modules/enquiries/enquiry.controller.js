@@ -203,6 +203,20 @@ const getEnquiries = async (req, res) => {
             }
         }
 
+        if (req.query.logisticsStatus) {
+            const Logistics = require('../logistics/logistics.model');
+            const lStatus = req.query.logisticsStatus.toUpperCase();
+            let arr = [];
+            if (lStatus === 'ASSIGNED') arr = ['PENDING'];
+            else if (lStatus === 'IN_PROGRESS') arr = ['IN_PROGRESS'];
+            else if (lStatus === 'COMPLETED') arr = ['COMPLETED', 'APPROVED'];
+            
+            if (arr.length > 0) {
+                const logs = await Logistics.find({ assignmentStatus: { $in: arr } }).select('enquiryId').lean();
+                query._id = { $in: logs.map(l => l.enquiryId) };
+            }
+        }
+
         if (date || dateFrom || dateTo) {
             const { getIstDayRange } = require('../../utils/dateHelper');
             const statusStr = status ? status.toUpperCase() : '';
@@ -274,6 +288,7 @@ const getEnquiries = async (req, res) => {
             const insp = inspectionMap[enq._id.toString()] || null;
             return {
                 ...enq,
+                status: req.query.logisticsStatus ? req.query.logisticsStatus.toUpperCase() : enq.status,
                 rejectReason: (enq.status === 'REJECTED' && insp) ? (insp.generalNotes || null) : null
             };
         });

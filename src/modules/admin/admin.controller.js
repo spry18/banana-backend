@@ -392,6 +392,9 @@ const getMonitoringDashboard = async (req, res) => {
                 query.status = 'PENDING';
             } else if (status === 'FUTURE_SELECTION') {
                 query.scheduledDate = { $gt: now };
+            } else if (status === 'UNASSIGNED') {
+                query.status = { $in: ['PENDING', 'RESCHEDULED'] };
+                query.assignedSelectorId = null;
             } else {
                 query.status = status;
             }
@@ -505,12 +508,16 @@ const getMonitoringDashboard = async (req, res) => {
             let effectiveStatus = e.status;
             if (e.status === 'PENDING' && e.scheduledDate && new Date(e.scheduledDate) < now) {
                 effectiveStatus = 'MISSED';
+            } else if ((e.status === 'PENDING' || e.status === 'RESCHEDULED') && !e.assignedSelectorId) {
+                effectiveStatus = 'UNASSIGNED';
             }
 
             // Dynamic button logic
             let actionButton = 'View Details';
             if (effectiveStatus === 'PENDING') {
                 actionButton = e.assignedSelectorId ? 'View Details' : 'Assign Selector';
+            } else if (effectiveStatus === 'UNASSIGNED') {
+                actionButton = 'Assign Selector';
             } else if (effectiveStatus === 'SELECTED') {
                 actionButton = 'Fix Rate';
             } else if (effectiveStatus === 'MISSED') {
@@ -893,11 +900,20 @@ const getFuelHistory = async (req, res) => {
         const skip = (Number(page) - 1) * Number(limit);
         const paginated = combined.slice(skip, skip + Number(limit));
 
+        const totalAmount = combined.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+        const totalTransactions = combined.length;
+        const avgAmount = totalTransactions > 0 ? Math.round(totalAmount / totalTransactions) : 0;
+
         res.json({
             total,
             page: Number(page),
             pages: Math.ceil(total / Number(limit)),
             data: paginated,
+            kpis: {
+                totalAmount,
+                totalTransactions,
+                avgAmount
+            }
         });
     } catch (error) {
         console.error('Fuel history error:', error);
@@ -965,11 +981,23 @@ const getMunshiHistory = async (req, res) => {
             Packing.countDocuments(query),
         ]);
 
+        const allReportsForKpis = await Packing.find(query).select('assignmentId createdAt').lean();
+        const totalReports = total;
+        const uniquePlots = new Set(allReportsForKpis.map(r => r.assignmentId?.toString())).size;
+        
+        const todayStr = new Date().toISOString().split('T')[0];
+        const recentReports = allReportsForKpis.filter(r => r.createdAt && r.createdAt.toISOString().startsWith(todayStr)).length;
+
         res.json({
             total,
             page: Number(page),
             pages: Math.ceil(total / Number(limit)),
             data: reports,
+            kpis: {
+                totalReports,
+                uniquePlots,
+                recentReports
+            }
         });
     } catch (error) {
         console.error('Munshi history error:', error);
@@ -1035,11 +1063,21 @@ const getLogisticsHistoryByVehicleType = async (req, res, driverRole) => {
             Logistics.countDocuments(query),
         ]);
 
+        const allAssignmentsForKpis = await Logistics.find(query).select('assignmentStatus').lean();
+        const totalTrips = total;
+        const completedTrips = allAssignmentsForKpis.filter(a => ['COMPLETED', 'CLOSED', 'APPROVED'].includes(a.assignmentStatus)).length;
+        const ongoingTrips = totalTrips - completedTrips;
+
         res.json({
             total,
             page: Number(page),
             pages: Math.ceil(total / Number(limit)),
             data: assignments,
+            kpis: {
+                totalTrips,
+                completedTrips,
+                ongoingTrips
+            }
         });
     } catch (error) {
         console.error(`${driverRole} logistics history error:`, error);

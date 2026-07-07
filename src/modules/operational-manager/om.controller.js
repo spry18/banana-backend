@@ -546,7 +546,7 @@ const rejectPackingReport = async (req, res) => {
             return res.status(404).json({ message: 'Packing report not found for this assignment' });
         }
 
-        if (packing.status !== 'SUBMITTED') {
+        if (!['SUBMITTED', 'APPROVED'].includes(packing.status)) {
             return res.status(400).json({ message: `Cannot reject a packing report with status: ${packing.status}` });
         }
 

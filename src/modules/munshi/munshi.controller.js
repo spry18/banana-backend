@@ -614,21 +614,23 @@ const updatePackingReport = async (req, res) => {
             return res.status(404).json({ message: 'Assignment not found' });
         }
 
-        if (assignment.munshiId.toString() !== munshiId.toString() && req.user.role !== 'Admin') {
+        if (assignment.munshiId.toString() !== munshiId.toString() && !['Admin', 'Operational Manager'].includes(req.user.role)) {
             return res.status(403).json({ message: 'You can only update reports for your own assignments' });
         }
 
-        if (assignment.assignmentStatus !== 'REJECTED') {
+        const isPrivileged = ['Admin', 'Operational Manager'].includes(req.user.role);
+
+        if (!isPrivileged && assignment.assignmentStatus !== 'REJECTED') {
             return res.status(400).json({ message: `Cannot update a packing report for assignment with status: ${assignment.assignmentStatus}` });
         }
 
-        // Find existing packing record in REJECTED status
+        // Find existing packing record
         const packing = await Packing.findOne({ assignmentId });
         if (!packing) {
             return res.status(404).json({ message: 'Packing report not found' });
         }
 
-        if (packing.status !== 'REJECTED') {
+        if (!isPrivileged && packing.status !== 'REJECTED') {
             return res.status(400).json({ message: `Cannot update packing report with status: ${packing.status}` });
         }
 
@@ -691,12 +693,19 @@ const updatePackingReport = async (req, res) => {
         packing.teamName = teamName || '';
         packing.brandId = brandId || null;
         packing.photos = photos;
-        packing.status = 'SUBMITTED';
-        packing.omRemark = null;  // Clear rejection remark
+        
+        // If edited by Admin/OM and it was already APPROVED, keep it APPROVED
+        const wasApproved = packing.status === 'APPROVED';
+        
+        if (wasApproved) {
+            packing.status = 'APPROVED';
+            assignment.assignmentStatus = 'APPROVED';
+        } else {
+            packing.status = 'SUBMITTED';
+            packing.omRemark = null;  // Clear rejection remark
+            assignment.assignmentStatus = 'COMPLETED'; // Parent logistics status
+        }
         await packing.save();
-
-        // Update parent logistics assignment status back to COMPLETED
-        assignment.assignmentStatus = 'COMPLETED';
         await assignment.save();
 
         res.status(200).json({
