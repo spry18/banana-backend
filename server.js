@@ -122,6 +122,9 @@ app.use('/api/reports', require('./src/modules/reports/reports.routes'));
 // Farmers module (Get all, Search/Filter, Import Excel, Export PDF)
 app.use('/api/farmers', require('./src/modules/farmers/farmer.routes'));
 
+// Farmer Plantation Info module (CRUD)
+app.use('/api/plantation-info', require('./src/modules/plantation-info/plantation.routes'));
+
 // Field Owner module
 app.use('/api/field-owner', require('./src/modules/field-owner/field-owner.routes'));
 

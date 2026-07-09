@@ -7,6 +7,7 @@ const {
     getMunshiHarvestingReport,
     exportFieldSelectionReport,
     exportMunshiHarvestingReport,
+    exportTransportSummaryReport,
 } = require('./reports.controller');
 
 router.use(protect);
@@ -22,5 +23,8 @@ router.get('/execution-detailed', getExecutionDetailedReport);
 // GET /api/reports/munshi-harvesting
 router.get('/munshi-harvesting', getMunshiHarvestingReport);
 router.get('/munshi-harvesting/export', exportMunshiHarvestingReport);
+
+// GET /api/reports/transport-summary/export
+router.get('/transport-summary/export', exportTransportSummaryReport);
 
 module.exports = router;

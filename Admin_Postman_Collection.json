@@ -834,10 +834,18 @@
                         "method": "POST",
                         "header": [
                             {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
                                 "key": "Authorization",
                                 "value": "Bearer {{adminToken}}"
                             }
                         ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"weight\": 6930\n}"
+                        },
                         "url": {
                             "raw": "{{baseUrl}}/api/enquiries/{{enquiryId}}/final-approve",
                             "host": [
@@ -850,7 +858,7 @@
                                 "final-approve"
                             ]
                         },
-                        "description": "Marks an enquiry as completed after the Admin has reviewed and made final edits. Moves status from PENDING_ADMIN_APPROVAL to COMPLETED."
+                        "description": "Marks an enquiry as completed after the Admin has reviewed and made final edits. Moves status from PENDING_ADMIN_APPROVAL to COMPLETED. Now accepts a verified weight parameter."
                     }
                 },
                 {
@@ -3558,6 +3566,50 @@
                             ]
                         }
                     }
+                },
+                {
+                    "name": "Export Transport Summary Report Excel",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/reports/transport-summary/export?dateFilter=weekly",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "reports",
+                                "transport-summary",
+                                "export"
+                            ],
+                            "query": [
+                                {
+                                    "key": "dateFilter",
+                                    "value": "weekly",
+                                    "description": "Filter type: daily | today | yesterday | weekly | monthly | custom"
+                                },
+                                {
+                                    "key": "startDate",
+                                    "value": "2026-07-01",
+                                    "description": "Start date for custom range (YYYY-MM-DD)",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2026-07-10",
+                                    "description": "End date for custom range (YYYY-MM-DD)",
+                                    "disabled": true
+                                }
+                            ]
+                        },
+                        "description": "Exports transport summary report to Excel with daily, weekly, monthly, and custom date range filters."
+                    }
                 }
             ]
         },
@@ -3580,6 +3632,156 @@
                 "description": "Fetches dynamic app configuration (e.g. screenshot restrictions)."
             },
             "response": []
+        },
+        {
+            "name": "Farmer Plantation Info",
+            "item": [
+                {
+                    "name": "POST Submit Plantation Info (Public)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"farmerName\": \"Abhishek Shinde\",\n  \"location\": \"Malshiras\",\n  \"mobileNo\": \"9999988888\",\n  \"totalPlants\": 2000,\n  \"spacing\": \"6 x 5\",\n  \"plantationDate\": \"2026-06-01\",\n  \"acres\": 3.5,\n  \"variety\": \"G9\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/plantation-info",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "plantation-info"
+                            ]
+                        },
+                        "description": "Public submission of farmer plantation details, replacing the Google Form."
+                    }
+                },
+                {
+                    "name": "GET List Plantation Submissions (Admin/FO)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/plantation-info?page=1&limit=20&search=Abhishek",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "plantation-info"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                },
+                                {
+                                    "key": "search",
+                                    "value": "Abhishek",
+                                    "description": "Optional search query"
+                                }
+                            ]
+                        },
+                        "description": "Lists all plantation form submissions with pagination and search."
+                    }
+                },
+                {
+                    "name": "GET Plantation Detail (Admin/FO)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/plantation-info/REPLACE_WITH_PLANTATION_ID",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "plantation-info",
+                                "REPLACE_WITH_PLANTATION_ID"
+                            ]
+                        },
+                        "description": "Gets details of a single plantation submission."
+                    }
+                },
+                {
+                    "name": "PUT Update Plantation Info (Admin/FO)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"acres\": 4.2,\n  \"spacing\": \"8 x 5\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/plantation-info/REPLACE_WITH_PLANTATION_ID",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "plantation-info",
+                                "REPLACE_WITH_PLANTATION_ID"
+                            ]
+                        },
+                        "description": "Updates details of a plantation submission."
+                    }
+                },
+                {
+                    "name": "DELETE Plantation Record (Admin)",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/plantation-info/REPLACE_WITH_PLANTATION_ID",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "plantation-info",
+                                "REPLACE_WITH_PLANTATION_ID"
+                            ]
+                        },
+                        "description": "Deletes a plantation submission record."
+                    }
+                }
+            ]
         }
     ]
 }

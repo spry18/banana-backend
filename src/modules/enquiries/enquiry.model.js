@@ -128,6 +128,10 @@ const enquirySchema = new mongoose.Schema(
             type: Date,
             required: false,
         },
+        actualWeight: {
+            type: Number,
+            default: null,
+        },
     },
     { timestamps: true }
 );

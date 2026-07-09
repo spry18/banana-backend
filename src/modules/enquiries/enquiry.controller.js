@@ -966,6 +966,7 @@ const eolEnquiry = async (req, res) => {
 // @access  Protected (Admin only)
 const finalApproveEnquiry = async (req, res) => {
     try {
+        const { weight } = req.body;
         const enquiry = await Enquiry.findById(req.params.id);
         if (!enquiry) {
             return res.status(404).json({ message: 'Enquiry not found' });
@@ -977,8 +978,11 @@ const finalApproveEnquiry = async (req, res) => {
             });
         }
 
-        const before = { status: enquiry.status };
+        const before = { status: enquiry.status, actualWeight: enquiry.actualWeight };
         enquiry.status = 'COMPLETED';
+        if (weight !== undefined && weight !== null) {
+            enquiry.actualWeight = Number(weight);
+        }
         await enquiry.save();
 
         // Flow 2 — In-app: notify Field Owner (their plot harvest is fully done)
@@ -999,7 +1003,7 @@ const finalApproveEnquiry = async (req, res) => {
             enquiry._id,
             `Admin marked final approval for Enquiry ${enquiry.enquiryId}`,
             before,
-            { status: 'COMPLETED' }
+            { status: 'COMPLETED', actualWeight: enquiry.actualWeight }
         );
 
         res.status(200).json({
