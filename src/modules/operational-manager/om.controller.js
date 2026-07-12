@@ -379,7 +379,7 @@ const getOmPlots = async (req, res) => {
         }
  
         // ---- Stage: Complete = Assignments with assignmentStatus COMPLETED, REJECTED, or APPROVED ----
-        if (stage === 'Complete') {
+        if (stage === 'Complete' || stage === 'Completed') {
             const assignmentQuery = {
                 assignmentStatus: { $in: ['COMPLETED', 'APPROVED', 'REJECTED'] },
             };
@@ -442,7 +442,7 @@ const getOmPlots = async (req, res) => {
             // --- End Enhancement ---
 
             return res.status(200).json({
-                stage: 'Complete',
+                stage: stage,
                 total,
                 page: Number(page),
                 pages: Math.ceil(total / Number(limit)),
@@ -520,7 +520,7 @@ const getOmPlots = async (req, res) => {
             });
         }
 
-        return res.status(400).json({ message: 'Invalid stage. Must be: All, Unassigned, Assigned, Rejected, Cancelled, or Complete' });
+        return res.status(400).json({ message: 'Invalid stage. Must be: All, Unassigned, Assigned, Rejected, Cancelled, Complete, or Completed' });
 
     } catch (error) {
         console.error('Error fetching OM plots pipeline:', error);
