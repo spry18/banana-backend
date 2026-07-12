@@ -592,7 +592,7 @@ const rejectPackingReport = async (req, res) => {
 const approvePackingReport = async (req, res) => {
     try {
         const { assignmentId } = req.params;
-        const { approvalNote } = req.body;
+        const { approvalNote, slipDetails, actualWeight } = req.body;
 
         // Find and verify the packing record exists and is in SUBMITTED status
         const packing = await Packing.findOne({ assignmentId });
@@ -607,6 +607,14 @@ const approvePackingReport = async (req, res) => {
         // Update packing record
         packing.status = 'APPROVED';
         packing.omRemark = null;  // Clear any remark field
+        
+        if (slipDetails !== undefined) {
+            packing.slipDetails = slipDetails;
+        }
+        if (actualWeight !== undefined) {
+            packing.actualWeight = actualWeight;
+        }
+        
         await packing.save();
 
         // Update parent logistics assignment status to APPROVED

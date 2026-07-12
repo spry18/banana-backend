@@ -43,7 +43,7 @@ const getAdminStats = async (req, res) => {
             Enquiry.countDocuments({ status: 'PENDING' }),
             Enquiry.countDocuments({ status: 'SELECTED', ...todayFilter }),
             Enquiry.countDocuments({ status: 'REJECTED', ...todayFilter }),
-            Enquiry.countDocuments({ status: 'RATE_FIXED', ...todayFilter }),
+            Enquiry.countDocuments({ status: 'ASSIGNED', purchaseRate: { $ne: null }, ...todayFilter }),
             Enquiry.countDocuments({ status: 'ASSIGNED', ...todayFilter }),
             Enquiry.countDocuments({ status: 'COMPLETED', ...todayFilter }),
             Enquiry.countDocuments({ status: 'PENDING_ADMIN_APPROVAL' }),
@@ -395,6 +395,9 @@ const getMonitoringDashboard = async (req, res) => {
             } else if (status === 'UNASSIGNED') {
                 query.status = { $in: ['PENDING', 'RESCHEDULED'] };
                 query.assignedSelectorId = null;
+            } else if (status === 'RATE_FIXED') {
+                query.status = 'ASSIGNED';
+                query.purchaseRate = { $ne: null };
             } else {
                 query.status = status;
             }
@@ -654,7 +657,7 @@ const getFieldSelectionDashboard = async (req, res) => {
             Enquiry.countDocuments({ status: 'REJECTED' }),
             Enquiry.countDocuments({ scheduledDate: { $gt: now }, status: 'PENDING' }),
             Enquiry.countDocuments({ scheduledDate: { $lt: now }, status: 'PENDING' }),
-            Enquiry.countDocuments({ status: 'RATE_FIXED' }),
+            Enquiry.countDocuments({ status: 'ASSIGNED', purchaseRate: { $ne: null } }),
         ]);
 
         const kmMatch = { status: 'COMPLETED' };
@@ -973,7 +976,11 @@ const getMunshiHistory = async (req, res) => {
                     path: 'assignmentId',
                     select: 'enquiryId totalBoxes vehicleId driverId',
                     populate: [
-                        { path: 'enquiryId', select: 'enquiryId farmerFirstName farmerLastName location' },
+                        { 
+                            path: 'enquiryId', 
+                            select: 'enquiryId farmerFirstName farmerLastName farmerMobile location subLocation plantCount estimatedBoxes companyId',
+                            populate: { path: 'companyId', select: 'companyName' }
+                        },
                         { path: 'driverId', select: 'firstName lastName mobileNo' }
                     ]
                 })
@@ -981,12 +988,10 @@ const getMunshiHistory = async (req, res) => {
             Packing.countDocuments(query),
         ]);
 
-        const allReportsForKpis = await Packing.find(query).select('assignmentId createdAt').lean();
+        const allReportsForKpis = await Packing.find(query).select('status').lean();
         const totalReports = total;
-        const uniquePlots = new Set(allReportsForKpis.map(r => r.assignmentId?.toString())).size;
-        
-        const todayStr = new Date().toISOString().split('T')[0];
-        const recentReports = allReportsForKpis.filter(r => r.createdAt && r.createdAt.toISOString().startsWith(todayStr)).length;
+        const completedReports = allReportsForKpis.filter(r => r.status === 'SUBMITTED' || r.status === 'APPROVED').length;
+        const cancelledReports = allReportsForKpis.filter(r => r.status === 'CANCELLED' || r.status === 'REJECTED').length;
 
         res.json({
             total,
@@ -995,8 +1000,8 @@ const getMunshiHistory = async (req, res) => {
             data: reports,
             kpis: {
                 totalReports,
-                uniquePlots,
-                recentReports
+                completedReports,
+                cancelledReports
             }
         });
     } catch (error) {

@@ -102,6 +102,14 @@ const packingSchema = new mongoose.Schema(
             type: String,
             default: null,
         },
+        slipDetails: {
+            type: String,
+            default: null,
+        },
+        actualWeight: {
+            type: Number,
+            default: null,
+        },
     },
     { timestamps: true }
 );

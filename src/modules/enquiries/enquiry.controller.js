@@ -480,15 +480,18 @@ const getEnquiryById = async (req, res) => {
             .lean();
 
         const logisticsData = logistics ? {
+            munshiId: logistics.munshiId ? logistics.munshiId._id : null,
             munshi: logistics.munshiId
                 ? `${logistics.munshiId.firstName} ${logistics.munshiId.lastName}`
                 : null,
+            driverId: logistics.driverId ? logistics.driverId._id : null,
             driver: logistics.driverId
                 ? `${logistics.driverId.firstName} ${logistics.driverId.lastName}`
                 : null,
             driverMobile: logistics.driverId ? logistics.driverId.mobileNo : null,
             vehicleNumber: logistics.vehicleId ? logistics.vehicleId.vehicleNumber : null,
             teamName: logistics.teamName || null,
+            assignmentStatus: logistics.assignmentStatus || null,
         } : null;
 
         // Join packing report details if logistics exists
