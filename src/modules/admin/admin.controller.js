@@ -480,6 +480,7 @@ const getMonitoringDashboard = async (req, res) => {
             .populate('fieldOwnerId', 'firstName lastName')
             .populate('assignedSelectorId', 'firstName lastName bikeNumber')
             .populate('companyId', 'companyName')
+            .populate('agentId', 'agentName')
             .lean();
 
         const tableEnquiryIds = rawTable.map(e => e._id);
@@ -562,7 +563,7 @@ const getMonitoringDashboard = async (req, res) => {
                 // Additional response fields
                 boxCount: packing ? (packing.totalBoxes || 0) : (e.estimatedBoxes || null),
                 company: e.companyId ? e.companyId.companyName : null,
-                partnerName: e.fieldOwnerId ? `${e.fieldOwnerId.firstName} ${e.fieldOwnerId.lastName}` : null,
+                partnerName: e.agentId ? e.agentId.agentName : null,
                 packagingType: e.packingType || null,
                 assignmentStatus: logistics ? logistics.assignmentStatus : 'UNASSIGNED',
                 subLocation: e.subLocation || null,
