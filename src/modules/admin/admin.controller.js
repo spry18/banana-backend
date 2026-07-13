@@ -395,7 +395,7 @@ const getMonitoringDashboard = async (req, res) => {
             } else if (status === 'UNASSIGNED') {
                 query.status = { $in: ['PENDING', 'RESCHEDULED'] };
                 query.assignedSelectorId = null;
-            } else if (status === 'RATE_FIXED') {
+            } else if (status === 'FIX_RATE' || status === 'RATE_FIXED') {
                 query.status = 'ASSIGNED';
                 query.purchaseRate = { $ne: null };
             } else {
@@ -561,9 +561,12 @@ const getMonitoringDashboard = async (req, res) => {
 
                 // Additional response fields
                 boxCount: packing ? (packing.totalBoxes || 0) : (e.estimatedBoxes || null),
-                partnerName: e.companyId ? e.companyId.companyName : null,
+                company: e.companyId ? e.companyId.companyName : null,
+                partnerName: e.fieldOwnerId ? `${e.fieldOwnerId.firstName} ${e.fieldOwnerId.lastName}` : null,
                 packagingType: e.packingType || null,
                 assignmentStatus: logistics ? logistics.assignmentStatus : 'UNASSIGNED',
+                subLocation: e.subLocation || null,
+                recoveryPercent: inspection ? inspection.recoveryPercent : null,
             };
         });
 
