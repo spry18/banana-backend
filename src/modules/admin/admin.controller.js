@@ -820,7 +820,7 @@ const getAllUsersHistory = async (req, res) => {
 // @access  Private (Admin, Operational Manager)
 const getFuelHistory = async (req, res) => {
     try {
-        const { search, date, dateFilter, page = 1, limit = 20 } = req.query;
+        const { search, date, dateFilter, page = 1, limit = 20, type } = req.query;
 
         const dieselQuery = {};
         const petrolQuery = {};
@@ -888,6 +888,10 @@ const getFuelHistory = async (req, res) => {
 
         let combined = [...dieselMapped, ...petrolMapped];
 
+        if (type && type !== 'All') {
+            combined = combined.filter(c => c.type === type);
+        }
+
         if (search) {
             const regex = new RegExp(search, 'i');
             combined = combined.filter(c => 
@@ -929,10 +933,14 @@ const getFuelHistory = async (req, res) => {
 // @access  Private (Admin, Operational Manager)
 const getMunshiHistory = async (req, res) => {
     try {
-        const { search, date, dateFilter, page = 1, limit = 20 } = req.query;
+        const { search, date, dateFilter, status, page = 1, limit = 20 } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
 
         const query = {};
+
+        if (status) {
+            query.status = status;
+        }
 
         if (dateFilter || date) {
             const { getIstDayRange } = require('../../utils/dateHelper');
@@ -974,14 +982,25 @@ const getMunshiHistory = async (req, res) => {
                 .populate('brandId', 'brandName')
                 .populate({
                     path: 'assignmentId',
-                    select: 'enquiryId totalBoxes vehicleId driverId',
+                    select: 'enquiryId totalBoxes vehicleId driverId companyId teamName pickupDriverId',
                     populate: [
                         { 
                             path: 'enquiryId', 
                             select: 'enquiryId farmerFirstName farmerLastName farmerMobile location subLocation plantCount estimatedBoxes companyId',
                             populate: { path: 'companyId', select: 'companyName' }
                         },
-                        { path: 'driverId', select: 'firstName lastName mobileNo' }
+                        { path: 'companyId', select: 'companyName' },
+                        { 
+                            path: 'driverId', 
+                            select: 'firstName lastName mobileNo vehicleId',
+                            populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' }
+                        },
+                        { 
+                            path: 'pickupDriverId', 
+                            select: 'firstName lastName mobileNo vehicleId',
+                            populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' }
+                        },
+                        { path: 'vehicleId', select: 'vehicleNumber vehicleType' }
                     ]
                 })
                 .lean(),
@@ -1013,7 +1032,7 @@ const getMunshiHistory = async (req, res) => {
 // Helper for logistics vehicle type history
 const getLogisticsHistoryByVehicleType = async (req, res, driverRole) => {
     try {
-        const { search, date, dateFilter, page = 1, limit = 20 } = req.query;
+        const { search, date, dateFilter, page = 1, limit = 20, type } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
 
         const matchingDrivers = await User.find({ role: driverRole }).select('_id');
@@ -1092,7 +1111,7 @@ const getLogisticsHistoryByVehicleType = async (req, res, driverRole) => {
 
 const getEicherHistory = async (req, res) => {
     try {
-        const { search, date, dateFilter, page = 1, limit = 20 } = req.query;
+        const { search, date, dateFilter, page = 1, limit = 20, type } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
 
         const matchingDrivers = await User.find({ role: 'driver eicher' }).select('_id');
@@ -1212,11 +1231,11 @@ const getEicherHistory = async (req, res) => {
 
 const getPickupHistory = async (req, res) => {
     try {
-        const { search, date, dateFilter, page = 1, limit = 20 } = req.query;
+        const { search, date, dateFilter, page = 1, limit = 20, type } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
 
         const matchingDrivers = await User.find({ role: 'driver pickup' }).select('_id');
-        const query = { driverId: { $in: matchingDrivers.map(d => d._id) } };
+        const query = { pickupDriverId: { $in: matchingDrivers.map(d => d._id) } };
 
         const { getIstDayRange } = require('../../utils/dateHelper');
         let dateRange = null;
@@ -1261,7 +1280,7 @@ const getPickupHistory = async (req, res) => {
                 .limit(Number(limit))
                 .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName location subLocation')
                 .populate('munshiId', 'firstName lastName mobileNo')
-                .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
+                .populate({ path: 'pickupDriverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
                 .populate('vehicleId', 'vehicleNumber')
                 .lean(),
             Logistics.countDocuments(query),
@@ -1377,6 +1396,49 @@ const masterSearch = async (req, res) => {
     }
 };
 
+// @desc    Get detailed Harvesting Report for an assignment
+// @route   GET /api/admin/harvesting-report/:assignmentId
+// @access  Private (Admin, Operational Manager)
+const getHarvestingReportDetails = async (req, res) => {
+    try {
+        const { assignmentId } = req.params;
+
+        const logistics = await Logistics.findById(assignmentId)
+            .populate('enquiryId')
+            .populate('munshiId', 'firstName lastName mobileNo')
+            .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
+            .populate({ path: 'pickupDriverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
+            .populate('companyId', 'companyName')
+            .populate('vehicleId', 'vehicleNumber vehicleType')
+            .lean();
+
+        if (!logistics) {
+            return res.status(404).json({ message: 'Assignment not found' });
+        }
+
+        const packing = await Packing.findOne({ assignmentId }).lean();
+        
+        const eicherTrip = await Trip.findOne({ assignmentId, driverType: 'Eicher' }).lean();
+        const pickupTrip = await Trip.findOne({ assignmentId, driverType: 'Pickup' }).lean();
+
+        const eicherAdvance = await DieselAdvance.findOne({ assignmentId, driverId: logistics.driverId?._id }).lean();
+        const pickupAdvance = await DieselAdvance.findOne({ assignmentId, driverId: logistics.pickupDriverId?._id }).lean();
+
+        res.status(200).json({
+            logistics,
+            packing,
+            eicherTrip,
+            pickupTrip,
+            eicherAdvance,
+            pickupAdvance
+        });
+
+    } catch (error) {
+        console.error('Error fetching Harvesting Report Details:', error);
+        res.status(500).json({ message: 'Server error while fetching Harvesting Report Details' });
+    }
+};
+
 module.exports = {
     getAdminStats,
     getAlerts,
@@ -1389,5 +1451,7 @@ module.exports = {
     getMunshiHistory,
     getEicherHistory,
     getPickupHistory,
+    getHarvestingReportDetails,
     masterSearch,
 };
+

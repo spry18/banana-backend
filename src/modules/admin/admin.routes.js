@@ -13,6 +13,7 @@ const {
     getMunshiHistory,
     getEicherHistory,
     getPickupHistory,
+    getHarvestingReportDetails,
     masterSearch,
 } = require('./admin.controller');
 
@@ -40,6 +41,7 @@ router.get('/history/fuel', getFuelHistory);
 router.get('/history/munshi', getMunshiHistory);
 router.get('/history/eicher', getEicherHistory);
 router.get('/history/pickup', getPickupHistory);
+router.get('/harvesting-report/:assignmentId', getHarvestingReportDetails);
 
 // Master Search
 router.get('/master-search', masterSearch);

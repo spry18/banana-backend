@@ -534,48 +534,68 @@ const getOmPlots = async (req, res) => {
 const rejectPackingReport = async (req, res) => {
     try {
         const { assignmentId } = req.params;
-        const { remark } = req.body;
+        const { remark, rejectRoles = [] } = req.body;
 
         if (!remark) {
             return res.status(400).json({ message: 'remark is required for rejection' });
         }
-
-        // Find and verify the packing record exists and is in SUBMITTED status
-        const packing = await Packing.findOne({ assignmentId });
-        if (!packing) {
-            return res.status(404).json({ message: 'Packing report not found for this assignment' });
+        if (!Array.isArray(rejectRoles) || rejectRoles.length === 0) {
+            return res.status(400).json({ message: 'At least one role must be selected for rejection (Munshi, Eicher, or Pickup)' });
         }
 
-        if (!['SUBMITTED', 'APPROVED'].includes(packing.status)) {
-            return res.status(400).json({ message: `Cannot reject a packing report with status: ${packing.status}` });
-        }
-
-        // Update packing record
-        packing.status = 'REJECTED';
-        packing.omRemark = remark;
-        await packing.save();
-
-        // Update parent logistics assignment status to REJECTED
+        // Find the logistics assignment
         const assignment = await Logistics.findById(assignmentId);
-        if (assignment) {
-            assignment.assignmentStatus = 'REJECTED';
+        if (!assignment) {
+            return res.status(404).json({ message: 'Assignment not found' });
+        }
+
+        // Handle Munshi Rejection
+        if (rejectRoles.includes('Munshi')) {
+            const packing = await Packing.findOne({ assignmentId });
+            if (packing) {
+                packing.status = 'REJECTED';
+                packing.omRemark = remark;
+                await packing.save();
+
+                assignment.assignmentStatus = 'REJECTED';
+                await assignment.save();
+
+                if (packing.munshiId) {
+                    await createNotification(
+                        packing.munshiId,
+                        'PACKING_REJECTED',
+                        `Your packing report was rejected by the Operations Manager. Reason: ${remark}. Please resubmit.`,
+                        packing._id,
+                        'Packing'
+                    );
+                }
+            }
+        }
+
+        // Handle Eicher Driver Rejection
+        if (rejectRoles.includes('Eicher')) {
+            await Trip.findOneAndDelete({ assignmentId, driverType: 'Eicher' });
+            if (assignment.driverId) {
+                await DieselAdvance.findOneAndDelete({ assignmentId, driverId: assignment.driverId });
+            }
+            assignment.driverId = null;
+            assignment.assignmentStatus = 'ASSIGNED'; // Revert back so it needs re-assignment or driver completion
             await assignment.save();
         }
 
-        // Flow 2 — In-app: notify the Munshi to resubmit with the rejection reason
-        if (packing.munshiId) {
-            await createNotification(
-                packing.munshiId,
-                'PACKING_REJECTED',
-                `Your packing report was rejected by the Operations Manager. Reason: ${remark}. Please resubmit.`,
-                packing._id,
-                'Packing'
-            );
+        // Handle Pickup Driver Rejection
+        if (rejectRoles.includes('Pickup')) {
+            await Trip.findOneAndDelete({ assignmentId, driverType: 'Pickup' });
+            if (assignment.pickupDriverId) {
+                await DieselAdvance.findOneAndDelete({ assignmentId, driverId: assignment.pickupDriverId });
+            }
+            assignment.pickupDriverId = null;
+            assignment.assignmentStatus = 'ASSIGNED';
+            await assignment.save();
         }
 
         res.status(200).json({
-            message: 'Packing report rejected successfully. Munshi has been notified to resubmit.',
-            packing,
+            message: 'Rejection processed successfully for selected roles.',
         });
     } catch (error) {
         console.error('Error rejecting packing report:', error);
