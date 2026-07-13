@@ -1091,11 +1091,237 @@ const getLogisticsHistoryByVehicleType = async (req, res, driverRole) => {
 };
 
 const getEicherHistory = async (req, res) => {
-    return getLogisticsHistoryByVehicleType(req, res, 'driver eicher');
+    try {
+        const { search, date, dateFilter, page = 1, limit = 20 } = req.query;
+        const skip = (Number(page) - 1) * Number(limit);
+
+        const matchingDrivers = await User.find({ role: 'driver eicher' }).select('_id');
+        const query = { driverId: { $in: matchingDrivers.map(d => d._id) } };
+
+        const { getIstDayRange } = require('../../utils/dateHelper');
+        let dateRange = null;
+
+        // Default to monthly if no date filter is provided
+        const activeFilter = dateFilter || 'monthly';
+
+        if (activeFilter === 'daily' || activeFilter === 'today' || date === 'today') {
+            dateRange = getIstDayRange('today');
+        } else if (activeFilter === 'weekly') {
+            const start = new Date();
+            start.setDate(start.getDate() - 7);
+            dateRange = { startOfDay: start, endOfDay: new Date() };
+        } else if (activeFilter === 'monthly') {
+            const start = new Date();
+            start.setMonth(start.getMonth() - 1);
+            dateRange = { startOfDay: start, endOfDay: new Date() };
+        } else if (activeFilter !== 'all' && date) {
+            dateRange = getIstDayRange(date);
+        }
+
+        if (dateRange && activeFilter !== 'all') {
+            query.createdAt = { $gte: dateRange.startOfDay, $lt: dateRange.endOfDay };
+        }
+
+        if (search) {
+            const matchingEnquiries = await Enquiry.find({
+                $or: [
+                    { farmerFirstName: { $regex: search, $options: 'i' } },
+                    { farmerLastName: { $regex: search, $options: 'i' } },
+                    { location: { $regex: search, $options: 'i' } },
+                    { enquiryId: { $regex: search, $options: 'i' } }
+                ]
+            }).select('_id');
+            query.enquiryId = { $in: matchingEnquiries.map(e => e._id) };
+        }
+
+        const [assignments, total] = await Promise.all([
+            Logistics.find(query)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(Number(limit))
+                .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName location subLocation')
+                .populate('munshiId', 'firstName lastName mobileNo')
+                .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
+                .populate('vehicleId', 'vehicleNumber')
+                .lean(),
+            Logistics.countDocuments(query),
+        ]);
+
+        const assignmentIds = assignments.map(a => a._id);
+        const tripsForPage = await Trip.find({ assignmentId: { $in: assignmentIds }, driverType: 'Eicher' }).lean();
+        const advancesForPage = await DieselAdvance.find({ assignmentId: { $in: assignmentIds } }).lean();
+
+        const enrichedAssignments = assignments.map(assignment => {
+            const trip = tripsForPage.find(t => t.assignmentId.toString() === assignment._id.toString());
+            const advance = advancesForPage.find(a => a.assignmentId.toString() === assignment._id.toString());
+            return {
+                ...assignment,
+                tripDetails: trip || null,
+                dieselAdvance: advance || null,
+            };
+        });
+
+        // Compute KPIs over ALL matched logistics items in the period
+        const allAssignmentsForKpis = await Logistics.find(query).select('_id').lean();
+        const allAssignmentIds = allAssignmentsForKpis.map(a => a._id);
+        const allTrips = await Trip.find({ assignmentId: { $in: allAssignmentIds }, driverType: 'Eicher' }).lean();
+        const allAdvances = await DieselAdvance.find({ assignmentId: { $in: allAssignmentIds } }).lean();
+
+        let totalTripsCount = allTrips.length;
+        let totalKm = 0;
+        let totalToll = 0;
+        let totalHaults = 0;
+        let totalLineCancels = 0;
+        let totalFuelAdvance = 0;
+
+        allTrips.forEach(t => {
+            totalKm += (t.totalKm || 0);
+            totalToll += (t.tollExpense || 0);
+            if (t.isHault) totalHaults += 1;
+            if (t.isLineCancel) totalLineCancels += 1;
+        });
+
+        allAdvances.forEach(a => {
+            totalFuelAdvance += (a.amount || 0);
+        });
+
+        const dieselPrice = 92.50; // Use static fallback or fetch dynamically if needed
+        let totalEarnings = (totalTripsCount * 2500) + (totalHaults * 1500) + (totalLineCancels * 1500) + ((totalKm / 5) * dieselPrice) + totalToll;
+        const monthlyPayout = parseFloat((totalEarnings - totalFuelAdvance).toFixed(2));
+
+        res.json({
+            total,
+            page: Number(page),
+            pages: Math.ceil(total / Number(limit)),
+            data: enrichedAssignments,
+            kpis: {
+                monthlyPayout,
+                totalKm,
+                totalTrips: totalTripsCount,
+                totalFuel: totalFuelAdvance,
+                totalToll,
+                totalLineCancels,
+                haults: totalHaults
+            }
+        });
+    } catch (error) {
+        console.error('Eicher logistics history error:', error);
+        res.status(500).json({ message: 'Server error while fetching Eicher logistics history' });
+    }
 };
 
 const getPickupHistory = async (req, res) => {
-    return getLogisticsHistoryByVehicleType(req, res, 'driver pickup');
+    try {
+        const { search, date, dateFilter, page = 1, limit = 20 } = req.query;
+        const skip = (Number(page) - 1) * Number(limit);
+
+        const matchingDrivers = await User.find({ role: 'driver pickup' }).select('_id');
+        const query = { driverId: { $in: matchingDrivers.map(d => d._id) } };
+
+        const { getIstDayRange } = require('../../utils/dateHelper');
+        let dateRange = null;
+
+        // Default to monthly if no date filter is provided
+        const activeFilter = dateFilter || 'monthly';
+
+        if (activeFilter === 'daily' || activeFilter === 'today' || date === 'today') {
+            dateRange = getIstDayRange('today');
+        } else if (activeFilter === 'weekly') {
+            const start = new Date();
+            start.setDate(start.getDate() - 7);
+            dateRange = { startOfDay: start, endOfDay: new Date() };
+        } else if (activeFilter === 'monthly') {
+            const start = new Date();
+            start.setMonth(start.getMonth() - 1);
+            dateRange = { startOfDay: start, endOfDay: new Date() };
+        } else if (activeFilter !== 'all' && date) {
+            dateRange = getIstDayRange(date);
+        }
+
+        if (dateRange && activeFilter !== 'all') {
+            query.createdAt = { $gte: dateRange.startOfDay, $lt: dateRange.endOfDay };
+        }
+
+        if (search) {
+            const matchingEnquiries = await Enquiry.find({
+                $or: [
+                    { farmerFirstName: { $regex: search, $options: 'i' } },
+                    { farmerLastName: { $regex: search, $options: 'i' } },
+                    { location: { $regex: search, $options: 'i' } },
+                    { enquiryId: { $regex: search, $options: 'i' } }
+                ]
+            }).select('_id');
+            query.enquiryId = { $in: matchingEnquiries.map(e => e._id) };
+        }
+
+        const [assignments, total] = await Promise.all([
+            Logistics.find(query)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(Number(limit))
+                .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName location subLocation')
+                .populate('munshiId', 'firstName lastName mobileNo')
+                .populate({ path: 'driverId', select: 'firstName lastName mobileNo vehicleId', populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' } })
+                .populate('vehicleId', 'vehicleNumber')
+                .lean(),
+            Logistics.countDocuments(query),
+        ]);
+
+        const assignmentIds = assignments.map(a => a._id);
+        const tripsForPage = await Trip.find({ assignmentId: { $in: assignmentIds }, driverType: 'Pickup' }).lean();
+        const advancesForPage = await DieselAdvance.find({ assignmentId: { $in: assignmentIds } }).lean();
+
+        const enrichedAssignments = assignments.map(assignment => {
+            const trip = tripsForPage.find(t => t.assignmentId.toString() === assignment._id.toString());
+            const advance = advancesForPage.find(a => a.assignmentId.toString() === assignment._id.toString());
+            return {
+                ...assignment,
+                tripDetails: trip || null,
+                dieselAdvance: advance || null,
+            };
+        });
+
+        // Compute KPIs over ALL matched logistics items in the period
+        const allAssignmentsForKpis = await Logistics.find(query).select('_id').lean();
+        const allAssignmentIds = allAssignmentsForKpis.map(a => a._id);
+        const allTrips = await Trip.find({ assignmentId: { $in: allAssignmentIds }, driverType: 'Pickup' }).lean();
+        const allAdvances = await DieselAdvance.find({ assignmentId: { $in: allAssignmentIds } }).lean();
+
+        let totalTripsCount = allTrips.length;
+        let totalKm = 0;
+        let totalToll = 0;
+        let totalFuelAdvance = 0;
+
+        allTrips.forEach(t => {
+            totalKm += (t.totalKm || 0);
+            totalToll += (t.tollExpense || 0);
+        });
+
+        allAdvances.forEach(a => {
+            totalFuelAdvance += (a.amount || 0);
+        });
+
+        const dieselPrice = 92.50; // Static fallback
+        let totalEarnings = (totalTripsCount * 1200) + ((totalKm / 10) * dieselPrice) + totalToll;
+        const monthlyPayout = parseFloat((totalEarnings - totalFuelAdvance).toFixed(2));
+
+        res.json({
+            total,
+            page: Number(page),
+            pages: Math.ceil(total / Number(limit)),
+            data: enrichedAssignments,
+            kpis: {
+                monthlyPayout,
+                totalKm,
+                totalTrips: totalTripsCount,
+                totalFuel: totalFuelAdvance,
+                totalToll
+            }
+        });
+    } catch (error) {
+        console.error('Pickup logistics history error:', error);
+        res.status(500).json({ message: 'Server error while fetching Pickup logistics history' });
+    }
 };
 
 // @desc    Master Search across Enquiries, Users, and Logistics
