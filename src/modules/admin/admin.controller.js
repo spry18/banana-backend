@@ -896,6 +896,11 @@ const getFuelHistory = async (req, res) => {
             combined = combined.filter(c => c.type === type);
         }
 
+        const { role } = req.query;
+        if (role && role !== 'All') {
+            combined = combined.filter(c => c.recipientRole === role);
+        }
+
         if (search) {
             const regex = new RegExp(search, 'i');
             combined = combined.filter(c => 

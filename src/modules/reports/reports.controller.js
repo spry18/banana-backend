@@ -25,30 +25,32 @@ const getFieldSelectionReport = async (req, res) => {
 
         const skip = (Number(page) - 1) * Number(limit);
 
-        // ── 1. Calculate Stats ──
-        const packingStats = await Packing.aggregate([
-            {
-                $group: {
-                    _id: null,
-                    totalBoxes: { $sum: '$totalBoxes' },
-                    totalWastage: { $sum: '$wastageKg' },
-                    lineRejected: {
-                        $sum: { $cond: [{ $eq: ['$status', 'CANCELLED'] }, 1, 0] },
-                    },
-                },
-            },
+        const now = new Date();
+        const [
+            totalEnquiries,
+            selectedPlots,
+            rejectedPlots,
+            missedPlots,
+            rescheduled,
+        ] = await Promise.all([
+            Enquiry.countDocuments(),
+            Enquiry.countDocuments({
+                $or: [
+                    { status: { $in: ['SELECTED', 'RATE_FIXED', 'COMPLETED'] } },
+                    { status: 'ASSIGNED', purchaseRate: { $ne: null, $exists: true } }
+                ]
+            }),
+            Enquiry.countDocuments({ status: 'REJECTED' }),
+            Enquiry.countDocuments({ scheduledDate: { $lt: now }, status: 'PENDING' }),
+            Enquiry.countDocuments({ status: 'RESCHEDULED' }),
         ]);
 
-        const pStats = packingStats[0] || { totalBoxes: 0, totalWastage: 0, lineRejected: 0 };
-        const totalRejected = await Enquiry.countDocuments({ status: 'REJECTED' });
-        const totalTrips = await Logistics.countDocuments();
-
         const stats = {
-            totalBoxes: pStats.totalBoxes,
-            totalWastage: pStats.totalWastage,
-            totalRejected,
-            totalTrips,
-            lineRejected: pStats.lineRejected,
+            totalEnquiries,
+            selectedPlots,
+            rejectedPlots,
+            missedPlots,
+            rescheduled,
         };
 
         // ── 2. Table Data (from Inspection joined to Enquiry) ──
@@ -191,32 +193,30 @@ const getExecutionDetailedReport = async (req, res) => {
         const skip = (Number(page) - 1) * Number(limit);
         const now = new Date();
 
-        // ── 1. Calculate Stats (from Enquiry) ──
-        const [
-            totalEnquiries,
-            selectedPlots,
-            rejectedPlots,
-            missedPlots,
-            rescheduled,
-        ] = await Promise.all([
-            Enquiry.countDocuments(),
-            Enquiry.countDocuments({
-                $or: [
-                    { status: { $in: ['SELECTED', 'RATE_FIXED', 'COMPLETED'] } },
-                    { status: 'ASSIGNED', purchaseRate: { $ne: null, $exists: true } }
-                ]
-            }),
-            Enquiry.countDocuments({ status: 'REJECTED' }),
-            Enquiry.countDocuments({ scheduledDate: { $lt: now }, status: 'PENDING' }),
-            Enquiry.countDocuments({ status: 'RESCHEDULED' }),
+        // ── 1. Calculate Stats ──
+        const packingStats = await Packing.aggregate([
+            {
+                $group: {
+                    _id: null,
+                    totalBoxes: { $sum: '$totalBoxes' },
+                    totalWastage: { $sum: '$wastageKg' },
+                    lineRejected: {
+                        $sum: { $cond: [{ $eq: ['$status', 'CANCELLED'] }, 1, 0] },
+                    },
+                },
+            },
         ]);
 
+        const pStats = packingStats[0] || { totalBoxes: 0, totalWastage: 0, lineRejected: 0 };
+        const totalRejected = await Enquiry.countDocuments({ status: 'REJECTED' });
+        const totalTrips = await Logistics.countDocuments();
+
         const stats = {
-            totalEnquiries,
-            selectedPlots,
-            rejectedPlots,
-            missedPlots,
-            rescheduled,
+            totalBoxes: pStats.totalBoxes,
+            totalWastage: pStats.totalWastage,
+            totalRejected,
+            totalTrips,
+            lineRejected: pStats.lineRejected,
         };
 
         // ── 2. Table Data (from Logistics joined to Enquiry and Packing) ──
