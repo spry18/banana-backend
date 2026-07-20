@@ -140,6 +140,9 @@ app.use('/api/analytics', require('./src/modules/analytics/analytics.routes'));
 // Phase 9: Audit logs — correct path is now /api/audit/logs (GET /)
 app.use('/api/audit/logs', require('./src/modules/auditing/systemAudit.routes'));
 
+// Billing Module (isolated — zero legacy code modified)
+app.use('/api/billing', require('./src/modules/billing/billing.router'));
+
 // Data Import module (Admin only — CSV import for master data + historical enquiries)
 // app.use('/api/import', require('./src/modules/import/import.routes'));
 

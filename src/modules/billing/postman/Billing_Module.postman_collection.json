@@ -1,0 +1,1252 @@
+{
+  "info": {
+    "name": "Billing Module — Banana Transport",
+    "_postman_id": "billing-module-v1",
+    "description": "Complete API collection for the isolated Billing Module (src/modules/billing/). All routes are prefixed with /api/billing. All requests require Bearer token authentication (Admin role).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "YOUR_ADMIN_JWT_TOKEN",
+      "type": "string"
+    },
+    {
+      "key": "farmer_bill_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "company_bill_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "farmer_payment_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "company_payment_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "eicher_trip_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "munshi_entry_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "kharchi_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "pickup_trip_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "cold_storage_entry_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "procurement_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "fuel_entry_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "agent_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "employee_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "00 — Master Data",
+      "item": [
+        {
+          "name": "GET Banks",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/master/banks"
+          }
+        },
+        {
+          "name": "GET Companies",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/master/companies"
+          }
+        },
+        {
+          "name": "GET Vehicles",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/master/vehicles"
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 — Dashboard",
+      "item": [
+        {
+          "name": "GET Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/dashboard/summary?date=2025-01-15"
+          }
+        },
+        {
+          "name": "GET Sales by Company",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/dashboard/sales-by-company?date=2025-01-15"
+          }
+        },
+        {
+          "name": "GET Overdue Farmers",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/dashboard/overdue-farmers?minDays=25"
+          }
+        },
+        {
+          "name": "GET Harvest Chart (7 days)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/dashboard/harvest-chart?range=7"
+          }
+        },
+        {
+          "name": "GET Outstanding Chart",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/dashboard/outstanding-chart"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 — Farmer Bills",
+      "item": [
+        {
+          "name": "GET All Farmer Bills",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/farmer/bills?search=&date=&status=&page=1&limit=20"
+          }
+        },
+        {
+          "name": "GET Farmer Bills Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/farmer/bills/summary"
+          }
+        },
+        {
+          "name": "GET Farmer Bills History",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/farmer/bills/history?page=1&limit=20"
+          }
+        },
+        {
+          "name": "POST Create Farmer Bill",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/farmer/bills",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2025-01-15\",\n  \"farmerName\": \"Ramesh Patil\",\n  \"farmerContact\": \"9876543210\",\n  \"location\": \"Nashik\",\n  \"company\": \"Sahyadri Farms\",\n  \"vehicleNo\": \"MH15AB1234\",\n  \"packingType\": \"13 KG\",\n  \"boxes\": 500,\n  \"totalWeight\": 6500,\n  \"grossWeight\": 13.0,\n  \"wastage\": 50,\n  \"netWeight\": 6450,\n  \"danda\": 10,\n  \"remainingWeight\": 6440,\n  \"rate\": 22,\n  \"transport\": 5000,\n  \"initialAmount\": 141680,\n  \"totalAmount\": 141680,\n  \"netPayable\": 136680,\n  \"note\": \"First batch of season\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const res = pm.response.json();",
+                  "pm.collectionVariables.set('farmer_bill_id', res.data._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Farmer Bill by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/farmer/bills/{{farmer_bill_id}}"
+          }
+        },
+        {
+          "name": "PATCH Update Farmer Bill",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/farmer/bills/{{farmer_bill_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"SENT\",\n  \"sentDate\": \"2025-01-15\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET Farmer Bill PDF (Generate & Upload to S3)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/farmer/bills/{{farmer_bill_id}}/pdf"
+          }
+        },
+        {
+          "name": "GET Farmer Bill Receipt",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/farmer/bills/{{farmer_bill_id}}/receipt"
+          }
+        },
+        {
+          "name": "POST Share Farmer Bill",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/farmer/bills/{{farmer_bill_id}}/share",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deviceToken\": \"FCM_DEVICE_TOKEN_HERE\",\n  \"medium\": \"firebase\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 — Farmer Payments",
+      "item": [
+        {
+          "name": "GET All Farmer Payments",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/farmer/payments?search=&page=1&limit=20"
+          }
+        },
+        {
+          "name": "GET Farmer Payments Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/farmer/payments/summary"
+          }
+        },
+        {
+          "name": "POST Record Farmer Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/farmer/payments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"farmerBillRef\": \"{{farmer_bill_id}}\",\n  \"farmerName\": \"Ramesh Patil\",\n  \"date\": \"2025-01-16\",\n  \"amountPaid\": 136680,\n  \"bankName\": \"HDFC Bank\",\n  \"beneficiaryName\": \"Ramesh Ramchandra Patil\",\n  \"accountNo\": \"50100123456789\",\n  \"remark\": \"Full payment cleared\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('farmer_payment_id', pm.response.json().data._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Farmer Payment by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/farmer/payments/{{farmer_payment_id}}"
+          }
+        }
+      ]
+    }
+  ],
+  "_commented_folders_note": "The folders below are commented out/disabled. Move any folder back into 'item' array when ready to enable in Postman.",
+  "_commented_folders": [
+    {
+      "name": "04 — Company Bills",
+      "item": [
+        {
+          "name": "GET All Company Bills",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/company/bills?search=&date=&status=&page=1&limit=20"
+          }
+        },
+        {
+          "name": "GET Company Bills Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/company/bills/summary"
+          }
+        },
+        {
+          "name": "GET Company Outstanding",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/company/bills/outstanding"
+          }
+        },
+        {
+          "name": "GET Company Bill History",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/company/bills/history?page=1&limit=20"
+          }
+        },
+        {
+          "name": "GET Export History (Excel)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/company/bills/history/export"
+          }
+        },
+        {
+          "name": "GET Club Bills — Fetch Vehicle Data",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/company/bills/club?vehicle1=MH15AB1234&vehicle2=MH15CD5678"
+          }
+        },
+        {
+          "name": "POST Create Company Bill",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/company/bills",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2025-01-15\",\n  \"farmerName\": \"Ramesh Patil\",\n  \"farmerContact\": \"9876543210\",\n  \"location\": \"Nashik\",\n  \"vehicleNo\": \"MH15AB1234\",\n  \"company\": \"Sahyadri Farms\",\n  \"rate\": 18,\n  \"packingType\": \"13 kg\",\n  \"boxes\": 500,\n  \"totalWeight\": 6500,\n  \"grossWeight\": 13.0,\n  \"billAmount\": 117000\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('company_bill_id', pm.response.json().data._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Create Club Bill",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/company/bills/club",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleNos\": [\"MH15AB1234\", \"MH15CD5678\"],\n  \"company\": \"Sahyadri Farms\",\n  \"date\": \"2025-01-15\",\n  \"boxes\": 1000,\n  \"totalWeight\": 13000,\n  \"billAmount\": 234000\n}"
+            }
+          }
+        },
+        {
+          "name": "GET Company Bill by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/company/bills/{{company_bill_id}}"
+          }
+        },
+        {
+          "name": "GET Company Bill PDF",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/company/bills/{{company_bill_id}}/pdf"
+          }
+        },
+        {
+          "name": "GET Company Bill Invoice",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/company/bills/{{company_bill_id}}/invoice"
+          }
+        },
+        {
+          "name": "POST Share Company Bill",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/company/bills/{{company_bill_id}}/share",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deviceToken\": \"FCM_TOKEN_HERE\",\n  \"medium\": \"firebase\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PATCH Update Company Bill",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/company/bills/{{company_bill_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"SUBMITTED\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE Company Bill",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/api/billing/company/bills/{{company_bill_id}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 — Company Payments",
+      "item": [
+        {
+          "name": "GET All Company Payments",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/company/payments?search=&page=1&limit=20"
+          }
+        },
+        {
+          "name": "POST Record Company Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/company/payments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2025-01-20\",\n  \"companyName\": \"Sahyadri Farms\",\n  \"transactionId\": \"TXN20250120001\",\n  \"receivedBankName\": \"HDFC Bank\",\n  \"receivedCompanyName\": \"Sahyadri Farms Pvt Ltd\",\n  \"amount\": 500000,\n  \"mode\": \"NEFT\",\n  \"remark\": \"January payment received\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('company_payment_id', pm.response.json().data._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Company Payment by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/company/payments/{{company_payment_id}}"
+          }
+        },
+        {
+          "name": "PATCH Update Company Payment",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/company/payments/{{company_payment_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"VERIFIED\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 — Eicher Billing",
+      "item": [
+        {
+          "name": "GET Trips",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/eicher/trips?filter=Weekly&page=1&limit=20"
+          }
+        },
+        {
+          "name": "GET Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/eicher/summary?filter=Weekly"
+          }
+        },
+        {
+          "name": "GET Payment Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/eicher/payment-summary"
+          }
+        },
+        {
+          "name": "GET Payment History",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/eicher/payments/history"
+          }
+        },
+        {
+          "name": "POST Create Trip",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/eicher/trips",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2025-01-15\",\n  \"vehicleNo\": \"MH15EI0001\",\n  \"route\": \"Dindori to Unit-2\",\n  \"km\": 85,\n  \"toll\": 150,\n  \"hault\": 200,\n  \"dieselAdvance\": 2000,\n  \"lineCancel\": 0,\n  \"netPayable\": 4500\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('eicher_trip_id', pm.response.json().data._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Record Eicher Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/eicher/payments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleNo\": \"MH15EI0001\",\n  \"date\": \"2025-01-20\",\n  \"amountPaid\": 4500,\n  \"bankName\": \"HDFC Bank\",\n  \"beneficiaryName\": \"Suresh Driver\",\n  \"accountNo\": \"50100987654\",\n  \"remark\": \"Weekly settlement\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 — Munshi Billing",
+      "item": [
+        {
+          "name": "GET Ledger",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/munshi/ledger?search=&page=1"
+          }
+        },
+        {
+          "name": "GET Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/munshi/summary"
+          }
+        },
+        {
+          "name": "GET Payment Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/munshi/payment-summary"
+          }
+        },
+        {
+          "name": "GET Payment History",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/munshi/payments/history"
+          }
+        },
+        {
+          "name": "POST Create Ledger Entry",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/munshi/ledger",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2025-01-15\",\n  \"farmerName\": \"Ramesh Patil\",\n  \"munshiName\": \"Anil Munshi\",\n  \"company\": \"Sahyadri Farms\",\n  \"boxes\": 500,\n  \"vehicleNo\": \"MH15AB1234\",\n  \"amountPayable\": 2500\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('munshi_entry_id', pm.response.json().data._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Record Munshi Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/munshi/payments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"munshiName\": \"Anil Munshi\",\n  \"date\": \"2025-01-20\",\n  \"amountPaid\": 2500,\n  \"bankName\": \"SBI Bank\",\n  \"beneficiaryName\": \"Anil Kumar\",\n  \"accountNo\": \"30190123456\",\n  \"remark\": \"Weekly payment\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 — Kharchi Billing",
+      "item": [
+        {
+          "name": "GET All Expenses",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/kharchi/expenses?status=Pending&type=Big&filter=Weekly&page=1"
+          }
+        },
+        {
+          "name": "GET Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/kharchi/summary"
+          }
+        },
+        {
+          "name": "POST Create Expense",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/kharchi/expenses",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2025-01-15\",\n  \"type\": \"Big\",\n  \"nature\": \"Generator Repair\",\n  \"payTo\": \"Sharma Electricals\",\n  \"purchased\": \"Generator parts\",\n  \"term\": \"Short\",\n  \"amount\": 15000\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('kharchi_id', pm.response.json().data._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Expense by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/kharchi/expenses/{{kharchi_id}}"
+          }
+        },
+        {
+          "name": "PATCH Approve Expense",
+          "request": {
+            "method": "PATCH",
+            "url": "{{base_url}}/api/billing/kharchi/expenses/{{kharchi_id}}/approve"
+          }
+        },
+        {
+          "name": "PATCH Reject Expense",
+          "request": {
+            "method": "PATCH",
+            "url": "{{base_url}}/api/billing/kharchi/expenses/{{kharchi_id}}/reject"
+          }
+        },
+        {
+          "name": "POST Record Kharchi Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/kharchi/payments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expenseRef\": \"{{kharchi_id}}\",\n  \"date\": \"2025-01-20\",\n  \"term\": \"Short\",\n  \"nature\": \"Generator Repair\",\n  \"totalAmount\": 15000,\n  \"bankName\": \"HDFC Bank\",\n  \"beneficiaryName\": \"Sharma Electricals\",\n  \"accountNo\": \"12345678901234\",\n  \"remark\": \"Payment against invoice #SE001\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 — Pickup Billing",
+      "item": [
+        {
+          "name": "GET Trips",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/pickup/trips?page=1&limit=20"
+          }
+        },
+        {
+          "name": "GET Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/pickup/summary"
+          }
+        },
+        {
+          "name": "GET Payment Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/pickup/payment-summary"
+          }
+        },
+        {
+          "name": "GET Payment History",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/pickup/payments/history"
+          }
+        },
+        {
+          "name": "POST Create Trip",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/pickup/trips",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2025-01-15\",\n  \"vehicleNo\": \"MH15PK0001\",\n  \"driver\": \"Santosh Kumar\",\n  \"route1\": \"Nashik\",\n  \"route2\": \"Dindori\",\n  \"km\": 45,\n  \"fuel\": 800,\n  \"toll\": 0,\n  \"amount\": 2200\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('pickup_trip_id', pm.response.json().data._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Record Pickup Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/pickup/payments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleNo\": \"MH15PK0001\",\n  \"date\": \"2025-01-20\",\n  \"amountPaid\": 2200,\n  \"bankName\": \"ICICI Bank\",\n  \"beneficiaryName\": \"Santosh Kumar\",\n  \"accountNo\": \"09876543210\",\n  \"remark\": \"Weekly trip payment\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 — Cold Storage Billing",
+      "item": [
+        {
+          "name": "GET All Entries",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/cold-storage/entries?month=2025-01&page=1"
+          }
+        },
+        {
+          "name": "GET Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/cold-storage/summary"
+          }
+        },
+        {
+          "name": "GET Payment Cycles",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/cold-storage/payment-cycles"
+          }
+        },
+        {
+          "name": "POST Add Cold Storage Entry",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/cold-storage/entries",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2025-01-15\",\n  \"coldStorageName\": \"Dindori Cold Storage\",\n  \"vehicleNo\": \"MH15AB1234\",\n  \"receiptNo\": \"REC001\",\n  \"containerNo\": \"CONT001\",\n  \"companyName\": \"Sahyadri Farms\",\n  \"brandName\": \"Fresh Gold\",\n  \"kgBoxes\": 500,\n  \"total4h5h6h\": 200,\n  \"total7h8h\": 300,\n  \"time\": \"08:30\",\n  \"amount\": 12500\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('cold_storage_entry_id', pm.response.json().data._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Record Cold Storage Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/cold-storage/payments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2025-01-20\",\n  \"coldStorageName\": \"Dindori Cold Storage\",\n  \"paymentCycle\": \"Jan 2025 Cycle 1\",\n  \"totalAmount\": 12500,\n  \"noOfContainers\": 5,\n  \"bankName\": \"SBI Bank\",\n  \"beneficiaryName\": \"Dindori Cold Storage\",\n  \"accountNo\": \"30019876543\",\n  \"remark\": \"Monthly cycle payment\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 — Packing Material Billing",
+      "item": [
+        {
+          "name": "GET All Procurements",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/packing-material/procurements?page=1&limit=20"
+          }
+        },
+        {
+          "name": "GET Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/packing-material/summary"
+          }
+        },
+        {
+          "name": "GET Vendor Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/packing-material/vendor-summary"
+          }
+        },
+        {
+          "name": "POST Add Procurement",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/packing-material/procurements",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2025-01-15\",\n  \"billNo\": \"BILL001\",\n  \"companyName\": \"Sahyadri Farms\",\n  \"supplier\": \"Patel Packaging\",\n  \"material\": \"13 KG Boxes\",\n  \"qty\": 1000,\n  \"rate\": 35,\n  \"amount\": 35000,\n  \"vehicleNo\": \"MH15AB1234\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('procurement_id', pm.response.json().data._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Upload Bill Photo",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{base_url}}/api/billing/packing-material/procurements/upload-bill",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "billPhoto",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST Record Packing Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/packing-material/payments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2025-01-20\",\n  \"vendorName\": \"Patel Packaging\",\n  \"amount\": 35000,\n  \"bankName\": \"HDFC Bank\",\n  \"beneficiaryName\": \"Patel Packaging Pvt Ltd\",\n  \"accountNo\": \"50101234567\",\n  \"remark\": \"Payment for January box supply\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 — Fuel Billing",
+      "item": [
+        {
+          "name": "GET All Fuel Entries",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/fuel/entries?filter=Weekly&page=1&limit=20"
+          }
+        },
+        {
+          "name": "GET Fuel Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/fuel/summary?filter=Weekly"
+          }
+        },
+        {
+          "name": "GET Pump Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/fuel/pump-summary"
+          }
+        },
+        {
+          "name": "GET Fuel Payment History",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/fuel/payments/history"
+          }
+        },
+        {
+          "name": "POST Add Fuel Entry",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/fuel/entries",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2025-01-15\",\n  \"vehicleNo\": \"MH15AB1234\",\n  \"pumpName\": \"Shiva Petrol Pump\",\n  \"fuelType\": \"Diesel\",\n  \"rate\": 89.5,\n  \"amount\": 3580,\n  \"remark\": \"Full tank\",\n  \"paymentCycle\": \"Jan 2025 - Cycle 1\",\n  \"period\": \"15Days\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('fuel_entry_id', pm.response.json().data._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Record Fuel Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/fuel/payments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2025-01-20\",\n  \"pumpName\": \"Shiva Petrol Pump\",\n  \"paymentCycle\": \"Jan 2025 - Cycle 1\",\n  \"totalAmount\": 85000,\n  \"bankName\": \"Bank of Maharashtra\",\n  \"beneficiaryName\": \"Shiva Petroleum\",\n  \"accountNo\": \"60019876543\",\n  \"remark\": \"15-day cycle settlement\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 — Commission Agent Billing",
+      "item": [
+        {
+          "name": "GET All Agents",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/commission-agent/agents?page=1&limit=20"
+          }
+        },
+        {
+          "name": "GET Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/commission-agent/summary"
+          }
+        },
+        {
+          "name": "POST Add Agent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/commission-agent/agents",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agentName\": \"Vijay Kumar\",\n  \"harvestType\": \"Sahyadri Grade A\",\n  \"commissionStructure\": \"Per box\",\n  \"commissionValue\": 10\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('agent_id', pm.response.json().data._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Record Commission Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/commission-agent/payments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agentRef\": \"{{agent_id}}\",\n  \"agentName\": \"Vijay Kumar\",\n  \"date\": \"2025-01-20\",\n  \"amount\": 5000,\n  \"bankName\": \"HDFC Bank\",\n  \"beneficiaryName\": \"Vijay Kumar\",\n  \"accountNo\": \"12345012345\",\n  \"remark\": \"January commission\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 — Salary & Profiles",
+      "item": [
+        {
+          "name": "GET All Employees",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/salary/employees?search=&page=1&limit=20"
+          }
+        },
+        {
+          "name": "GET Salary Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/salary/summary"
+          }
+        },
+        {
+          "name": "GET Payroll History",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/salary/payroll/history?page=1&limit=20"
+          }
+        },
+        {
+          "name": "POST Add Employee Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/salary/employees",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Anil Patil\",\n  \"role\": \"Munshi\",\n  \"monthlySalary\": 18000,\n  \"joiningDate\": \"2023-06-01\",\n  \"commissionType\": \"Per box\",\n  \"commissionValue\": 2,\n  \"petrolAllowance\": 1500,\n  \"maintenanceAllowance\": 500,\n  \"bankName\": \"SBI Bank\",\n  \"accountNo\": \"30190123456\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('employee_id', pm.response.json().data._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Employee by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/salary/employees/{{employee_id}}"
+          }
+        },
+        {
+          "name": "PATCH Update Employee Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/salary/employees/{{employee_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"monthlySalary\": 20000,\n  \"petrolAllowance\": 2000\n}"
+            }
+          }
+        },
+        {
+          "name": "POST Pay This Month",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/salary/payroll",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employee_id}}\",\n  \"month\": \"2025-01\",\n  \"salaryAmount\": 18000,\n  \"commissionAmount\": 1200,\n  \"totalPayable\": 21200,\n  \"bankName\": \"SBI Bank\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
