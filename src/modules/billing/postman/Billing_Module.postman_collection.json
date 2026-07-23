@@ -321,10 +321,7 @@
           }
         }
       ]
-    }
-  ],
-  "_commented_folders_note": "The folders below are commented out/disabled. Move any folder back into 'item' array when ready to enable in Postman.",
-  "_commented_folders": [
+    },
     {
       "name": "04 — Company Bills",
       "item": [
@@ -778,7 +775,10 @@
           }
         }
       ]
-    },
+    }
+  ],
+  "_commented_folders_note": "The folders below are commented out/disabled. Move any folder back into 'item' array when ready to enable in Postman.",
+  "_commented_folders": [
     {
       "name": "09 — Pickup Billing",
       "item": [
