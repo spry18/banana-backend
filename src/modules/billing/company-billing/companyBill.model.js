@@ -13,7 +13,7 @@ const companyBillSchema = new mongoose.Schema(
     companyName:   { type: String, required: true, trim: true },
     companyRef:    { type: mongoose.Schema.Types.ObjectId, ref: 'Company', default: null },
     rate:          { type: Number, default: 0 },
-    packingType:   { type: String, enum: ['13 kg', '13.5 kg', '14 kg', '16 kg', 'Other'], default: '13 kg' },
+    packingType:   { type: String, enum: ['13 kg', '13.5 kg', '14 kg', '16 kg', '13 KG', '13.5 KG', '14 KG', '16 KG', 'Other'], default: '13 kg' },
     boxes:         { type: Number, default: 0 },
     totalWeight:   { type: Number, default: 0 },
     grossWeight:   { type: Number, default: 0 },
@@ -21,7 +21,7 @@ const companyBillSchema = new mongoose.Schema(
     status:        { type: String, enum: ['PENDING', 'SUBMITTED', 'PAID'], default: 'PENDING' },
     isClubBill:    { type: Boolean, default: false },
     clubVehicles:  [{ type: String }],
-    invoiceNo:     { type: String, unique: true, sparse: true },
+    invoiceNo:     { type: String, sparse: true },
     pdfUrl:        { type: String },
     invoiceUrl:    { type: String },
   },
@@ -31,14 +31,13 @@ const companyBillSchema = new mongoose.Schema(
 // Mongoose Pre-save hook to calculate billAmount
 companyBillSchema.pre('save', function (next) {
   this.billAmount = Math.round(this.totalWeight * this.rate * 100) / 100;
-  next();
+  if (typeof next === 'function') next();
 });
 
 companyBillSchema.index({ date: -1 });
 companyBillSchema.index({ companyName: 1, date: -1 });
 companyBillSchema.index({ status: 1 });
 companyBillSchema.index({ vehicleNumber: 1 });
-companyBillSchema.index({ invoiceNo: 1 });
 companyBillSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('CompanyBill', companyBillSchema);
