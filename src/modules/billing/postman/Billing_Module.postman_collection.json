@@ -116,6 +116,41 @@
             "method": "GET",
             "url": "{{base_url}}/api/billing/master/vehicles"
           }
+        },
+        {
+          "name": "GET Farmers",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/master/farmers?search="
+          }
+        },
+        {
+          "name": "GET Munshis",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/master/munshis"
+          }
+        },
+        {
+          "name": "GET Drivers",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/master/drivers"
+          }
+        },
+        {
+          "name": "GET Agents",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/master/agents"
+          }
+        },
+        {
+          "name": "GET Brands",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/master/brands?companyId="
+          }
         }
       ]
     },

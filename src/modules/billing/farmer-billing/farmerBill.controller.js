@@ -1,6 +1,9 @@
 'use strict';
 const asyncHandler = require('../shared/billing.asyncHandler');
 const FarmerBill = require('./farmerBill.model');
+const Farmer = require('../../farmers/farmer.model');
+const Company = require('../../master-data/company.model');
+const Vehicle = require('../../master-data/vehicle.model');
 const { generateFarmerReceiptPDF } = require('../shared/billing.pdf');
 const { sendBillNotification } = require('../shared/billing.notify');
 
@@ -29,7 +32,14 @@ exports.getAll = asyncHandler(async (req, res) => {
 
   const skip = (Number(page) - 1) * Number(limit);
   const [data, total] = await Promise.all([
-    FarmerBill.find(query).sort({ date: -1 }).skip(skip).limit(Number(limit)).lean(),
+    FarmerBill.find(query)
+      .populate('farmerRef', 'name mobile location')
+      .populate('companyRef', 'companyName')
+      .populate('vehicleRef', 'vehicleNumber vehicleType')
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(Number(limit))
+      .lean(),
     FarmerBill.countDocuments(query),
   ]);
   res.json({
@@ -69,13 +79,41 @@ exports.getSummary = asyncHandler(async (req, res) => {
 
 /** POST /api/billing/farmer/bills */
 exports.create = asyncHandler(async (req, res) => {
-  const bill = await FarmerBill.create(req.body);
+  const body = { ...req.body };
+
+  // Auto-resolve farmer details if farmerRef is passed
+  if (body.farmerRef) {
+    const farmer = await Farmer.findById(body.farmerRef).lean();
+    if (farmer) {
+      if (!body.farmerName) body.farmerName = farmer.name;
+      if (!body.farmerContact) body.farmerContact = farmer.mobile;
+      if (!body.location) body.location = farmer.location;
+    }
+  }
+
+  // Auto-resolve companyName if companyRef is passed
+  if (body.companyRef && !body.companyName) {
+    const company = await Company.findById(body.companyRef).lean();
+    if (company) body.companyName = company.companyName;
+  }
+
+  // Auto-resolve vehicleNumber if vehicleRef is passed
+  if (body.vehicleRef && !body.vehicleNumber) {
+    const vehicle = await Vehicle.findById(body.vehicleRef).lean();
+    if (vehicle) body.vehicleNumber = vehicle.vehicleNumber;
+  }
+
+  const bill = await FarmerBill.create(body);
   res.status(201).json({ success: true, data: bill });
 });
 
 /** GET /api/billing/farmer/bills/:id */
 exports.getById = asyncHandler(async (req, res) => {
-  const bill = await FarmerBill.findById(req.params.id).lean();
+  const bill = await FarmerBill.findById(req.params.id)
+    .populate('farmerRef', 'name mobile location')
+    .populate('companyRef', 'companyName')
+    .populate('vehicleRef', 'vehicleNumber vehicleType')
+    .lean();
   if (!bill) return res.status(404).json({ success: false, message: 'Farmer bill not found' });
   res.json({ success: true, data: bill });
 });
@@ -141,7 +179,12 @@ exports.getHistory = asyncHandler(async (req, res) => {
   const { page = 1, limit = 20 } = req.query;
   const skip = (Number(page) - 1) * Number(limit);
   const [data, total] = await Promise.all([
-    FarmerBill.find({ status: 'PAID' }).sort({ updatedAt: -1 }).skip(skip).limit(Number(limit)).lean(),
+    FarmerBill.find({ status: 'PAID' })
+      .populate('farmerRef', 'name mobile location')
+      .sort({ updatedAt: -1 })
+      .skip(skip)
+      .limit(Number(limit))
+      .lean(),
     FarmerBill.countDocuments({ status: 'PAID' }),
   ]);
   res.json({ success: true, data, pagination: { total, page: Number(page), limit: Number(limit) } });

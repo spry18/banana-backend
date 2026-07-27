@@ -1,6 +1,9 @@
 'use strict';
 const asyncHandler = require('../shared/billing.asyncHandler');
 const CompanyBill = require('./companyBill.model');
+const Company = require('../../master-data/company.model');
+const Farmer = require('../../farmers/farmer.model');
+const Vehicle = require('../../master-data/vehicle.model');
 const { generateCompanyInvoicePDF } = require('../shared/billing.pdf');
 const { sendBillNotification } = require('../shared/billing.notify');
 const ExcelJS = require('exceljs');
@@ -28,7 +31,14 @@ exports.getAll = asyncHandler(async (req, res) => {
   if (status) query.status = status;
   const skip = (Number(page) - 1) * Number(limit);
   const [data, total] = await Promise.all([
-    CompanyBill.find(query).sort({ date: -1 }).skip(skip).limit(Number(limit)).lean(),
+    CompanyBill.find(query)
+      .populate('companyRef', 'companyName')
+      .populate('farmerRef', 'name mobile location')
+      .populate('vehicleRef', 'vehicleNumber vehicleType')
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(Number(limit))
+      .lean(),
     CompanyBill.countDocuments(query),
   ]);
   res.json({ success: true, data, pagination: { total, page: Number(page), limit: Number(limit), pages: Math.ceil(total / Number(limit)) } });
@@ -57,13 +67,40 @@ exports.getSummary = asyncHandler(async (req, res) => {
 /** POST /api/billing/company/bills */
 exports.create = asyncHandler(async (req, res) => {
   const body = { ...req.body, invoiceNo: req.body.invoiceNo || nextInvoiceNo() };
+
+  // Auto-resolve companyName if companyRef is passed
+  if (body.companyRef && !body.companyName) {
+    const company = await Company.findById(body.companyRef).lean();
+    if (company) body.companyName = company.companyName;
+  }
+
+  // Auto-resolve farmerName if farmerRef is passed
+  if (body.farmerRef) {
+    const farmer = await Farmer.findById(body.farmerRef).lean();
+    if (farmer) {
+      if (!body.farmerName) body.farmerName = farmer.name;
+      if (!body.farmerContact) body.farmerContact = farmer.mobile;
+      if (!body.location) body.location = farmer.location;
+    }
+  }
+
+  // Auto-resolve vehicleNumber if vehicleRef is passed
+  if (body.vehicleRef && !body.vehicleNumber) {
+    const vehicle = await Vehicle.findById(body.vehicleRef).lean();
+    if (vehicle) body.vehicleNumber = vehicle.vehicleNumber;
+  }
+
   const bill = await CompanyBill.create(body);
   res.status(201).json({ success: true, data: bill });
 });
 
 /** GET /api/billing/company/bills/:id */
 exports.getById = asyncHandler(async (req, res) => {
-  const bill = await CompanyBill.findById(req.params.id).lean();
+  const bill = await CompanyBill.findById(req.params.id)
+    .populate('companyRef', 'companyName')
+    .populate('farmerRef', 'name mobile location')
+    .populate('vehicleRef', 'vehicleNumber vehicleType')
+    .lean();
   if (!bill) return res.status(404).json({ success: false, message: 'Company bill not found' });
   res.json({ success: true, data: bill });
 });
@@ -94,7 +131,11 @@ exports.getPDF = asyncHandler(async (req, res) => {
 
 /** GET /api/billing/company/bills/:id/invoice */
 exports.getInvoice = asyncHandler(async (req, res) => {
-  const bill = await CompanyBill.findById(req.params.id).lean();
+  const bill = await CompanyBill.findById(req.params.id)
+    .populate('companyRef', 'companyName')
+    .populate('farmerRef', 'name mobile location')
+    .populate('vehicleRef', 'vehicleNumber vehicleType')
+    .lean();
   if (!bill) return res.status(404).json({ success: false, message: 'Bill not found' });
   res.json({ success: true, data: bill });
 });
@@ -157,7 +198,13 @@ exports.getHistory = asyncHandler(async (req, res) => {
   const { page = 1, limit = 20 } = req.query;
   const skip = (Number(page) - 1) * Number(limit);
   const [data, total] = await Promise.all([
-    CompanyBill.find().sort({ createdAt: -1 }).skip(skip).limit(Number(limit)).lean(),
+    CompanyBill.find()
+      .populate('companyRef', 'companyName')
+      .populate('farmerRef', 'name mobile location')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit))
+      .lean(),
     CompanyBill.countDocuments(),
   ]);
   res.json({ success: true, data, pagination: { total, page: Number(page), limit: Number(limit) } });
