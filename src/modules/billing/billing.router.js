@@ -8,6 +8,7 @@
 const express = require('express');
 const router = express.Router();
 
+router.use('/sync',             require('./sync/billingSync.routes'));
 router.use('/master',           require('./master/billingMaster.routes'));
 router.use('/dashboard',        require('./dashboard/dashboard.routes'));
 router.use('/farmer/bills',     require('./farmer-billing/farmerBill.routes'));

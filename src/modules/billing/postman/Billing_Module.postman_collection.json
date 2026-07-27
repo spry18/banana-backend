@@ -155,6 +155,25 @@
       ]
     },
     {
+      "name": "00.1 — Operational Execution Sync",
+      "item": [
+        {
+          "name": "GET Unbilled Completed Executions",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/sync/unbilled-executions"
+          }
+        },
+        {
+          "name": "POST 1-Click Sync From Execution Assignment",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/billing/sync/from-execution/:assignmentId"
+          }
+        }
+      ]
+    },
+    {
       "name": "01 — Dashboard",
       "item": [
         {

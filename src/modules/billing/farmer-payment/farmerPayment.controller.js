@@ -1,6 +1,8 @@
 'use strict';
 const asyncHandler = require('../shared/billing.asyncHandler');
 const FarmerPayment = require('./farmerPayment.model');
+const FarmerBill = require('../farmer-billing/farmerBill.model');
+const { logSystemAction } = require('../../../utils/auditLogger');
 
 /** GET /api/billing/farmer/payments */
 exports.getAll = asyncHandler(async (req, res) => {
@@ -48,6 +50,29 @@ exports.getSummary = asyncHandler(async (req, res) => {
 /** POST /api/billing/farmer/payments */
 exports.create = asyncHandler(async (req, res) => {
   const payment = await FarmerPayment.create(req.body);
+
+  // Auto-Reconcile FarmerBill Status if linked to a bill
+  if (payment.farmerBillRef) {
+    const allPayments = await FarmerPayment.find({ farmerBillRef: payment.farmerBillRef }).lean();
+    const totalPaid = allPayments.reduce((sum, p) => sum + (p.amountPaid || 0), 0);
+    const bill = await FarmerBill.findById(payment.farmerBillRef);
+    if (bill) {
+      if (totalPaid >= bill.netPayable) {
+        bill.status = 'PAID';
+      }
+      await bill.save();
+    }
+  }
+
+  // Log system audit action
+  await logSystemAction(
+    req.user._id,
+    'CREATE',
+    'Billing',
+    payment._id,
+    `Recorded farmer payment of ₹${payment.amountPaid} for ${payment.farmerName}`
+  );
+
   res.status(201).json({ success: true, data: payment });
 });
 
