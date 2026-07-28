@@ -641,6 +641,39 @@
                     }
                 },
                 {
+                    "name": "POST Final Approve Enquiry (Admin)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"weight\": 1250.50\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries/{{enquiryId}}/final-approve",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries",
+                                "{{enquiryId}}",
+                                "final-approve"
+                            ]
+                        },
+                        "description": "Performs final Admin approval for an enquiry in PENDING_ADMIN_APPROVAL status. Updates status to COMPLETED and optionally records actual weight."
+                    }
+                },
+                {
                     "name": "PATCH Reschedule Enquiry (Admin)",
                     "request": {
                         "method": "PATCH",

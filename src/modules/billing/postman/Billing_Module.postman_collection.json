@@ -217,6 +217,13 @@
       "name": "02 — Farmer Bills",
       "item": [
         {
+          "name": "GET Approved Enquiries For Billing",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/farmer/bills/approved-enquiries?search="
+          }
+        },
+        {
           "name": "GET All Farmer Bills",
           "request": {
             "method": "GET",

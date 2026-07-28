@@ -4,6 +4,9 @@ const FarmerBill = require('./farmerBill.model');
 const Farmer = require('../../farmers/farmer.model');
 const Company = require('../../master-data/company.model');
 const Vehicle = require('../../master-data/vehicle.model');
+const Enquiry = require('../../enquiries/enquiry.model');
+const Logistics = require('../../logistics/logistics.model');
+const Packing = require('../../execution/packing.model');
 const { generateFarmerReceiptPDF } = require('../shared/billing.pdf');
 const { sendBillNotification } = require('../shared/billing.notify');
 
@@ -14,6 +17,171 @@ const buildDateFilter = (date) => {
     $lte: new Date(new Date(date).setHours(23, 59, 59, 999)),
   };
 };
+
+/** GET /api/billing/farmer/bills/approved-enquiries — Fetch all Admin-Approved/Completed Enquiries ready for Farmer Billing */
+exports.getApprovedEnquiries = asyncHandler(async (req, res) => {
+  const { search = '' } = req.query;
+
+  // 1. Fetch completed or approved logistics assignments populated with full enquiry and staff details
+  const completedAssignments = await Logistics.find({ assignmentStatus: { $in: ['COMPLETED', 'APPROVED'] } })
+    .populate({
+      path: 'enquiryId',
+      populate: [
+        { path: 'fieldOwnerId', select: 'firstName lastName mobileNo' },
+        { path: 'assignedSelectorId', select: 'firstName lastName mobileNo bikeNumber' },
+        { path: 'generation', select: 'name' },
+      ],
+    })
+    .populate('companyId', 'companyName')
+    .populate('vehicleId', 'vehicleNumber vehicleType')
+    .populate('munshiId', 'firstName lastName mobileNo')
+    .populate('driverId', 'firstName lastName mobileNo')
+    .populate('pickupDriverId', 'firstName lastName mobileNo')
+    .sort({ updatedAt: -1 })
+    .lean();
+
+  if (completedAssignments.length === 0) {
+    return res.json({ success: true, count: 0, data: [] });
+  }
+
+  // Filter ONLY assignments whose associated Enquiry has ADMIN FINAL APPROVAL (status === 'COMPLETED')
+  const adminApprovedAssignments = completedAssignments.filter((a) => a.enquiryId && a.enquiryId.status === 'COMPLETED');
+
+  if (adminApprovedAssignments.length === 0) {
+    return res.json({ success: true, count: 0, data: [] });
+  }
+
+  // 2. Fetch packing reports
+  const assignmentIds = adminApprovedAssignments.map((a) => a._id);
+  const packingList = await Packing.find({ assignmentId: { $in: assignmentIds } }).lean();
+  const packingMap = Object.fromEntries(packingList.map((p) => [String(p.assignmentId), p]));
+
+  // 3. Transform into clean Farmer Billing UI objects with full details
+  const result = adminApprovedAssignments
+    .map((a) => {
+      const enq = a.enquiryId || {};
+      const p = packingMap[String(a._id)];
+      const farmerName = `${enq.farmerFirstName || ''} ${enq.farmerLastName || ''}`.trim() || 'Farmer';
+      const farmerContact = enq.farmerMobile || '';
+      const location = enq.location || '';
+      const subLocation = enq.subLocation || '';
+      const companyName = a.companyId?.companyName || '';
+      const vehicleNumber = a.vehicleId?.vehicleNumber || '';
+      const rate = enq.purchaseRate || a.purchaseRate || 0;
+      const boxes = p?.totalBoxes || enq.estimatedBoxes || 0;
+      const wastage = p?.wastageKg || 0;
+
+      let packingType = 'Other';
+      if (p) {
+        if (p.box13Kg) packingType = '13 KG';
+        else if (p.box13_5Kg) packingType = '13.5 KG';
+        else if (p.box14Kg) packingType = '14 KG';
+        else if (p.box16Kg) packingType = '16 KG';
+        else if (p.box7Kg) packingType = '7 KG';
+        else if (p.box5Kg) packingType = '5 KG';
+      } else if (enq.packingType) {
+        packingType = enq.packingType;
+      }
+
+      const boxWeightMultiplier = packingType === '13 KG' ? 13 : packingType === '13.5 KG' ? 13.5 : packingType === '14 KG' ? 14 : packingType === '16 KG' ? 16 : packingType === '7 KG' ? 7 : packingType === '5 KG' ? 5 : 13;
+      const totalWeight = enq.actualWeight ? enq.actualWeight : boxes * boxWeightMultiplier;
+      const netWeight = Math.max(0, totalWeight - wastage);
+      const initialAmount = Math.round(netWeight * rate * 100) / 100;
+
+      return {
+        assignmentId: a._id,
+        enquiryId: enq.enquiryId || '',
+        enquiryDbId: enq._id || null,
+        enquiryStatus: enq.status, // Always 'COMPLETED' (Admin Final Approved)
+        farmerName,
+        farmerContact,
+        farmerRef: enq.farmerRef || null,
+        location,
+        subLocation,
+        companyName,
+        companyRef: a.companyId?._id || null,
+        vehicleNumber,
+        vehicleRef: a.vehicleId?._id || null,
+        packingType,
+        boxes,
+        totalWeight,
+        grossWeight: boxWeightMultiplier,
+        wastage,
+        rate,
+        netWeight,
+        initialAmount,
+        completedAt: a.updatedAt,
+
+        // --- Detailed Nested Objects ---
+        enquiryDetails: {
+          _id: enq._id,
+          enquiryId: enq.enquiryId,
+          farmerFirstName: enq.farmerFirstName,
+          farmerLastName: enq.farmerLastName,
+          farmerMobile: enq.farmerMobile,
+          location: enq.location,
+          subLocation: enq.subLocation,
+          plantCount: enq.plantCount,
+          purchaseRate: enq.purchaseRate,
+          actualWeight: enq.actualWeight || null,
+          estimatedBoxes: enq.estimatedBoxes,
+          remarks: enq.remarks,
+          fieldOwner: enq.fieldOwnerId || null,
+          assignedSelector: enq.assignedSelectorId || null,
+          generation: enq.generation || null,
+          status: enq.status,
+          createdAt: enq.createdAt,
+          updatedAt: enq.updatedAt,
+        },
+        logisticsDetails: {
+          assignmentId: a._id,
+          assignmentStatus: a.assignmentStatus,
+          munshi: a.munshiId || null,
+          driver: a.driverId || null,
+          pickupDriver: a.pickupDriverId || null,
+          company: a.companyId || null,
+          vehicle: a.vehicleId || null,
+          scheduledDate: a.scheduledDate || null,
+          lightInTime: a.lightInTime || null,
+          lightOutTime: a.lightOutTime || null,
+          createdAt: a.createdAt,
+          updatedAt: a.updatedAt,
+        },
+        packingDetails: p ? {
+          packingId: p._id,
+          totalBoxes: p.totalBoxes,
+          box4H: p.box4H,
+          box5H: p.box5H,
+          box6H: p.box6H,
+          box8H: p.box8H,
+          boxCL: p.boxCL,
+          box7Kg: p.box7Kg,
+          box13Kg: p.box13Kg,
+          box13_5Kg: p.box13_5Kg,
+          box14Kg: p.box14Kg,
+          box16Kg: p.box16Kg,
+          boxOther: p.boxOther,
+          wastageKg: p.wastageKg,
+          wastageReason: p.wastageReason,
+          remarks: p.remarks,
+          photos: p.photos || [],
+          status: p.status,
+        } : null,
+      };
+    })
+    .filter((item) => {
+      if (!search) return true;
+      const term = search.trim().toLowerCase();
+      return (
+        item.farmerName.toLowerCase().includes(term) ||
+        item.companyName.toLowerCase().includes(term) ||
+        item.location.toLowerCase().includes(term) ||
+        item.enquiryId.toLowerCase().includes(term)
+      );
+    });
+
+  res.json({ success: true, count: result.length, data: result });
+});
 
 /** GET /api/billing/farmer/bills */
 exports.getAll = asyncHandler(async (req, res) => {

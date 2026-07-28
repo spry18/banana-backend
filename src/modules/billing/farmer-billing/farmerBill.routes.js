@@ -6,6 +6,9 @@ const ctrl = require('./farmerBill.controller');
 
 router.use(protect, authorize('Admin'));
 
+/** GET /api/billing/farmer/bills/approved-enquiries — Fetch all admin-approved enquiries ready for farmer billing */
+router.get('/approved-enquiries', ctrl.getApprovedEnquiries);
+
 router.get('/summary', ctrl.getSummary);
 router.get('/history', ctrl.getHistory);
 router.route('/').get(ctrl.getAll).post(ctrl.create);
