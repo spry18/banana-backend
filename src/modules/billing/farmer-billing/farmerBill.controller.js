@@ -51,16 +51,37 @@ exports.getApprovedEnquiries = asyncHandler(async (req, res) => {
     return res.json({ success: true, count: 0, data: [] });
   }
 
-  // 2. Fetch packing reports
+  // 2. Fetch packing reports & existing farmer bills
   const assignmentIds = adminApprovedAssignments.map((a) => a._id);
-  const packingList = await Packing.find({ assignmentId: { $in: assignmentIds } }).lean();
-  const packingMap = Object.fromEntries(packingList.map((p) => [String(p.assignmentId), p]));
+  const enquiryDbIds = adminApprovedAssignments.map((a) => a.enquiryId?._id).filter(Boolean);
+  const enquiryStringIds = adminApprovedAssignments.map((a) => a.enquiryId?.enquiryId).filter(Boolean);
 
-  // 3. Transform into clean Farmer Billing UI objects with full details
+  const [packingList, existingBills] = await Promise.all([
+    Packing.find({ assignmentId: { $in: assignmentIds } }).lean(),
+    FarmerBill.find({
+      $or: [
+        { assignmentRef: { $in: assignmentIds } },
+        { enquiryRef: { $in: enquiryDbIds } },
+        { enquiryId: { $in: enquiryStringIds } },
+        { note: { $regex: assignmentIds.map(id => String(id)).join('|'), $options: 'i' } }
+      ]
+    }).lean()
+  ]);
+
+  const packingMap = Object.fromEntries(packingList.map((p) => [String(p.assignmentId), p]));
+  const billMap = {};
+  existingBills.forEach((b) => {
+    if (b.assignmentRef) billMap[String(b.assignmentRef)] = b;
+    if (b.enquiryRef) billMap[String(b.enquiryRef)] = b;
+    if (b.enquiryId) billMap[String(b.enquiryId)] = b;
+  });
+
+  // 3. Transform into clean Farmer Billing UI objects with full details & billing status
   const result = adminApprovedAssignments
     .map((a) => {
       const enq = a.enquiryId || {};
       const p = packingMap[String(a._id)];
+      const existingBill = billMap[String(a._id)] || billMap[String(enq._id)] || billMap[String(enq.enquiryId)] || null;
       const farmerName = `${enq.farmerFirstName || ''} ${enq.farmerLastName || ''}`.trim() || 'Farmer';
       const farmerContact = enq.farmerMobile || '';
       const location = enq.location || '';
@@ -93,6 +114,9 @@ exports.getApprovedEnquiries = asyncHandler(async (req, res) => {
         enquiryId: enq.enquiryId || '',
         enquiryDbId: enq._id || null,
         enquiryStatus: enq.status, // Always 'COMPLETED' (Admin Final Approved)
+        isBilled: Boolean(existingBill),
+        billId: existingBill ? existingBill._id : null,
+        billStatus: existingBill ? existingBill.status : null,
         farmerName,
         farmerContact,
         farmerRef: enq.farmerRef || null,
@@ -170,6 +194,9 @@ exports.getApprovedEnquiries = asyncHandler(async (req, res) => {
       };
     })
     .filter((item) => {
+      if (req.query.unbilledOnly === 'true' && item.isBilled) {
+        return false;
+      }
       if (!search) return true;
       const term = search.trim().toLowerCase();
       return (
@@ -269,6 +296,19 @@ exports.create = asyncHandler(async (req, res) => {
   if (body.vehicleRef && !body.vehicleNumber) {
     const vehicle = await Vehicle.findById(body.vehicleRef).lean();
     if (vehicle) body.vehicleNumber = vehicle.vehicleNumber;
+  }
+
+  // Auto-resolve assignmentRef & enquiryRef if passed
+  if (body.assignmentId && !body.assignmentRef) {
+    body.assignmentRef = body.assignmentId;
+  }
+  if (body.assignmentRef && !body.enquiryRef) {
+    const logistics = await Logistics.findById(body.assignmentRef).select('enquiryId').lean();
+    if (logistics && logistics.enquiryId) {
+      body.enquiryRef = logistics.enquiryId;
+      const enq = await Enquiry.findById(logistics.enquiryId).select('enquiryId').lean();
+      if (enq && !body.enquiryId) body.enquiryId = enq.enquiryId;
+    }
   }
 
   const bill = await FarmerBill.create(body);
