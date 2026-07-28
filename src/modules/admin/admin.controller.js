@@ -537,37 +537,47 @@ const getMonitoringDashboard = async (req, res) => {
             const packing = logistics ? packingMap[logistics._id.toString()] : null;
 
             return {
-                id: e._id,
-                enquiryId: e.enquiryId,
-                farmerFirstName: e.farmerFirstName,
-                farmerLastName: e.farmerLastName,
-                farmerMobile: e.farmerMobile,
-                farmerName: `${e.farmerFirstName} ${e.farmerLastName}`,
-                location: e.location,
-                fieldOwner: e.fieldOwnerId
-                    ? `${e.fieldOwnerId.firstName} ${e.fieldOwnerId.lastName}`
+              id: e._id,
+              enquiryId: e.enquiryId,
+              farmerFirstName: e.farmerFirstName,
+              farmerLastName: e.farmerLastName,
+              farmerMobile: e.farmerMobile,
+              farmerName: `${e.farmerFirstName} ${e.farmerLastName}`,
+              location: e.location,
+              fieldOwner: e.fieldOwnerId
+                ? `${e.fieldOwnerId.firstName} ${e.fieldOwnerId.lastName}`
+                : null,
+              fieldSelector: e.assignedSelectorId
+                ? `${e.assignedSelectorId.firstName} ${e.assignedSelectorId.lastName}`
+                : null,
+              fieldSelectorBike: e.assignedSelectorId
+                ? e.assignedSelectorId.bikeNumber || null
+                : null,
+              visitDate: inspection
+                ? new Date(inspection.createdAt).toLocaleDateString("en-IN")
+                : e.scheduledDate
+                  ? new Date(e.scheduledDate).toLocaleDateString("en-IN")
+                  : e.createdAt
+                    ? new Date(e.createdAt).toLocaleDateString("en-IN")
                     : null,
-                fieldSelector: e.assignedSelectorId
-                    ? `${e.assignedSelectorId.firstName} ${e.assignedSelectorId.lastName}`
-                    : null,
-                fieldSelectorBike: e.assignedSelectorId
-                    ? (e.assignedSelectorId.bikeNumber || null)
-                    : null,
-                visitDate: inspection 
-                    ? new Date(inspection.createdAt).toLocaleDateString('en-IN') 
-                    : (e.scheduledDate ? new Date(e.scheduledDate).toLocaleDateString('en-IN') : null),
-                harvestTime: inspection ? inspection.harvestingTime : (e.scheduledTime || null),
-                status: effectiveStatus,
-                action: actionButton,
+              harvestTime: inspection
+                ? inspection.harvestingTime
+                : e.scheduledTime || null,
+              status: effectiveStatus,
+              action: actionButton,
 
-                // Additional response fields
-                boxCount: packing ? (packing.totalBoxes || 0) : (e.estimatedBoxes || null),
-                company: e.companyId ? e.companyId.companyName : null,
-                partnerName: e.agentId ? e.agentId.agentName : null,
-                packagingType: e.packingType || null,
-                assignmentStatus: logistics ? logistics.assignmentStatus : 'UNASSIGNED',
-                subLocation: e.subLocation || null,
-                recoveryPercent: inspection ? inspection.recoveryPercent : null,
+              // Additional response fields
+              boxCount: packing
+                ? packing.totalBoxes || 0
+                : e.estimatedBoxes || null,
+              company: e.companyId ? e.companyId.companyName : null,
+              partnerName: e.agentId ? e.agentId.agentName : null,
+              packagingType: e.packingType || null,
+              assignmentStatus: logistics
+                ? logistics.assignmentStatus
+                : "UNASSIGNED",
+              subLocation: e.subLocation || null,
+              recoveryPercent: inspection ? inspection.recoveryPercent : null,
             };
         });
 
