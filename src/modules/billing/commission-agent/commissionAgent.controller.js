@@ -72,3 +72,19 @@ exports.createPayment = asyncHandler(async (req, res) => {
   const payment = await CommissionPayment.create(req.body);
   res.status(201).json({ success: true, data: payment });
 });
+
+/** GET /api/billing/commission-agent/payments */
+exports.getPayments = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 50, search = '' } = req.query;
+  const query = {};
+  if (search) {
+    query.agentName = { $regex: search, $options: 'i' };
+  }
+  const skip = (Number(page) - 1) * Number(limit);
+  const [data, total] = await Promise.all([
+    CommissionPayment.find(query).sort({ date: -1, createdAt: -1 }).skip(skip).limit(Number(limit)).lean(),
+    CommissionPayment.countDocuments(query),
+  ]);
+  res.json({ success: true, data, pagination: { total, page: Number(page), limit: Number(limit) } });
+});
+

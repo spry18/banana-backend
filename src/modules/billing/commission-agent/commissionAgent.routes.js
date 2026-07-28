@@ -7,7 +7,7 @@ const ctrl = require('./commissionAgent.controller');
 router.use(protect, authorize('Admin'));
 
 router.get('/summary', ctrl.getSummary);
-router.post('/payments', ctrl.createPayment);
+router.route('/payments').get(ctrl.getPayments).post(ctrl.createPayment);
 router.route('/agents').get(ctrl.getAll).post(ctrl.create);
 router.route('/agents/:id').get(ctrl.getById).patch(ctrl.update);
 

@@ -23,9 +23,13 @@ router.get('/plots', authorize('Admin', 'Operational Manager'), getOmPlots);
 
 // POST /api/operational-manager/assignments/:assignmentId/reject
 router.post('/assignments/:assignmentId/reject', authorize('Admin', 'Operational Manager'), rejectPackingReport);
+router.patch('/reject-packing/:assignmentId', authorize('Admin', 'Operational Manager'), rejectPackingReport);
+router.post('/reject-packing/:assignmentId', authorize('Admin', 'Operational Manager'), rejectPackingReport);
 
 // POST /api/operational-manager/assignments/:assignmentId/approve
 router.post('/assignments/:assignmentId/approve', authorize('Admin', 'Operational Manager'), approvePackingReport);
+router.patch('/approve-packing/:assignmentId', authorize('Admin', 'Operational Manager'), approvePackingReport);
+router.post('/approve-packing/:assignmentId', authorize('Admin', 'Operational Manager'), approvePackingReport);
 
 module.exports = router;
 
