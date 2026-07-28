@@ -7,7 +7,8 @@ const ctrl = require('./farmerPayment.controller');
 router.use(protect, authorize('Admin'));
 
 router.get('/summary', ctrl.getSummary);
+router.get('/unpaid-bills', ctrl.getUnpaidBills);
 router.route('/').get(ctrl.getAll).post(ctrl.create);
-router.route('/:id').get(ctrl.getById);
+router.route('/:id').get(ctrl.getById).patch(ctrl.update);
 
 module.exports = router;

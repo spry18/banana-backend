@@ -47,9 +47,40 @@ exports.getSummary = asyncHandler(async (req, res) => {
   });
 });
 
+/** GET /api/billing/farmer/payments/unpaid-bills — Fetch all farmer bills waiting for payment */
+exports.getUnpaidBills = asyncHandler(async (req, res) => {
+  const { search = '' } = req.query;
+  const query = { status: { $ne: 'PAID' } };
+  if (search) {
+    query.$or = [
+      { farmerName: { $regex: search, $options: 'i' } },
+      { companyName: { $regex: search, $options: 'i' } },
+      { vehicleNumber: { $regex: search, $options: 'i' } },
+    ];
+  }
+  const unpaidBills = await FarmerBill.find(query)
+    .populate('farmerRef', 'name mobile location')
+    .sort({ date: -1 })
+    .lean();
+
+  res.json({ success: true, count: unpaidBills.length, data: unpaidBills });
+});
+
 /** POST /api/billing/farmer/payments */
 exports.create = asyncHandler(async (req, res) => {
-  const payment = await FarmerPayment.create(req.body);
+  const body = { ...req.body };
+
+  // Auto-resolve farmer details if farmerBillRef is passed
+  if (body.farmerBillRef) {
+    const bill = await FarmerBill.findById(body.farmerBillRef).lean();
+    if (bill) {
+      if (!body.farmerName) body.farmerName = bill.farmerName;
+      if (!body.farmerRef) body.farmerRef = bill.farmerRef;
+      if (!body.beneficiaryName) body.beneficiaryName = bill.farmerName;
+    }
+  }
+
+  const payment = await FarmerPayment.create(body);
 
   // Auto-Reconcile FarmerBill Status if linked to a bill
   if (payment.farmerBillRef) {
@@ -81,5 +112,12 @@ exports.getById = asyncHandler(async (req, res) => {
   const payment = await FarmerPayment.findById(req.params.id).lean();
   if (!payment) return res.status(404).json({ success: false, message: 'Payment not found' });
   payment.accountNo = payment.accountNo ? `****${payment.accountNo.slice(-4)}` : null;
+  res.json({ success: true, data: payment });
+});
+
+/** PATCH /api/billing/farmer/payments/:id */
+exports.update = asyncHandler(async (req, res) => {
+  const payment = await FarmerPayment.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+  if (!payment) return res.status(404).json({ success: false, message: 'Payment record not found' });
   res.json({ success: true, data: payment });
 });

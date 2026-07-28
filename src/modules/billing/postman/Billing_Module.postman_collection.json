@@ -348,6 +348,13 @@
           }
         },
         {
+          "name": "GET Unpaid Farmer Bills For Payment",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/farmer/payments/unpaid-bills?search="
+          }
+        },
+        {
           "name": "POST Record Farmer Payment",
           "request": {
             "method": "POST",
@@ -379,6 +386,23 @@
           "request": {
             "method": "GET",
             "url": "{{base_url}}/api/billing/farmer/payments/{{farmer_payment_id}}"
+          }
+        },
+        {
+          "name": "PATCH Update Farmer Payment Record",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/farmer/payments/{{farmer_payment_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isCompleted\": true,\n  \"remark\": \"Settled & confirmed by bank\"\n}"
+            }
           }
         }
       ]
