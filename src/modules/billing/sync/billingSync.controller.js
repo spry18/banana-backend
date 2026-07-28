@@ -30,8 +30,8 @@ const nextInvoiceNo = () => `INV-${++counter.seq}`;
  * that do not yet have generated billing records.
  */
 exports.getUnbilledExecutions = asyncHandler(async (req, res) => {
-  // Find completed assignments
-  const completedAssignments = await Logistics.find({ assignmentStatus: 'COMPLETED' })
+  // Find completed or approved assignments
+  const completedAssignments = await Logistics.find({ assignmentStatus: { $in: ['COMPLETED', 'APPROVED'] } })
     .populate('enquiryId', 'enquiryId farmerFirstName farmerLastName farmerMobile location purchaseRate status')
     .populate('companyId', 'companyName')
     .populate('munshiId', 'firstName lastName mobileNo')
@@ -54,13 +54,17 @@ exports.getUnbilledExecutions = asyncHandler(async (req, res) => {
 
   // Check which ones already have billing records
   const existingFarmerBills = await FarmerBill.find({
-    note: { $regex: /Auto-generated from assignment/, $options: 'i' },
-  }).select('note').lean();
+    $or: [
+      { assignmentRef: { $in: assignmentIds } },
+      { note: { $regex: assignmentIds.map(id => String(id)).join('|'), $options: 'i' } }
+    ]
+  }).select('assignmentRef note').lean();
 
-  // Extract assignment IDs from notes
+  // Extract assignment IDs from existing bills
   const billedAssignmentIds = new Set(
     existingFarmerBills
       .map((b) => {
+        if (b.assignmentRef) return String(b.assignmentRef);
         const match = b.note?.match(/assignment ([0-9a-fA-F]{24})/);
         return match ? match[1] : null;
       })
@@ -185,6 +189,9 @@ exports.syncFromExecution = asyncHandler(async (req, res) => {
     farmerName,
     farmerContact,
     farmerRef: enq.farmerRef || null,
+    enquiryRef: enq._id || null,
+    assignmentRef: assignment._id,
+    enquiryId: enq.enquiryId || null,
     location,
     companyName,
     companyRef: company._id || null,
@@ -207,6 +214,9 @@ exports.syncFromExecution = asyncHandler(async (req, res) => {
     farmerName,
     farmerContact,
     farmerRef: enq.farmerRef || null,
+    enquiryRef: enq._id || null,
+    assignmentRef: assignment._id,
+    enquiryId: enq.enquiryId || null,
     location,
     vehicleNumber,
     vehicleRef: vehicle._id || null,

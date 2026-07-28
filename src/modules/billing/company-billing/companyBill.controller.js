@@ -90,6 +90,21 @@ exports.create = asyncHandler(async (req, res) => {
     if (vehicle) body.vehicleNumber = vehicle.vehicleNumber;
   }
 
+  // Auto-resolve assignmentRef & enquiryRef if passed
+  if (body.assignmentId && !body.assignmentRef) {
+    body.assignmentRef = body.assignmentId;
+  }
+  if (body.assignmentRef && !body.enquiryRef) {
+    const Logistics = require('../../logistics/logistics.model');
+    const Enquiry = require('../../enquiries/enquiry.model');
+    const logistics = await Logistics.findById(body.assignmentRef).select('enquiryId').lean();
+    if (logistics && logistics.enquiryId) {
+      body.enquiryRef = logistics.enquiryId;
+      const enq = await Enquiry.findById(logistics.enquiryId).select('enquiryId').lean();
+      if (enq && !body.enquiryId) body.enquiryId = enq.enquiryId;
+    }
+  }
+
   const bill = await CompanyBill.create(body);
   res.status(201).json({ success: true, data: bill });
 });
