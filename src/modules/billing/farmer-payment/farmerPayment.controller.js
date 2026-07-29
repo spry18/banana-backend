@@ -86,23 +86,24 @@ exports.create = asyncHandler(async (req, res) => {
   if (payment.farmerBillRef) {
     const allPayments = await FarmerPayment.find({ farmerBillRef: payment.farmerBillRef }).lean();
     const totalPaid = allPayments.reduce((sum, p) => sum + (p.amountPaid || 0), 0);
-    const bill = await FarmerBill.findById(payment.farmerBillRef);
+    const bill = await FarmerBill.findById(payment.farmerBillRef).lean();
     if (bill) {
-      if (totalPaid >= bill.netPayable) {
-        bill.status = 'PAID';
+      if (totalPaid >= (bill.netPayable || 0)) {
+        await FarmerBill.findByIdAndUpdate(payment.farmerBillRef, { status: 'PAID' });
       }
-      await bill.save();
     }
   }
 
-  // Log system audit action
-  await logSystemAction(
-    req.user._id,
-    'CREATE',
-    'Billing',
-    payment._id,
-    `Recorded farmer payment of ₹${payment.amountPaid} for ${payment.farmerName}`
-  );
+  // Log system audit action safely
+  if (req.user?._id) {
+    await logSystemAction(
+      req.user._id,
+      'CREATE',
+      'Billing',
+      payment._id,
+      `Recorded farmer payment of ₹${payment.amountPaid} for ${payment.farmerName}`
+    );
+  }
 
   res.status(201).json({ success: true, data: payment });
 });

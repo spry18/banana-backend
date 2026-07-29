@@ -122,12 +122,6 @@ exports.getApprovedEnquiries = asyncHandler(async (req, res) => {
       else if (ptNorm === '5KG' || ptNorm === '5 KG') packingType = '5 KG';
 
       const boxWeightMultiplier = packingType === '13.5 KG' ? 13.5 : packingType === '13 KG' ? 13 : packingType === '14 KG' ? 14 : packingType === '16 KG' ? 16 : packingType === '7 KG' ? 7 : packingType === '5 KG' ? 5 : 13;
-      const vehicleWeight = enq.actualWeight ? enq.actualWeight : (boxes > 0 ? boxes * boxWeightMultiplier : 0);
-      const remainingWeight = Math.max(0, vehicleWeight - boxes);
-      const netWeight = remainingWeight + wastage;
-      const danda = 0;
-      const finalTotalWeight = netWeight + danda;
-      const initialAmount = Math.round(finalTotalWeight * rate * 100) / 100;
 
       return {
         assignmentId: a._id,
@@ -146,21 +140,22 @@ exports.getApprovedEnquiries = asyncHandler(async (req, res) => {
         companyRef: a.companyId?._id || null,
         vehicleNumber,
         vehicleRef: a.vehicleId?._id || null,
-        packingType,
-        boxes,
-        vehicleWeight,
-        remainingWeight,
-        wastage,
-        netWeight,
-        danda,
-        finalTotalWeight,
-        totalWeight: finalTotalWeight,
+        packingType: existingBill?.packingType || packingType,
+        boxes: existingBill?.boxes ?? boxes,
+        vehicleWeight: existingBill?.vehicleWeight ?? 0,
+        remainingWeight: existingBill?.remainingWeight ?? 0,
+        wastage: existingBill?.wastage ?? wastage,
+        netWeight: existingBill?.netWeight ?? 0,
+        danda: existingBill?.danda ?? 0,
+        finalTotalWeight: existingBill?.totalWeight ?? 0,
+        totalWeight: existingBill?.totalWeight ?? 0,
         grossWeight: boxWeightMultiplier,
-        rate,
-        transport: 0,
-        initialAmount,
-        totalAmount: initialAmount,
-        netPayable: initialAmount,
+        rate: existingBill?.rate ?? rate,
+        transport: existingBill?.transport ?? 0,
+        initialAmount: existingBill?.initialAmount ?? 0,
+        totalAmount: existingBill?.totalAmount ?? 0,
+        netPayable: existingBill?.netPayable ?? 0,
+        netPayment: existingBill?.netPayable ?? 0,
         completedAt: a.updatedAt,
 
         // --- Detailed Nested Objects ---
@@ -302,6 +297,9 @@ exports.getSummary = asyncHandler(async (req, res) => {
 /** POST /api/billing/farmer/bills */
 exports.create = asyncHandler(async (req, res) => {
   const body = { ...req.body };
+
+  if (!body.netPayable && body.netPayment) body.netPayable = body.netPayment;
+  if (!body.netPayable && body.netAmount) body.netPayable = body.netAmount;
 
   // Auto-resolve farmer details if farmerRef is passed
   if (body.farmerRef) {

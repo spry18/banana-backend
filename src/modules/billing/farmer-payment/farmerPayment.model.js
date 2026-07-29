@@ -22,6 +22,22 @@ farmerPaymentSchema.index({ date: -1 });
 farmerPaymentSchema.index({ farmerBillRef: 1 });
 farmerPaymentSchema.index({ farmerName: 1 });
 farmerPaymentSchema.index({ isCompleted: 1 });
-farmerPaymentSchema.index({ createdAt: -1 });
+// Mongoose post-save hook to auto-reconcile linked FarmerBill status
+farmerPaymentSchema.post('save', async function (doc) {
+  if (doc && doc.farmerBillRef) {
+    try {
+      const FarmerPayment = mongoose.model('FarmerPayment');
+      const FarmerBill = mongoose.model('FarmerBill');
+      const allPayments = await FarmerPayment.find({ farmerBillRef: doc.farmerBillRef }).lean();
+      const totalPaid = allPayments.reduce((sum, p) => sum + (p.amountPaid || 0), 0);
+      const bill = await FarmerBill.findById(doc.farmerBillRef).lean();
+      if (bill && totalPaid >= (bill.netPayable || 0)) {
+        await FarmerBill.findByIdAndUpdate(doc.farmerBillRef, { status: 'PAID' });
+      }
+    } catch (err) {
+      console.error('Error auto-reconciling FarmerBill status:', err);
+    }
+  }
+});
 
 module.exports = mongoose.model('FarmerPayment', farmerPaymentSchema);

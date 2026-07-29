@@ -65,7 +65,10 @@ farmerBillSchema.pre('save', function (next) {
   }
   if (!this.totalAmount) this.totalAmount = this.initialAmount;
 
-  // 5. Net Payable: Preserve FE value if sent in body, else fallback
+  // 5. Net Payable: Map netPayment / netAmount / netPayable sent in body, else fallback
+  if (this.netPayment && !this.netPayable) this.netPayable = this.netPayment;
+  if (this.netAmount && !this.netPayable) this.netPayable = this.netAmount;
+
   if (!this.netPayable) {
     this.netPayable = Math.max(0, Math.round(this.initialAmount - (this.transport || 0)));
   }
