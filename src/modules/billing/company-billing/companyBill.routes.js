@@ -6,8 +6,9 @@ const ctrl = require('./companyBill.controller');
 
 router.use(protect, authorize('Admin'));
 
-router.get('/summary',        ctrl.getSummary);
-router.get('/outstanding',    ctrl.getOutstanding);
+router.get('/summary',             ctrl.getSummary);
+router.get('/approved-dispatches', ctrl.getApprovedDispatches);
+router.get('/outstanding',         ctrl.getOutstanding);
 router.get('/history/export', ctrl.exportHistory);
 router.get('/history',        ctrl.getHistory);
 router.get('/club',           ctrl.getClubData);

@@ -44,6 +44,137 @@ exports.getAll = asyncHandler(async (req, res) => {
   res.json({ success: true, data, pagination: { total, page: Number(page), limit: Number(limit), pages: Math.ceil(total / Number(limit)) } });
 });
 
+/** GET /api/billing/company/bills/approved-dispatches — Fetch all Admin-Approved dispatches ready for Company Billing */
+exports.getApprovedDispatches = asyncHandler(async (req, res) => {
+  const { search = '' } = req.query;
+
+  const Logistics = require('../../logistics/logistics.model');
+  const Packing = require('../../execution/packing.model');
+
+  const completedAssignments = await Logistics.find({ assignmentStatus: { $in: ['COMPLETED', 'APPROVED'] } })
+    .populate({
+      path: 'enquiryId',
+      populate: [
+        { path: 'fieldOwnerId', select: 'firstName lastName mobile' },
+        { path: 'assignedSelectorId', select: 'firstName lastName mobile' },
+        { path: 'generation', select: 'name' }
+      ]
+    })
+    .populate('companyId', 'companyName code')
+    .populate('munshiId', 'firstName lastName mobileNo')
+    .populate('driverId', 'firstName lastName mobileNo')
+    .populate('pickupDriverId', 'firstName lastName mobileNo')
+    .populate('vehicleId', 'vehicleNumber vehicleType')
+    .sort({ updatedAt: -1 })
+    .lean();
+
+  if (completedAssignments.length === 0) {
+    return res.json({ success: true, count: 0, data: [] });
+  }
+
+  const adminApprovedAssignments = completedAssignments.filter(
+    (a) => a.enquiryId && a.enquiryId.status === 'COMPLETED'
+  );
+
+  if (adminApprovedAssignments.length === 0) {
+    return res.json({ success: true, count: 0, data: [] });
+  }
+
+  const assignmentIds = adminApprovedAssignments.map((a) => a._id);
+  const enquiryDbIds = adminApprovedAssignments.map((a) => a.enquiryId?._id).filter(Boolean);
+  const enquiryStringIds = adminApprovedAssignments.map((a) => a.enquiryId?.enquiryId).filter(Boolean);
+  const companyNames = adminApprovedAssignments.map((a) => a.companyId?.companyName).filter(Boolean);
+
+  const norm = (str) => (str || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
+
+  const [packingList, existingBills] = await Promise.all([
+    Packing.find({ assignmentId: { $in: assignmentIds } }).lean(),
+    CompanyBill.find({
+      $or: [
+        { assignmentRef: { $in: assignmentIds } },
+        { enquiryRef: { $in: enquiryDbIds } },
+        { enquiryId: { $in: enquiryStringIds } },
+        { companyName: { $in: companyNames.map(n => new RegExp(`^${n.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i')) } }
+      ]
+    }).lean()
+  ]);
+
+  const packingMap = Object.fromEntries(packingList.map((p) => [String(p.assignmentId), p]));
+  const billMap = {};
+  existingBills.forEach((b) => {
+    if (b.assignmentRef) billMap[String(b.assignmentRef)] = b;
+    if (b.enquiryRef) billMap[String(b.enquiryRef)] = b;
+    if (b.enquiryId) billMap[String(b.enquiryId)] = b;
+    if (b.companyName && b.vehicleNumber) billMap[`${norm(b.companyName)}_${norm(b.vehicleNumber)}`] = b;
+  });
+
+  const result = adminApprovedAssignments
+    .map((a) => {
+      const enq = a.enquiryId || {};
+      const p = packingMap[String(a._id)];
+      const companyName = a.companyId?.companyName || '';
+      const vehicleNumber = a.vehicleId?.vehicleNumber || '';
+      const farmerName = `${enq.farmerFirstName || ''} ${enq.farmerLastName || ''}`.trim() || 'Farmer';
+      const farmerContact = enq.farmerMobile || '';
+      const location = enq.location || '';
+      const rate = enq.purchaseRate || a.purchaseRate || 0;
+      const boxes = p?.totalBoxes || enq.estimatedBoxes || 0;
+
+      let packingType = enq.packingType || 'Other';
+      if (p) {
+        if (p.box13_5Kg > 0) packingType = '13.5 KG';
+        else if (p.box13Kg > 0) packingType = '13 KG';
+        else if (p.box14Kg > 0) packingType = '14 KG';
+        else if (p.box16Kg > 0) packingType = '16 KG';
+        else if (p.box7Kg > 0) packingType = '7 KG';
+        else if (p.box5Kg > 0) packingType = '5 KG';
+        else if (enq.packingType) packingType = enq.packingType;
+      }
+
+      const existingBill = billMap[String(a._id)] || billMap[String(enq._id)] || billMap[String(enq.enquiryId)] || billMap[`${norm(companyName)}_${norm(vehicleNumber)}`] || null;
+
+      const boxWeightMultiplier = packingType === '13.5 KG' ? 13.5 : packingType === '13 KG' ? 13 : packingType === '14 KG' ? 14 : packingType === '16 KG' ? 16 : packingType === '7 KG' ? 7 : packingType === '5 KG' ? 5 : 13;
+
+      return {
+        assignmentId: a._id,
+        enquiryId: enq.enquiryId || '',
+        enquiryDbId: enq._id || null,
+        isBilled: Boolean(existingBill),
+        billId: existingBill ? existingBill._id : null,
+        billStatus: existingBill ? existingBill.status : null,
+        invoiceNo: existingBill ? existingBill.invoiceNo : null,
+        companyName,
+        companyRef: a.companyId?._id || null,
+        farmerName,
+        farmerContact,
+        farmerRef: enq.farmerRef || null,
+        location,
+        vehicleNumber,
+        vehicleRef: a.vehicleId?._id || null,
+        packingType: existingBill?.packingType || packingType,
+        boxes: existingBill?.boxes ?? boxes,
+        totalWeight: existingBill?.totalWeight ?? 0,
+        grossWeight: boxWeightMultiplier,
+        rate: existingBill?.rate ?? rate,
+        billAmount: existingBill?.billAmount ?? 0,
+        completedAt: a.updatedAt
+      };
+    })
+    .filter((item) => {
+      if (req.query.unbilledOnly === 'true' && item.isBilled) return false;
+      if (!search) return true;
+      const term = search.trim().toLowerCase();
+      return (
+        item.companyName.toLowerCase().includes(term) ||
+        item.farmerName.toLowerCase().includes(term) ||
+        item.vehicleNumber.toLowerCase().includes(term) ||
+        item.enquiryId.toLowerCase().includes(term)
+      );
+    });
+
+  res.json({ success: true, count: result.length, data: result });
+});
+
 /** GET /api/billing/company/bills/summary */
 exports.getSummary = asyncHandler(async (req, res) => {
   const todayStart = new Date(new Date().setHours(0, 0, 0, 0));
