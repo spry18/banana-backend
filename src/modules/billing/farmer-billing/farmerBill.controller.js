@@ -56,6 +56,10 @@ exports.getApprovedEnquiries = asyncHandler(async (req, res) => {
   const enquiryDbIds = adminApprovedAssignments.map((a) => a.enquiryId?._id).filter(Boolean);
   const enquiryStringIds = adminApprovedAssignments.map((a) => a.enquiryId?.enquiryId).filter(Boolean);
 
+  const farmerNames = adminApprovedAssignments
+    .map((a) => `${a.enquiryId?.farmerFirstName || ''} ${a.enquiryId?.farmerLastName || ''}`.trim())
+    .filter(Boolean);
+
   const [packingList, existingBills] = await Promise.all([
     Packing.find({ assignmentId: { $in: assignmentIds } }).lean(),
     FarmerBill.find({
@@ -63,6 +67,7 @@ exports.getApprovedEnquiries = asyncHandler(async (req, res) => {
         { assignmentRef: { $in: assignmentIds } },
         { enquiryRef: { $in: enquiryDbIds } },
         { enquiryId: { $in: enquiryStringIds } },
+        { farmerName: { $in: farmerNames } },
         { note: { $regex: assignmentIds.map(id => String(id)).join('|'), $options: 'i' } }
       ]
     }).lean()
@@ -74,6 +79,8 @@ exports.getApprovedEnquiries = asyncHandler(async (req, res) => {
     if (b.assignmentRef) billMap[String(b.assignmentRef)] = b;
     if (b.enquiryRef) billMap[String(b.enquiryRef)] = b;
     if (b.enquiryId) billMap[String(b.enquiryId)] = b;
+    if (b.farmerName && b.vehicleNumber) billMap[`${b.farmerName.trim()}_${b.vehicleNumber.trim()}`] = b;
+    if (b.farmerName) billMap[b.farmerName.trim()] = b;
   });
 
   // 3. Transform into clean Farmer Billing UI objects with full details & billing status
@@ -81,13 +88,13 @@ exports.getApprovedEnquiries = asyncHandler(async (req, res) => {
     .map((a) => {
       const enq = a.enquiryId || {};
       const p = packingMap[String(a._id)];
-      const existingBill = billMap[String(a._id)] || billMap[String(enq._id)] || billMap[String(enq.enquiryId)] || null;
       const farmerName = `${enq.farmerFirstName || ''} ${enq.farmerLastName || ''}`.trim() || 'Farmer';
+      const vehicleNumber = a.vehicleId?.vehicleNumber || '';
+      const existingBill = billMap[String(a._id)] || billMap[String(enq._id)] || billMap[String(enq.enquiryId)] || billMap[`${farmerName}_${vehicleNumber.trim()}`] || billMap[farmerName] || null;
       const farmerContact = enq.farmerMobile || '';
       const location = enq.location || '';
       const subLocation = enq.subLocation || '';
       const companyName = a.companyId?.companyName || '';
-      const vehicleNumber = a.vehicleId?.vehicleNumber || '';
       const rate = enq.purchaseRate || a.purchaseRate || 0;
       const boxes = p?.totalBoxes || enq.estimatedBoxes || 0;
       const wastage = p?.wastageKg || 0;
