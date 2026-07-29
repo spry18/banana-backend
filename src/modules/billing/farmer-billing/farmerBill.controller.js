@@ -100,12 +100,7 @@ exports.getApprovedEnquiries = asyncHandler(async (req, res) => {
         else if (p.box16Kg > 0) packingType = '16 KG';
         else if (p.box7Kg > 0) packingType = '7 KG';
         else if (p.box5Kg > 0) packingType = '5 KG';
-        else if (p.box4H > 0) packingType = '4H';
-        else if (p.box5H > 0) packingType = '5H';
-        else if (p.box6H > 0) packingType = '6H';
-        else if (p.box8H > 0) packingType = '8H';
-        else if (p.boxCL > 0) packingType = 'CL';
-        else if (p.boxOther > 0) packingType = 'Other';
+        else if (enq.packingType) packingType = enq.packingType;
       }
 
       // Normalize string representation
