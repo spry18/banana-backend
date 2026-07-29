@@ -6,6 +6,7 @@ const companyPaymentSchema = new mongoose.Schema(
     date:                { type: Date, required: true, default: Date.now },
     companyName:         { type: String, required: true, trim: true },
     companyRef:          { type: mongoose.Schema.Types.ObjectId, ref: 'Company', default: null },
+    companyBillRef:      { type: mongoose.Schema.Types.ObjectId, ref: 'CompanyBill', default: null },
     transactionId:       { type: String, trim: true },
     receivedBankName:    { type: String, trim: true },
     receivedCompanyName: { type: String, trim: true },

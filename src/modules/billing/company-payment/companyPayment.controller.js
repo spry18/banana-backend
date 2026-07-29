@@ -20,9 +20,48 @@ exports.getAll = asyncHandler(async (req, res) => {
   res.json({ success: true, data, pagination: { total, page: Number(page), limit: Number(limit) } });
 });
 
+const Company = require('../../master-data/company.model');
+const CompanyBill = require('../company-billing/companyBill.model');
+const { logSystemAction } = require('../../../utils/auditLogger');
+
 /** POST /api/billing/company/payments */
 exports.create = asyncHandler(async (req, res) => {
-  const payment = await CompanyPayment.create(req.body);
+  const body = { ...req.body };
+
+  // Auto-resolve companyName if companyRef is passed
+  if (body.companyRef && !body.companyName) {
+    const company = await Company.findById(body.companyRef).lean();
+    if (company) body.companyName = company.companyName;
+  }
+
+  const payment = await CompanyPayment.create(body);
+
+  // Auto-reconcile linked CompanyBill status if linked
+  if (payment.companyBillRef) {
+    const allPayments = await CompanyPayment.find({ companyBillRef: payment.companyBillRef }).lean();
+    const totalPaid = allPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const bill = await CompanyBill.findById(payment.companyBillRef);
+    if (bill) {
+      if (totalPaid >= bill.billAmount) {
+        bill.status = 'PAID';
+      } else {
+        bill.status = 'SUBMITTED';
+      }
+      await bill.save();
+    }
+  }
+
+  // Audit log
+  if (req.user?._id) {
+    await logSystemAction(
+      req.user._id,
+      'CREATE',
+      'Billing',
+      payment._id,
+      `Recorded company payment of ₹${payment.amount} from ${payment.companyName}`
+    );
+  }
+
   res.status(201).json({ success: true, data: payment });
 });
 
