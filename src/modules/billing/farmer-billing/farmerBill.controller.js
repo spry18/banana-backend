@@ -92,22 +92,38 @@ exports.getApprovedEnquiries = asyncHandler(async (req, res) => {
       const boxes = p?.totalBoxes || enq.estimatedBoxes || 0;
       const wastage = p?.wastageKg || 0;
 
-      let packingType = 'Other';
+      let packingType = enq.packingType || 'Other';
       if (p) {
-        if (p.box13Kg) packingType = '13 KG';
-        else if (p.box13_5Kg) packingType = '13.5 KG';
-        else if (p.box14Kg) packingType = '14 KG';
-        else if (p.box16Kg) packingType = '16 KG';
-        else if (p.box7Kg) packingType = '7 KG';
-        else if (p.box5Kg) packingType = '5 KG';
-      } else if (enq.packingType) {
-        packingType = enq.packingType;
+        if (p.box13_5Kg > 0) packingType = '13.5 KG';
+        else if (p.box13Kg > 0) packingType = '13 KG';
+        else if (p.box14Kg > 0) packingType = '14 KG';
+        else if (p.box16Kg > 0) packingType = '16 KG';
+        else if (p.box7Kg > 0) packingType = '7 KG';
+        else if (p.box5Kg > 0) packingType = '5 KG';
+        else if (p.box4H > 0) packingType = '4H';
+        else if (p.box5H > 0) packingType = '5H';
+        else if (p.box6H > 0) packingType = '6H';
+        else if (p.box8H > 0) packingType = '8H';
+        else if (p.boxCL > 0) packingType = 'CL';
+        else if (p.boxOther > 0) packingType = 'Other';
       }
 
-      const boxWeightMultiplier = packingType === '13 KG' ? 13 : packingType === '13.5 KG' ? 13.5 : packingType === '14 KG' ? 14 : packingType === '16 KG' ? 16 : packingType === '7 KG' ? 7 : packingType === '5 KG' ? 5 : 13;
-      const totalWeight = enq.actualWeight ? enq.actualWeight : boxes * boxWeightMultiplier;
-      const netWeight = Math.max(0, totalWeight - wastage);
-      const initialAmount = Math.round(netWeight * rate * 100) / 100;
+      // Normalize string representation
+      const ptNorm = String(packingType).trim().toUpperCase();
+      if (ptNorm === '13.5KG' || ptNorm === '13.5 KG') packingType = '13.5 KG';
+      else if (ptNorm === '13KG' || ptNorm === '13 KG') packingType = '13 KG';
+      else if (ptNorm === '14KG' || ptNorm === '14 KG') packingType = '14 KG';
+      else if (ptNorm === '16KG' || ptNorm === '16 KG') packingType = '16 KG';
+      else if (ptNorm === '7KG' || ptNorm === '7 KG') packingType = '7 KG';
+      else if (ptNorm === '5KG' || ptNorm === '5 KG') packingType = '5 KG';
+
+      const boxWeightMultiplier = packingType === '13.5 KG' ? 13.5 : packingType === '13 KG' ? 13 : packingType === '14 KG' ? 14 : packingType === '16 KG' ? 16 : packingType === '7 KG' ? 7 : packingType === '5 KG' ? 5 : 13;
+      const vehicleWeight = enq.actualWeight ? enq.actualWeight : boxes * boxWeightMultiplier;
+      const remainingWeight = Math.max(0, vehicleWeight - boxes);
+      const netWeight = remainingWeight + wastage;
+      const danda = 0;
+      const finalTotalWeight = netWeight + danda;
+      const initialAmount = Math.round(finalTotalWeight * rate * 100) / 100;
 
       return {
         assignmentId: a._id,
@@ -128,12 +144,19 @@ exports.getApprovedEnquiries = asyncHandler(async (req, res) => {
         vehicleRef: a.vehicleId?._id || null,
         packingType,
         boxes,
-        totalWeight,
-        grossWeight: boxWeightMultiplier,
+        vehicleWeight,
+        remainingWeight,
         wastage,
-        rate,
         netWeight,
+        danda,
+        finalTotalWeight,
+        totalWeight: finalTotalWeight,
+        grossWeight: boxWeightMultiplier,
+        rate,
+        transport: 0,
         initialAmount,
+        totalAmount: initialAmount,
+        netPayable: initialAmount,
         completedAt: a.updatedAt,
 
         // --- Detailed Nested Objects ---

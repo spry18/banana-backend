@@ -15,8 +15,9 @@ const farmerBillSchema = new mongoose.Schema(
     companyRef:      { type: mongoose.Schema.Types.ObjectId, ref: 'Company', default: null },
     vehicleNumber:   { type: String, trim: true },
     vehicleRef:      { type: mongoose.Schema.Types.ObjectId, ref: 'Vehicle', default: null },
-    packingType:     { type: String, enum: ['13 KG', '13.5 KG', '14 KG', '16 KG', 'Other'], default: '13 KG' },
+    packingType:     { type: String, enum: ['13 KG', '13.5 KG', '14 KG', '16 KG', '7 KG', '5 KG', '4H', '5H', '6H', '8H', 'CL', 'Other'], default: '13 KG' },
     boxes:           { type: Number, default: 0 },
+    vehicleWeight:   { type: Number, default: 0 },
     totalWeight:     { type: Number, default: 0 },
     grossWeight:     { type: Number, default: 0 },
     wastage:         { type: Number, default: 0 },
@@ -37,21 +38,30 @@ const farmerBillSchema = new mongoose.Schema(
   { timestamps: true, collection: 'farmer_bills' }
 );
 
-// Mongoose Pre-save hook to ensure mathematical calculations on the backend
+// Mongoose Pre-save hook to ensure mathematical calculations match the UI specification
 farmerBillSchema.pre('save', function (next) {
-  // 1. Calculate net weight: totalWeight (or grossWeight) - wastage
-  this.netWeight = Math.max(0, this.totalWeight - this.wastage);
-  
-  // 2. Calculate remaining weight: netWeight - danda
-  this.remainingWeight = Math.max(0, this.netWeight - this.danda);
-  
-  // 3. Calculate initial amount: remainingWeight * rate
-  this.initialAmount = Math.round(this.remainingWeight * this.rate * 100) / 100;
+  const boxes = this.boxes || 0;
+  const gross = this.vehicleWeight || this.grossWeight || this.totalWeight || 0;
+  this.vehicleWeight = gross;
+  this.grossWeight = gross;
+
+  // 1. Remaining Weight = Gross Vehicle Weight - Box Tare (1kg per box)
+  this.remainingWeight = Math.max(0, gross - boxes);
+
+  // 2. Net Weight (before Danda) = Remaining Weight + Wastage
+  this.netWeight = this.remainingWeight + (this.wastage || 0);
+
+  // 3. Final Total Weight = Net Weight + Danda
+  const finalTotalWeight = this.netWeight + (this.danda || 0);
+  this.totalWeight = finalTotalWeight;
+
+  // 4. Initial Amount / First Amount = Final Total Weight * Rate
+  this.initialAmount = Math.round(finalTotalWeight * (this.rate || 0) * 100) / 100;
   this.totalAmount = this.initialAmount;
-  
-  // 4. Calculate net payable: totalAmount - transport
-  this.netPayable = Math.max(0, Math.round((this.totalAmount - this.transport) * 100) / 100);
-  
+
+  // 5. Net Payable / Net Amount = Initial Amount - Transport (rounded to nearest integer)
+  this.netPayable = Math.max(0, Math.round(this.initialAmount - (this.transport || 0)));
+
   if (typeof next === 'function') next();
 });
 
