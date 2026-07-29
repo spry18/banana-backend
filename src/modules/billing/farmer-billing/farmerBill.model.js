@@ -38,29 +38,37 @@ const farmerBillSchema = new mongoose.Schema(
   { timestamps: true, collection: 'farmer_bills' }
 );
 
-// Mongoose Pre-save hook to ensure mathematical calculations match the UI specification
+// Mongoose Pre-save hook: Respect values sent by FE in body, or fallback to calculation
 farmerBillSchema.pre('save', function (next) {
   const boxes = this.boxes || 0;
   const gross = this.vehicleWeight || this.grossWeight || this.totalWeight || 0;
   this.vehicleWeight = gross;
   this.grossWeight = gross;
 
-  // 1. Remaining Weight = Gross Vehicle Weight - Box Tare (1kg per box)
-  this.remainingWeight = Math.max(0, gross - boxes);
+  // 1. Remaining Weight: Preserve FE value or fallback
+  if (this.remainingWeight === undefined || this.remainingWeight === null) {
+    this.remainingWeight = Math.max(0, gross - boxes);
+  }
 
-  // 2. Net Weight (before Danda) = Remaining Weight + Wastage
-  this.netWeight = this.remainingWeight + (this.wastage || 0);
+  // 2. Net Weight: Preserve FE value or fallback
+  if (this.netWeight === undefined || this.netWeight === null) {
+    this.netWeight = this.remainingWeight + (this.wastage || 0);
+  }
 
-  // 3. Final Total Weight = Net Weight + Danda
-  const finalTotalWeight = this.netWeight + (this.danda || 0);
-  this.totalWeight = finalTotalWeight;
+  // 3. Final Total Weight
+  const finalTotalWeight = (this.netWeight || 0) + (this.danda || 0);
+  if (!this.totalWeight) this.totalWeight = finalTotalWeight;
 
-  // 4. Initial Amount / First Amount = Final Total Weight * Rate
-  this.initialAmount = Math.round(finalTotalWeight * (this.rate || 0) * 100) / 100;
-  this.totalAmount = this.initialAmount;
+  // 4. Initial Amount: Preserve FE value if sent in body, else fallback
+  if (!this.initialAmount) {
+    this.initialAmount = Math.round(finalTotalWeight * (this.rate || 0) * 100) / 100;
+  }
+  if (!this.totalAmount) this.totalAmount = this.initialAmount;
 
-  // 5. Net Payable / Net Amount = Initial Amount - Transport (rounded to nearest integer)
-  this.netPayable = Math.max(0, Math.round(this.initialAmount - (this.transport || 0)));
+  // 5. Net Payable: Preserve FE value if sent in body, else fallback
+  if (!this.netPayable) {
+    this.netPayable = Math.max(0, Math.round(this.initialAmount - (this.transport || 0)));
+  }
 
   if (typeof next === 'function') next();
 });

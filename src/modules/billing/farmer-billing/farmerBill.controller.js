@@ -113,7 +113,7 @@ exports.getApprovedEnquiries = asyncHandler(async (req, res) => {
       else if (ptNorm === '5KG' || ptNorm === '5 KG') packingType = '5 KG';
 
       const boxWeightMultiplier = packingType === '13.5 KG' ? 13.5 : packingType === '13 KG' ? 13 : packingType === '14 KG' ? 14 : packingType === '16 KG' ? 16 : packingType === '7 KG' ? 7 : packingType === '5 KG' ? 5 : 13;
-      const vehicleWeight = enq.actualWeight ? enq.actualWeight : boxes * boxWeightMultiplier;
+      const vehicleWeight = enq.actualWeight ? enq.actualWeight : (boxes > 0 ? boxes * boxWeightMultiplier : 0);
       const remainingWeight = Math.max(0, vehicleWeight - boxes);
       const netWeight = remainingWeight + wastage;
       const danda = 0;
