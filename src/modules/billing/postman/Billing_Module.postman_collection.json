@@ -709,33 +709,6 @@
           }
         },
         {
-          "name": "POST Create Trip",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{base_url}}/api/billing/eicher/trips",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"date\": \"2025-01-15\",\n  \"vehicleNo\": \"MH15EI0001\",\n  \"route\": \"Dindori to Unit-2\",\n  \"km\": 85,\n  \"toll\": 150,\n  \"hault\": 200,\n  \"dieselAdvance\": 2000,\n  \"lineCancel\": 0,\n  \"netPayable\": 4500\n}"
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.collectionVariables.set('eicher_trip_id', pm.response.json().data._id);"
-                ]
-              }
-            }
-          ]
-        },
-        {
           "name": "POST Record Eicher Payment",
           "request": {
             "method": "POST",
@@ -835,45 +808,18 @@
       "name": "08 — Kharchi Billing",
       "item": [
         {
-          "name": "GET All Expenses",
+          "name": "GET All Approved Kharchi Expenses",
           "request": {
             "method": "GET",
-            "url": "{{base_url}}/api/billing/kharchi/expenses?status=Pending&type=Big&filter=Weekly&page=1"
+            "url": "{{base_url}}/api/billing/kharchi/expenses?status=Approved&type=Big&filter=Weekly&page=1"
           }
         },
         {
-          "name": "GET Summary",
+          "name": "GET Summary Cards",
           "request": {
             "method": "GET",
             "url": "{{base_url}}/api/billing/kharchi/summary"
           }
-        },
-        {
-          "name": "POST Create Expense",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{base_url}}/api/billing/kharchi/expenses",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"date\": \"2025-01-15\",\n  \"type\": \"Big\",\n  \"nature\": \"Generator Repair\",\n  \"payTo\": \"Sharma Electricals\",\n  \"purchased\": \"Generator parts\",\n  \"term\": \"Short\",\n  \"amount\": 15000\n}"
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.collectionVariables.set('kharchi_id', pm.response.json().data._id);"
-                ]
-              }
-            }
-          ]
         },
         {
           "name": "GET Expense by ID",
@@ -883,21 +829,7 @@
           }
         },
         {
-          "name": "PATCH Approve Expense",
-          "request": {
-            "method": "PATCH",
-            "url": "{{base_url}}/api/billing/kharchi/expenses/{{kharchi_id}}/approve"
-          }
-        },
-        {
-          "name": "PATCH Reject Expense",
-          "request": {
-            "method": "PATCH",
-            "url": "{{base_url}}/api/billing/kharchi/expenses/{{kharchi_id}}/reject"
-          }
-        },
-        {
-          "name": "POST Record Kharchi Payment",
+          "name": "POST Record Kharchi Payment (Pay Bill)",
           "request": {
             "method": "POST",
             "header": [
@@ -909,8 +841,15 @@
             "url": "{{base_url}}/api/billing/kharchi/payments",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"expenseRef\": \"{{kharchi_id}}\",\n  \"date\": \"2025-01-20\",\n  \"term\": \"Short\",\n  \"nature\": \"Generator Repair\",\n  \"totalAmount\": 15000,\n  \"bankName\": \"HDFC Bank\",\n  \"beneficiaryName\": \"Sharma Electricals\",\n  \"accountNo\": \"12345678901234\",\n  \"remark\": \"Payment against invoice #SE001\"\n}"
+              "raw": "{\n  \"expenseId\": \"{{kharchi_id}}\",\n  \"date\": \"2026-07-31\",\n  \"term\": \"Long\",\n  \"nature\": \"Generator Repair\",\n  \"totalAmount\": 15000,\n  \"bankName\": \"HDFC Bank\",\n  \"beneficiaryName\": \"Sharma Electricals\",\n  \"accountNo\": \"50100987654321\",\n  \"paymentMode\": \"Bank Transfer\",\n  \"remark\": \"Bill paid by Admin via HDFC Bank\"\n}"
             }
+          }
+        },
+        {
+          "name": "GET Payment History",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/kharchi/payments/history?page=1"
           }
         }
       ]
@@ -945,33 +884,6 @@
             "method": "GET",
             "url": "{{base_url}}/api/billing/pickup/payments/history"
           }
-        },
-        {
-          "name": "POST Create Trip",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{base_url}}/api/billing/pickup/trips",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"date\": \"2025-01-15\",\n  \"vehicleNo\": \"MH15PK0001\",\n  \"driver\": \"Santosh Kumar\",\n  \"route1\": \"Nashik\",\n  \"route2\": \"Dindori\",\n  \"km\": 45,\n  \"fuel\": 800,\n  \"toll\": 0,\n  \"amount\": 2200\n}"
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.collectionVariables.set('pickup_trip_id', pm.response.json().data._id);"
-                ]
-              }
-            }
-          ]
         },
         {
           "name": "POST Record Pickup Payment",
