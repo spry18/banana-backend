@@ -721,7 +721,7 @@
             "url": "{{base_url}}/api/billing/eicher/payments",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"vehicleNo\": \"MH15EI0001\",\n  \"date\": \"2025-01-20\",\n  \"amountPaid\": 4500,\n  \"bankName\": \"HDFC Bank\",\n  \"beneficiaryName\": \"Suresh Driver\",\n  \"accountNo\": \"50100987654\",\n  \"remark\": \"Weekly settlement\"\n}"
+              "raw": "{\n  \"tripId\": \"{{eicher_trip_id}}\",\n  \"vehicleNo\": \"MH15EI0001\",\n  \"date\": \"2026-07-31\",\n  \"amountPaid\": 4500,\n  \"bankName\": \"HDFC Bank\",\n  \"beneficiaryName\": \"Suresh Driver\",\n  \"accountNo\": \"50100987654\",\n  \"paymentMode\": \"Bank Transfer\",\n  \"transactionId\": \"TXN987654321\",\n  \"remark\": \"Weekly settlement paid by Admin\"\n}"
             }
           }
         }
@@ -898,7 +898,7 @@
             "url": "{{base_url}}/api/billing/pickup/payments",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"vehicleNo\": \"MH15PK0001\",\n  \"date\": \"2025-01-20\",\n  \"amountPaid\": 2200,\n  \"bankName\": \"ICICI Bank\",\n  \"beneficiaryName\": \"Santosh Kumar\",\n  \"accountNo\": \"09876543210\",\n  \"remark\": \"Weekly trip payment\"\n}"
+              "raw": "{\n  \"tripId\": \"{{pickup_trip_id}}\",\n  \"vehicleNo\": \"MH15PK0001\",\n  \"date\": \"2026-07-31\",\n  \"amountPaid\": 2200,\n  \"bankName\": \"ICICI Bank\",\n  \"beneficiaryName\": \"Santosh Kumar\",\n  \"accountNo\": \"09876543210\",\n  \"paymentMode\": \"Bank Transfer\",\n  \"transactionId\": \"TXN987654322\",\n  \"remark\": \"Weekly trip payment paid by Admin\"\n}"
             }
           }
         }

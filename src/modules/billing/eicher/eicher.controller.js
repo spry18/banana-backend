@@ -14,13 +14,12 @@ try {
 }
 
 const periodFilter = (filter) => {
-  if (!filter) return null;
-  const now = new Date();
+  if (!filter || filter === 'All') return null;
   const map = { Daily: 1, Weekly: 7, Monthly: 30 };
   const days = map[filter];
   if (!days) return null;
-  const since = new Date(now);
-  since.setDate(now.getDate() - days);
+  const since = new Date();
+  since.setDate(since.getDate() - days);
   return { $gte: since };
 };
 
@@ -110,7 +109,6 @@ exports.getTrips = asyncHandler(async (req, res) => {
     ]);
   }
 
-  // Fallback / merge with local EicherTrip if present
   let localData = [];
   if (EicherTrip && tripData.length === 0) {
     const localQuery = {};
@@ -126,14 +124,14 @@ exports.getTrips = asyncHandler(async (req, res) => {
     ]);
   }
 
-  const combined = [
+  let combined = [
     ...tripData.map((t) => normalizeEicherTrip(t)),
     ...localData.map((t) => normalizeEicherTrip(t)),
   ];
 
   if (search) {
     const s = search.toLowerCase();
-    combined.filter(
+    combined = combined.filter(
       (item) =>
         item.vehicle.toLowerCase().includes(s) ||
         item.driver.toLowerCase().includes(s) ||
@@ -141,6 +139,7 @@ exports.getTrips = asyncHandler(async (req, res) => {
     );
   }
 
+  const total = combined.length;
   const skip = (Number(page) - 1) * Number(limit);
   const paginatedData = combined.slice(skip, skip + Number(limit));
 
@@ -148,10 +147,10 @@ exports.getTrips = asyncHandler(async (req, res) => {
     success: true,
     data: paginatedData,
     pagination: {
-      total: totalCount || combined.length,
+      total,
       page: Number(page),
       limit: Number(limit),
-      pages: Math.ceil((totalCount || combined.length) / Number(limit)) || 1,
+      pages: Math.ceil(total / Number(limit)) || 1,
     },
   });
 });
@@ -178,7 +177,7 @@ exports.getSummary = asyncHandler(async (req, res) => {
           $group: {
             _id: null,
             totalKm: { $sum: '$totalKm' },
-            diesel: { $sum: '$tollExpense' }, // Diesel / toll expenses
+            diesel: { $sum: '$tollExpense' },
             payable: { $sum: '$totalKm' },
           },
         },
