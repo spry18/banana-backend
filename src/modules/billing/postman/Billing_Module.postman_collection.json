@@ -94,6 +94,46 @@
   },
   "item": [
     {
+      "name": "00 — Auth",
+      "item": [
+        {
+          "name": "POST Admin Login (Auto-Sets Token)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/users/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobileNo\": \"9766028325\",\n  \"password\": \"p@12345678\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200/201', () => pm.response.to.have.status(200) || pm.response.to.have.status(201));",
+                  "const res = pm.response.json();",
+                  "if (res.token) {",
+                  "    pm.collectionVariables.set('token', res.token);",
+                  "    console.log('✅ Admin JWT Token set successfully!');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "00 — Master Data",
       "item": [
         {
@@ -257,7 +297,7 @@
             "url": "{{base_url}}/api/billing/farmer/bills",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"date\": \"2025-01-15\",\n  \"farmerName\": \"Ramesh Patil\",\n  \"farmerContact\": \"9876543210\",\n  \"location\": \"Nashik\",\n  \"company\": \"Sahyadri Farms\",\n  \"vehicleNo\": \"MH15AB1234\",\n  \"packingType\": \"13 KG\",\n  \"boxes\": 500,\n  \"totalWeight\": 6500,\n  \"grossWeight\": 13.0,\n  \"wastage\": 50,\n  \"netWeight\": 6450,\n  \"danda\": 10,\n  \"remainingWeight\": 6440,\n  \"rate\": 22,\n  \"transport\": 5000,\n  \"initialAmount\": 141680,\n  \"totalAmount\": 141680,\n  \"netPayable\": 136680,\n  \"note\": \"First batch of season\"\n}"
+              "raw": "{\n  \"assignmentId\": \"6a30f48fd3d2a767ad50704f\",\n  \"farmerName\": \"Shankar Kamble\",\n  \"farmerContact\": \"8698310547\",\n  \"location\": \"Mahalung\",\n  \"companyName\": \"Green Agro Agriculture\",\n  \"vehicleNumber\": \"MH50J3886\",\n  \"packingType\": \"14 KG\",\n  \"boxes\": 490,\n  \"vehicleWeight\": 6860,\n  \"remainingWeight\": 6370,\n  \"wastage\": 250,\n  \"netWeight\": 6620,\n  \"danda\": 0,\n  \"totalWeight\": 6620,\n  \"grossWeight\": 14.0,\n  \"rate\": 60.6,\n  \"transport\": 2000,\n  \"initialAmount\": 401172,\n  \"totalAmount\": 401172,\n  \"netPayable\": 399172,\n  \"netPayment\": 399172,\n  \"status\": \"SENT\"\n}"
             }
           },
           "event": [
@@ -411,6 +451,13 @@
       "name": "04 — Company Bills",
       "item": [
         {
+          "name": "GET Approved Dispatches For Company Billing",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/company/bills/approved-dispatches?search=&unbilledOnly=true"
+          }
+        },
+        {
           "name": "GET All Company Bills",
           "request": {
             "method": "GET",
@@ -465,7 +512,7 @@
             "url": "{{base_url}}/api/billing/company/bills",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"date\": \"2025-01-15\",\n  \"farmerName\": \"Ramesh Patil\",\n  \"farmerContact\": \"9876543210\",\n  \"location\": \"Nashik\",\n  \"vehicleNo\": \"MH15AB1234\",\n  \"company\": \"Sahyadri Farms\",\n  \"rate\": 18,\n  \"packingType\": \"13 kg\",\n  \"boxes\": 500,\n  \"totalWeight\": 6500,\n  \"grossWeight\": 13.0,\n  \"billAmount\": 117000\n}"
+              "raw": "{\n  \"assignmentId\": \"6a40c0040f3a8df26f9c9349\",\n  \"companyName\": \"Green Agro Agriculture\",\n  \"companyId\": \"69b960c4921f143f865b5347\",\n  \"farmerName\": \"Jivraj Chavan\",\n  \"farmerContact\": \"8698310547\",\n  \"location\": \"Kanhapuri\",\n  \"vehicleNumber\": \"MH12AB1234\",\n  \"packingType\": \"13.5 KG\",\n  \"boxes\": 342,\n  \"totalWeight\": 4617,\n  \"grossWeight\": 13.5,\n  \"rate\": 60.6,\n  \"billAmount\": 279790.2,\n  \"status\": \"SENT\"\n}"
             }
           },
           "event": [
@@ -571,6 +618,13 @@
           }
         },
         {
+          "name": "GET Unpaid Company Bills For Payment",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/company/payments/unpaid-bills?search="
+          }
+        },
+        {
           "name": "POST Record Company Payment",
           "request": {
             "method": "POST",
@@ -583,7 +637,7 @@
             "url": "{{base_url}}/api/billing/company/payments",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"date\": \"2025-01-20\",\n  \"companyName\": \"Sahyadri Farms\",\n  \"transactionId\": \"TXN20250120001\",\n  \"receivedBankName\": \"HDFC Bank\",\n  \"receivedCompanyName\": \"Sahyadri Farms Pvt Ltd\",\n  \"amount\": 500000,\n  \"mode\": \"NEFT\",\n  \"remark\": \"January payment received\"\n}"
+              "raw": "{\n  \"companyBillRef\": \"{{company_bill_id}}\",\n  \"companyName\": \"Green Agro Agriculture\",\n  \"transactionId\": \"TXN20260729001\",\n  \"receivedBankName\": \"HDFC Bank\",\n  \"receivedCompanyName\": \"Green Agro Agriculture\",\n  \"amount\": 279790.2,\n  \"mode\": \"NEFT\",\n  \"status\": \"VERIFIED\",\n  \"remark\": \"Full invoice payment received\"\n}"
             }
           },
           "event": [

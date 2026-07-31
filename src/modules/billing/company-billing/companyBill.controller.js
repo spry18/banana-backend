@@ -145,12 +145,15 @@ exports.getApprovedDispatches = asyncHandler(async (req, res) => {
         invoiceNo: existingBill ? existingBill.invoiceNo : null,
         companyName,
         companyRef: a.companyId?._id || null,
+        companyId: a.companyId?._id || null,
         farmerName,
         farmerContact,
         farmerRef: enq.farmerRef || null,
+        farmerId: enq.farmerRef || null,
         location,
         vehicleNumber,
         vehicleRef: a.vehicleId?._id || null,
+        vehicleId: a.vehicleId?._id || null,
         packingType: existingBill?.packingType || packingType,
         boxes: existingBill?.boxes ?? boxes,
         totalWeight: existingBill?.totalWeight ?? 0,
@@ -198,6 +201,10 @@ exports.getSummary = asyncHandler(async (req, res) => {
 /** POST /api/billing/company/bills */
 exports.create = asyncHandler(async (req, res) => {
   const body = { ...req.body, invoiceNo: req.body.invoiceNo || nextInvoiceNo() };
+
+  if (body.companyId && !body.companyRef) body.companyRef = body.companyId;
+  if (body.farmerId && !body.farmerRef) body.farmerRef = body.farmerId;
+  if (body.vehicleId && !body.vehicleRef) body.vehicleRef = body.vehicleId;
 
   // Auto-resolve companyName if companyRef is passed
   if (body.companyRef && !body.companyName) {

@@ -21,7 +21,7 @@ const companyBillSchema = new mongoose.Schema(
     totalWeight:   { type: Number, default: 0 },
     grossWeight:   { type: Number, default: 0 },
     billAmount:    { type: Number, default: 0 },
-    status:        { type: String, enum: ['PENDING', 'SUBMITTED', 'PAID'], default: 'PENDING' },
+    status:        { type: String, enum: ['PENDING', 'SUBMITTED', 'SENT', 'PAID'], default: 'SENT' },
     isClubBill:    { type: Boolean, default: false },
     clubVehicles:  [{ type: String }],
     invoiceNo:     { type: String, sparse: true },
@@ -31,9 +31,11 @@ const companyBillSchema = new mongoose.Schema(
   { timestamps: true, collection: 'company_bills' }
 );
 
-// Mongoose Pre-save hook to calculate billAmount
+// Mongoose Pre-save hook: Respect billAmount sent by FE, or fallback to calculation
 companyBillSchema.pre('save', function (next) {
-  this.billAmount = Math.round(this.totalWeight * this.rate * 100) / 100;
+  if (!this.billAmount) {
+    this.billAmount = Math.round((this.totalWeight || 0) * (this.rate || 0) * 100) / 100;
+  }
   if (typeof next === 'function') next();
 });
 

@@ -55,6 +55,11 @@
             "key": "assignmentId",
             "value": "",
             "type": "string"
+        },
+        {
+            "key": "kharchiId",
+            "value": "",
+            "type": "string"
         }
     ],
     "item": [
@@ -3812,6 +3817,481 @@
                             ]
                         },
                         "description": "Deletes a plantation submission record."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "OM Kharchi Expenses",
+            "item": [
+                {
+                    "name": "GET List Small Kharchi",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/operational-manager/kharchi?category=Small&page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "operational-manager",
+                                "kharchi"
+                            ],
+                            "query": [
+                                {
+                                    "key": "category",
+                                    "value": "Small"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        },
+                        "description": "Fetch list of Small Kharchi expenses."
+                    }
+                },
+                {
+                    "name": "GET List Big Kharchi",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/operational-manager/kharchi?category=Big&page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "operational-manager",
+                                "kharchi"
+                            ],
+                            "query": [
+                                {
+                                    "key": "category",
+                                    "value": "Big"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        },
+                        "description": "Fetch list of Big Kharchi expenses."
+                    }
+                },
+                {
+                    "name": "GET Pending Kharchi List (Admin Review)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/operational-manager/kharchi/pending?page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "operational-manager",
+                                "kharchi",
+                                "pending"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        },
+                        "description": "Fetch expenses with status = Pending requiring manual Admin approval."
+                    }
+                },
+                {
+                    "name": "GET Approved Kharchi List",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/operational-manager/kharchi/approved?page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "operational-manager",
+                                "kharchi",
+                                "approved"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        },
+                        "description": "Fetch expenses with status = Approved."
+                    }
+                },
+                {
+                    "name": "GET Single Kharchi Details by ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/operational-manager/kharchi/{{kharchiId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "operational-manager",
+                                "kharchi",
+                                "{{kharchiId}}"
+                            ]
+                        },
+                        "description": "Fetch details of a single Kharchi expense by ID."
+                    }
+                },
+                {
+                    "name": "POST Create Small Kharchi (< ₹1000 - Auto Approved)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data && res.data._id) {",
+                                    "  pm.collectionVariables.set('kharchiId', res.data._id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "transferDate",
+                                    "value": "2026-07-31",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "amount",
+                                    "value": "450",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "recipientName",
+                                    "value": "Vikas Kadam",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "type",
+                                    "value": "Dietary",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "nature",
+                                    "value": "Breakfast / Lunch / Dinner",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "natureInDetail",
+                                    "value": "Driver dinner allowance for long route",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "billReceipt",
+                                    "type": "file",
+                                    "src": []
+                                },
+                                {
+                                    "key": "paymentReceipt",
+                                    "type": "file",
+                                    "src": []
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/operational-manager/kharchi/small",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "operational-manager",
+                                "kharchi",
+                                "small"
+                            ]
+                        },
+                        "description": "Create Small Kharchi. Amount < 1000 will be auto-approved."
+                    }
+                },
+                {
+                    "name": "POST Create Small Kharchi (>= ₹1000 - Pending Approval)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data && res.data._id) {",
+                                    "  pm.collectionVariables.set('kharchiId', res.data._id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "transferDate",
+                                    "value": "2026-07-31",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "amount",
+                                    "value": "1250",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "recipientName",
+                                    "value": "Rajesh Gaikwad",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "type",
+                                    "value": "Maintenance",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "nature",
+                                    "value": "Vehicle Puncture",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "natureInDetail",
+                                    "value": "Brake pad replacement and oiling in village garage",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "billReceipt",
+                                    "type": "file",
+                                    "src": []
+                                },
+                                {
+                                    "key": "paymentReceipt",
+                                    "type": "file",
+                                    "src": []
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/operational-manager/kharchi/small",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "operational-manager",
+                                "kharchi",
+                                "small"
+                            ]
+                        },
+                        "description": "Create Small Kharchi. Amount >= 1000 will set status to Pending."
+                    }
+                },
+                {
+                    "name": "POST Create Big Kharchi (>= ₹1000 - Pending Approval)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data && res.data._id) {",
+                                    "  pm.collectionVariables.set('kharchiId', res.data._id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "amount",
+                                    "value": "15000",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "consigneeName",
+                                    "value": "Sharma Electricals",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "type",
+                                    "value": "Capital Equipment",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "nature",
+                                    "value": "Generator Repair",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "natureInDetail",
+                                    "value": "Generator armature rewinding and oil service",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "bankDetails",
+                                    "type": "file",
+                                    "src": []
+                                },
+                                {
+                                    "key": "billReceipt",
+                                    "type": "file",
+                                    "src": []
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/operational-manager/kharchi/big",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "operational-manager",
+                                "kharchi",
+                                "big"
+                            ]
+                        },
+                        "description": "Create Big Kharchi."
+                    }
+                },
+                {
+                    "name": "PATCH Approve Kharchi",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/operational-manager/kharchi/{{kharchiId}}/approve",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "operational-manager",
+                                "kharchi",
+                                "{{kharchiId}}",
+                                "approve"
+                            ]
+                        },
+                        "description": "Approve a pending Kharchi expense."
+                    }
+                },
+                {
+                    "name": "PATCH Reject Kharchi",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/operational-manager/kharchi/{{kharchiId}}/reject",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "operational-manager",
+                                "kharchi",
+                                "{{kharchiId}}",
+                                "reject"
+                            ]
+                        },
+                        "description": "Reject a pending Kharchi expense."
                     }
                 }
             ]
