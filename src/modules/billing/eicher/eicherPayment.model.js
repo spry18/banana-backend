@@ -3,13 +3,19 @@ const mongoose = require('mongoose');
 
 const eicherPaymentSchema = new mongoose.Schema(
   {
-    vehicleNumber:  { type: String, required: true, trim: true },
+    tripRef:        { type: mongoose.Schema.Types.ObjectId, ref: 'Trip', default: null },
+    driverRef:      { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    vehicleNumber:  { type: String, trim: true },
+    vehicleNo:      { type: String, trim: true }, // Alias for vehicleNumber
     vehicleRef:     { type: mongoose.Schema.Types.ObjectId, ref: 'Vehicle', default: null },
     date:           { type: Date, required: true, default: Date.now },
     amountPaid:     { type: Number, required: true, min: 0 },
     bankName:       { type: String, trim: true },
     beneficiaryName:{ type: String, trim: true },
     accountNo:      { type: String, trim: true },
+    paymentMode:    { type: String, trim: true, default: 'Bank Transfer' },
+    transactionId: { type: String, trim: true },
+    paidBy:         { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     remark:         { type: String, trim: true },
   },
   { timestamps: true, collection: 'eicher_payments' }
@@ -17,6 +23,7 @@ const eicherPaymentSchema = new mongoose.Schema(
 
 eicherPaymentSchema.index({ date: -1 });
 eicherPaymentSchema.index({ vehicleNumber: 1 });
+eicherPaymentSchema.index({ tripRef: 1 });
 eicherPaymentSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('EicherPayment', eicherPaymentSchema);
