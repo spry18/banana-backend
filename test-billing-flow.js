@@ -22,6 +22,7 @@ const pickupCtrl = require('./src/modules/billing/pickup/pickup.controller');
 const fuelCtrl = require('./src/modules/billing/fuel/fuel.controller');
 const agentCtrl = require('./src/modules/billing/commission-agent/commissionAgent.controller');
 const csCtrl = require('./src/modules/billing/cold-storage/coldStorage.controller');
+const munshiCtrl = require('./src/modules/billing/munshi/munshi.controller');
 
 // Mock req and res for testing controllers directly
 function createMockReqRes(query = {}, body = {}, params = {}) {
@@ -308,6 +309,47 @@ async function runTests() {
   const csHist = createMockReqRes({ page: 1, limit: 5 });
   await csCtrl.getPaymentHistory(csHist.req, csHist.res);
   console.log(`Cold Storage Payment History (Total: ${csHist.getResult().data?.pagination?.total || 0})`);
+
+  console.log('\n=====================================================');
+  console.log('7. TESTING MUNSHI BILLING MODULE');
+  console.log('=====================================================');
+
+  // 7a. Summary
+  const mSum = createMockReqRes();
+  await munshiCtrl.getSummary(mSum.req, mSum.res);
+  console.log('Munshi Summary Cards:', JSON.stringify(mSum.getResult().data, null, 2));
+
+  // 7b. Ledger Entries List (Completed Enquiries Only)
+  const mLedger = createMockReqRes({ page: 1, limit: 5 });
+  await munshiCtrl.getLedger(mLedger.req, mLedger.res);
+  console.log(`Munshi Completed Ledger Entries (Total Count: ${mLedger.getResult().data?.pagination?.total || 0}):`);
+  console.log(JSON.stringify(mLedger.getResult().data?.data?.slice(0, 2), null, 2));
+
+  // 7c. Payment Summary
+  const mPaySum = createMockReqRes();
+  await munshiCtrl.getPaymentSummary(mPaySum.req, mPaySum.res);
+  console.log('Munshi Payment Breakdown (Munshi Name Breakdown):');
+  console.log(JSON.stringify(mPaySum.getResult().data?.data?.slice(0, 2), null, 2));
+
+  // 7d. Record Payment
+  const mPay = createMockReqRes(
+    {},
+    {
+      munshiName: 'Balu Mali',
+      amountPaid: 30000,
+      bankName: 'HDFC Bank',
+      beneficiaryName: 'Balu Mali',
+      accountNo: '50100987654321',
+      remark: 'Weekly Munshi payout test',
+    }
+  );
+  await munshiCtrl.createPayment(mPay.req, mPay.res);
+  console.log('Munshi Payment Recorded:', JSON.stringify(mPay.getResult().data, null, 2));
+
+  // 7e. Payment History
+  const mHist = createMockReqRes({ page: 1, limit: 5 });
+  await munshiCtrl.getPaymentHistory(mHist.req, mHist.res);
+  console.log(`Munshi Payment History (Total: ${mHist.getResult().data?.pagination?.total || 0})`);
 
   console.log('\n=====================================================');
   console.log('ALL BILLING MODULE FLOW TESTS COMPLETED SUCCESSFULLY ✅');

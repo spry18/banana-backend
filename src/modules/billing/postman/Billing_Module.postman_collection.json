@@ -1170,6 +1170,63 @@
       ]
     },
     {
+      "name": "14 — Munshi Billing",
+      "item": [
+        {
+          "name": "GET All Munshi Ledger Entries (Completed Enquiries)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/munshi/ledger?search=&page=1&limit=20"
+          }
+        },
+        {
+          "name": "GET Summary Cards",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/munshi/summary"
+          }
+        },
+        {
+          "name": "GET Ledger Entry By ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/munshi/ledger/{{munshi_ledger_id}}"
+          }
+        },
+        {
+          "name": "GET Payment Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/munshi/payment-summary"
+          }
+        },
+        {
+          "name": "POST Record Munshi Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/munshi/payments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"munshiName\": \"Balu Mali\",\n  \"amountPaid\": 30000,\n  \"bankName\": \"HDFC Bank\",\n  \"beneficiaryName\": \"Balu Mali\",\n  \"accountNo\": \"50100987654321\",\n  \"paymentMode\": \"Bank Transfer\",\n  \"transactionId\": \"TXN987654326\",\n  \"remark\": \"Weekly Munshi harvesting payout by Admin\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET Munshi Payment History",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/munshi/payments/history?page=1&limit=20"
+          }
+        }
+      ]
+    },
+    {
       "name": "14 — Salary & Profiles",
       "item": [
         {
