@@ -1,6 +1,12 @@
 'use strict';
 const asyncHandler = require('../shared/billing.asyncHandler');
 const PickupPayment = require('./pickupPayment.model');
+
+try {
+  require('../../master-data/vehicle.model');
+  require('../../logistics/logistics.model');
+} catch (e) {}
+
 let Trip, PickupTrip;
 try {
   Trip = require('../../execution/trip.model');
@@ -31,7 +37,17 @@ const normalizePickupTrip = (trip) => {
     : trip.driver || 'Pickup Driver';
 
   const assignmentObj = trip.assignmentId || trip.assignmentRef;
-  const vehicleNo = assignmentObj?.assignedVehicleNumber || trip.vehicleNumber || trip.vehicle || 'N/A';
+  const vehicleObj = assignmentObj?.vehicleId || trip.vehicleId;
+  const vehicleNo =
+    (typeof vehicleObj === 'object' ? vehicleObj?.vehicleNumber : null) ||
+    assignmentObj?.vehicleNumber ||
+    assignmentObj?.assignedVehicleNumber ||
+    trip.vehicleNumber ||
+    trip.vehicleNo ||
+    trip.vehicle ||
+    'N/A';
+
+  const cleanVehicleNo = typeof vehicleNo === 'string' ? vehicleNo.trim() : vehicleNo;
 
   let route1 = trip.startRoute || 'Start';
   let route2 = trip.destination || 'Unit';
@@ -49,8 +65,8 @@ const normalizePickupTrip = (trip) => {
     _id: trip._id,
     id: trip._id,
     date: trip.createdAt || trip.date,
-    vehicle: vehicleNo,
-    vehicleNumber: vehicleNo,
+    vehicle: cleanVehicleNo,
+    vehicleNumber: cleanVehicleNo,
     driver: driverName,
     driverId: driverObj || null,
     route1,
@@ -103,7 +119,10 @@ exports.getTrips = asyncHandler(async (req, res) => {
       Trip.find(query)
         .sort({ createdAt: -1 })
         .populate('driverId', 'firstName lastName mobileNo role')
-        .populate('assignmentId', 'enquiryId farmerFirstName farmerLastName status assignedVehicleNumber')
+        .populate({
+          path: 'assignmentId',
+          populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' },
+        })
         .populate('reviewedBy', 'firstName lastName role')
         .lean(),
       Trip.countDocuments(query),
@@ -212,7 +231,10 @@ exports.getTripById = asyncHandler(async (req, res) => {
   if (Trip) {
     trip = await Trip.findById(id)
       .populate('driverId', 'firstName lastName mobileNo role')
-      .populate('assignmentId')
+      .populate({
+        path: 'assignmentId',
+        populate: { path: 'vehicleId', select: 'vehicleNumber vehicleType' },
+      })
       .populate('reviewedBy', 'firstName lastName role')
       .lean();
   }
