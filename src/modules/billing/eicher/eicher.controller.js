@@ -48,6 +48,7 @@ const normalizeEicherTrip = (trip) => {
     'N/A';
 
   const cleanVehicleNo = typeof vehicleNo === 'string' ? vehicleNo.trim() : vehicleNo;
+  const vehicleRefId = typeof vehicleObj === 'object' ? vehicleObj?._id : (vehicleObj || null);
 
   const routeStr = trip.startRoute && trip.destination
     ? `${trip.startRoute} → ${trip.destination}`
@@ -67,6 +68,8 @@ const normalizeEicherTrip = (trip) => {
     date: trip.createdAt || trip.date,
     vehicle: cleanVehicleNo,
     vehicleNumber: cleanVehicleNo,
+    vehicleId: vehicleRefId || null,
+    vehicleRef: vehicleRefId || null,
     driver: driverName,
     driverId: driverObj || null,
     route: routeStr,

@@ -48,6 +48,7 @@ const normalizePickupTrip = (trip) => {
     'N/A';
 
   const cleanVehicleNo = typeof vehicleNo === 'string' ? vehicleNo.trim() : vehicleNo;
+  const vehicleRefId = typeof vehicleObj === 'object' ? vehicleObj?._id : (vehicleObj || null);
 
   let route1 = trip.startRoute || 'Start';
   let route2 = trip.destination || 'Unit';
@@ -67,6 +68,8 @@ const normalizePickupTrip = (trip) => {
     date: trip.createdAt || trip.date,
     vehicle: cleanVehicleNo,
     vehicleNumber: cleanVehicleNo,
+    vehicleId: vehicleRefId || null,
+    vehicleRef: vehicleRefId || null,
     driver: driverName,
     driverId: driverObj || null,
     route1,
