@@ -908,14 +908,14 @@
       "name": "10 — Cold Storage Billing",
       "item": [
         {
-          "name": "GET All Entries",
+          "name": "GET All Cold Storage Entries (Completed Enquiries)",
           "request": {
             "method": "GET",
-            "url": "{{base_url}}/api/billing/cold-storage/entries?month=2025-01&page=1"
+            "url": "{{base_url}}/api/billing/cold-storage/entries?search=&page=1&limit=20"
           }
         },
         {
-          "name": "GET Summary",
+          "name": "GET Summary Cards",
           "request": {
             "method": "GET",
             "url": "{{base_url}}/api/billing/cold-storage/summary"
@@ -927,33 +927,6 @@
             "method": "GET",
             "url": "{{base_url}}/api/billing/cold-storage/payment-cycles"
           }
-        },
-        {
-          "name": "POST Add Cold Storage Entry",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{base_url}}/api/billing/cold-storage/entries",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"date\": \"2025-01-15\",\n  \"coldStorageName\": \"Dindori Cold Storage\",\n  \"vehicleNo\": \"MH15AB1234\",\n  \"receiptNo\": \"REC001\",\n  \"containerNo\": \"CONT001\",\n  \"companyName\": \"Sahyadri Farms\",\n  \"brandName\": \"Fresh Gold\",\n  \"kgBoxes\": 500,\n  \"total4h5h6h\": 200,\n  \"total7h8h\": 300,\n  \"time\": \"08:30\",\n  \"amount\": 12500\n}"
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.collectionVariables.set('cold_storage_entry_id', pm.response.json().data._id);"
-                ]
-              }
-            }
-          ]
         },
         {
           "name": "POST Record Cold Storage Payment",
@@ -968,8 +941,15 @@
             "url": "{{base_url}}/api/billing/cold-storage/payments",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"date\": \"2025-01-20\",\n  \"coldStorageName\": \"Dindori Cold Storage\",\n  \"paymentCycle\": \"Jan 2025 Cycle 1\",\n  \"totalAmount\": 12500,\n  \"noOfContainers\": 5,\n  \"bankName\": \"SBI Bank\",\n  \"beneficiaryName\": \"Dindori Cold Storage\",\n  \"accountNo\": \"30019876543\",\n  \"remark\": \"Monthly cycle payment\"\n}"
+              "raw": "{\n  \"date\": \"2026-08-01\",\n  \"coldStorageName\": \"Dindori Unit-2\",\n  \"companyName\": \"ABC Farms\",\n  \"paymentCycle\": \"1 July - 15 July\",\n  \"totalAmount\": 96400,\n  \"noOfContainers\": 10,\n  \"bankName\": \"HDFC Bank\",\n  \"beneficiaryName\": \"Dindori Unit-2 Cold Storage\",\n  \"accountNo\": \"50100987654321\",\n  \"paymentMode\": \"Bank Transfer\",\n  \"transactionId\": \"TXN987654325\",\n  \"remark\": \"Monthly cold storage settlement paid by Admin\"\n}"
             }
+          }
+        },
+        {
+          "name": "GET Cold Storage Payment History",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/cold-storage/payments/history?page=1&limit=20"
           }
         }
       ]

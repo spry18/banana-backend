@@ -9,6 +9,8 @@ const mongoose = require('mongoose');
 require('./src/modules/users/user.model');
 try {
   require('./src/modules/master-data/agent.model');
+  require('./src/modules/master-data/company.model');
+  require('./src/modules/master-data/brand.model');
 } catch (e) {}
 try {
   require('./src/modules/logistics/logistics.model');
@@ -19,6 +21,7 @@ const eicherCtrl = require('./src/modules/billing/eicher/eicher.controller');
 const pickupCtrl = require('./src/modules/billing/pickup/pickup.controller');
 const fuelCtrl = require('./src/modules/billing/fuel/fuel.controller');
 const agentCtrl = require('./src/modules/billing/commission-agent/commissionAgent.controller');
+const csCtrl = require('./src/modules/billing/cold-storage/coldStorage.controller');
 
 // Mock req and res for testing controllers directly
 function createMockReqRes(query = {}, body = {}, params = {}) {
@@ -261,6 +264,50 @@ async function runTests() {
   const cHist = createMockReqRes({ page: 1, limit: 5 });
   await agentCtrl.getPayments(cHist.req, cHist.res);
   console.log(`Commission Payment History (Total: ${cHist.getResult().data?.pagination?.total || 0})`);
+
+  console.log('\n=====================================================');
+  console.log('6. TESTING COLD STORAGE BILLING MODULE');
+  console.log('=====================================================');
+
+  // 6a. Summary
+  const csSum = createMockReqRes();
+  await csCtrl.getSummary(csSum.req, csSum.res);
+  console.log('Cold Storage Summary Cards:', JSON.stringify(csSum.getResult().data, null, 2));
+
+  // 6b. Entries List (Completed Enquiries Only)
+  const csEntries = createMockReqRes({ page: 1, limit: 5 });
+  await csCtrl.getAll(csEntries.req, csEntries.res);
+  console.log(`Cold Storage Completed Entries (Total Count: ${csEntries.getResult().data?.pagination?.total || 0}):`);
+  console.log(JSON.stringify(csEntries.getResult().data?.data?.slice(0, 2), null, 2));
+
+  // 6c. Payment Cycles
+  const csCycles = createMockReqRes();
+  await csCtrl.getPaymentCycles(csCycles.req, csCycles.res);
+  console.log('Cold Storage Payment Cycles (Storage & Company Breakdown):');
+  console.log(JSON.stringify(csCycles.getResult().data?.data?.slice(0, 2), null, 2));
+
+  // 6d. Record Payment
+  const csPay = createMockReqRes(
+    {},
+    {
+      coldStorageName: 'Dindori Unit-2',
+      companyName: 'ABC Farms',
+      paymentCycle: '1 July - 15 July',
+      totalAmount: 96400,
+      noOfContainers: 10,
+      bankName: 'HDFC Bank',
+      beneficiaryName: 'Dindori Unit-2 Cold Storage',
+      accountNo: '50100987654321',
+      remark: 'Monthly cold storage payout test',
+    }
+  );
+  await csCtrl.createPayment(csPay.req, csPay.res);
+  console.log('Cold Storage Payment Recorded:', JSON.stringify(csPay.getResult().data, null, 2));
+
+  // 6e. Payment History
+  const csHist = createMockReqRes({ page: 1, limit: 5 });
+  await csCtrl.getPaymentHistory(csHist.req, csHist.res);
+  console.log(`Cold Storage Payment History (Total: ${csHist.getResult().data?.pagination?.total || 0})`);
 
   console.log('\n=====================================================');
   console.log('ALL BILLING MODULE FLOW TESTS COMPLETED SUCCESSFULLY ✅');
