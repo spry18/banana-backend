@@ -1069,59 +1069,25 @@
           "name": "GET All Fuel Entries",
           "request": {
             "method": "GET",
-            "url": "{{base_url}}/api/billing/fuel/entries?filter=Weekly&page=1&limit=20"
+            "url": "{{base_url}}/api/billing/fuel/entries?page=1&limit=20"
           }
         },
         {
-          "name": "GET Fuel Summary",
+          "name": "GET Fuel Summary Cards",
           "request": {
             "method": "GET",
-            "url": "{{base_url}}/api/billing/fuel/summary?filter=Weekly"
+            "url": "{{base_url}}/api/billing/fuel/summary"
           }
         },
         {
-          "name": "GET Pump Summary",
+          "name": "GET Pump Payment Summary",
           "request": {
             "method": "GET",
             "url": "{{base_url}}/api/billing/fuel/pump-summary"
           }
         },
         {
-          "name": "GET Fuel Payment History",
-          "request": {
-            "method": "GET",
-            "url": "{{base_url}}/api/billing/fuel/payments/history"
-          }
-        },
-        {
-          "name": "POST Add Fuel Entry",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{base_url}}/api/billing/fuel/entries",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"date\": \"2025-01-15\",\n  \"vehicleNo\": \"MH15AB1234\",\n  \"pumpName\": \"Shiva Petrol Pump\",\n  \"fuelType\": \"Diesel\",\n  \"rate\": 89.5,\n  \"amount\": 3580,\n  \"remark\": \"Full tank\",\n  \"paymentCycle\": \"Jan 2025 - Cycle 1\",\n  \"period\": \"15Days\"\n}"
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.collectionVariables.set('fuel_entry_id', pm.response.json().data._id);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "POST Record Fuel Payment",
+          "name": "POST Record Fuel Pump Payment (Pay Bill)",
           "request": {
             "method": "POST",
             "header": [
@@ -1133,8 +1099,15 @@
             "url": "{{base_url}}/api/billing/fuel/payments",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"date\": \"2025-01-20\",\n  \"pumpName\": \"Shiva Petrol Pump\",\n  \"paymentCycle\": \"Jan 2025 - Cycle 1\",\n  \"totalAmount\": 85000,\n  \"bankName\": \"Bank of Maharashtra\",\n  \"beneficiaryName\": \"Shiva Petroleum\",\n  \"accountNo\": \"60019876543\",\n  \"remark\": \"15-day cycle settlement\"\n}"
+              "raw": "{\n  \"fuelAdvanceId\": \"6a5b6648097a19acfb153482\",\n  \"date\": \"2026-08-01\",\n  \"pumpName\": \"Sonai Petrol Pump\",\n  \"paymentCycle\": \"1 July - 15 July\",\n  \"totalAmount\": 50000,\n  \"bankName\": \"HDFC Bank\",\n  \"beneficiaryName\": \"Sonai Petrol Pump\",\n  \"accountNo\": \"50100987654321\",\n  \"paymentMode\": \"Bank Transfer\",\n  \"transactionId\": \"TXN987654323\",\n  \"remark\": \"15-day fuel cycle settlement paid by Admin\"\n}"
             }
+          }
+        },
+        {
+          "name": "GET Fuel Payment History",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/fuel/payments/history?page=1"
           }
         }
       ]

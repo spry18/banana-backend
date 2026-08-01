@@ -14,6 +14,7 @@ try {
 const kharchiCtrl = require('./src/modules/billing/kharchi/kharchi.controller');
 const eicherCtrl = require('./src/modules/billing/eicher/eicher.controller');
 const pickupCtrl = require('./src/modules/billing/pickup/pickup.controller');
+const fuelCtrl = require('./src/modules/billing/fuel/fuel.controller');
 
 // Mock req and res for testing controllers directly
 function createMockReqRes(query = {}, body = {}, params = {}) {
@@ -52,7 +53,7 @@ async function runTests() {
   // 1b. Expenses List
   const kExp = createMockReqRes({ status: 'Approved', page: 1, limit: 5 });
   await kharchiCtrl.getAll(kExp.req, kExp.res);
-  console.log(`Kharchi Approved Expenses (Count: ${kExp.getResult().data?.data?.pagination?.total || kExp.getResult().data?.pagination?.total || 0}):`);
+  console.log(`Kharchi Approved Expenses (Count: ${kExp.getResult().data?.pagination?.total || 0}):`);
   console.log(JSON.stringify(kExp.getResult().data?.data?.slice(0, 2), null, 2));
 
   // 1c. Record Payment
@@ -160,6 +161,48 @@ async function runTests() {
   const pHist = createMockReqRes({ page: 1, limit: 5 });
   await pickupCtrl.getPaymentHistory(pHist.req, pHist.res);
   console.log(`Pickup Payment History (Total: ${pHist.getResult().data?.pagination?.total || 0})`);
+
+  console.log('\n=====================================================');
+  console.log('4. TESTING FUEL / PETROL-DIESEL BILLING MODULE');
+  console.log('=====================================================');
+
+  // 4a. Summary
+  const fSum = createMockReqRes();
+  await fuelCtrl.getSummary(fSum.req, fSum.res);
+  console.log('Fuel Summary Cards:', JSON.stringify(fSum.getResult().data, null, 2));
+
+  // 4b. Entries List
+  const fEntries = createMockReqRes({ page: 1, limit: 5 });
+  await fuelCtrl.getAll(fEntries.req, fEntries.res);
+  console.log(`Fuel Entries (Total Count: ${fEntries.getResult().data?.pagination?.total || 0}):`);
+  console.log(JSON.stringify(fEntries.getResult().data?.data?.slice(0, 2), null, 2));
+
+  // 4c. Pump Summary
+  const fPumpSum = createMockReqRes();
+  await fuelCtrl.getPumpSummary(fPumpSum.req, fPumpSum.res);
+  console.log('Fuel Pump-Wise Payment Summary:');
+  console.log(JSON.stringify(fPumpSum.getResult().data?.data?.slice(0, 2), null, 2));
+
+  // 4d. Record Payment
+  const fPay = createMockReqRes(
+    {},
+    {
+      pumpName: 'Sonai Petrol Pump',
+      paymentCycle: '1 July - 15 July',
+      totalAmount: 50000,
+      bankName: 'HDFC Bank',
+      beneficiaryName: 'Sonai Petrol Pump',
+      accountNo: '50100987654321',
+      remark: 'Cycle payment test',
+    }
+  );
+  await fuelCtrl.createPayment(fPay.req, fPay.res);
+  console.log('Fuel Pump Payment Recorded:', JSON.stringify(fPay.getResult().data, null, 2));
+
+  // 4e. Payment History
+  const fHist = createMockReqRes({ page: 1, limit: 5 });
+  await fuelCtrl.getPaymentHistory(fHist.req, fHist.res);
+  console.log(`Fuel Payment History (Total: ${fHist.getResult().data?.pagination?.total || 0})`);
 
   console.log('\n=====================================================');
   console.log('ALL BILLING MODULE FLOW TESTS COMPLETED SUCCESSFULLY ✅');
