@@ -1116,21 +1116,28 @@
       "name": "13 — Commission Agent Billing",
       "item": [
         {
-          "name": "GET All Agents",
+          "name": "GET All Commission Agents (Including Approved Enquiries)",
           "request": {
             "method": "GET",
-            "url": "{{base_url}}/api/billing/commission-agent/agents?page=1&limit=20"
+            "url": "{{base_url}}/api/billing/commission-agent/agents?search=&page=1&limit=20"
           }
         },
         {
-          "name": "GET Summary",
+          "name": "GET Summary Cards",
           "request": {
             "method": "GET",
             "url": "{{base_url}}/api/billing/commission-agent/summary"
           }
         },
         {
-          "name": "POST Add Agent",
+          "name": "GET Agent By ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/commission-agent/agents/{{agent_id}}"
+          }
+        },
+        {
+          "name": "POST Add Commission Agent",
           "request": {
             "method": "POST",
             "header": [
@@ -1142,7 +1149,7 @@
             "url": "{{base_url}}/api/billing/commission-agent/agents",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"agentName\": \"Vijay Kumar\",\n  \"harvestType\": \"Sahyadri Grade A\",\n  \"commissionStructure\": \"Per box\",\n  \"commissionValue\": 10\n}"
+              "raw": "{\n  \"agentName\": \"Bharat Deshmukh\",\n  \"harvestType\": \"Sahyadri\",\n  \"commissionStructure\": \"Per box\",\n  \"commissionValue\": 10,\n  \"totalBusiness\": 6200000,\n  \"totalCommission\": 184000\n}"
             }
           },
           "event": [
@@ -1157,7 +1164,7 @@
           ]
         },
         {
-          "name": "POST Record Commission Payment",
+          "name": "POST Pay Commission Agent",
           "request": {
             "method": "POST",
             "header": [
@@ -1169,8 +1176,15 @@
             "url": "{{base_url}}/api/billing/commission-agent/payments",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"agentRef\": \"{{agent_id}}\",\n  \"agentName\": \"Vijay Kumar\",\n  \"date\": \"2025-01-20\",\n  \"amount\": 5000,\n  \"bankName\": \"HDFC Bank\",\n  \"beneficiaryName\": \"Vijay Kumar\",\n  \"accountNo\": \"12345012345\",\n  \"remark\": \"January commission\"\n}"
+              "raw": "{\n  \"agentRef\": \"{{agent_id}}\",\n  \"agentName\": \"Bharat Deshmukh\",\n  \"amountPaid\": 50000,\n  \"bankName\": \"HDFC Bank\",\n  \"beneficiaryName\": \"Bharat Deshmukh\",\n  \"accountNo\": \"50100987654321\",\n  \"paymentMode\": \"Bank Transfer\",\n  \"transactionId\": \"TXN987654324\",\n  \"remark\": \"Monthly commission payout by Admin\"\n}"
             }
+          }
+        },
+        {
+          "name": "GET Commission Payment History",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/commission-agent/payments?search=&page=1&limit=20"
           }
         }
       ]

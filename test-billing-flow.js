@@ -8,6 +8,9 @@ const mongoose = require('mongoose');
 // Register models
 require('./src/modules/users/user.model');
 try {
+  require('./src/modules/master-data/agent.model');
+} catch (e) {}
+try {
   require('./src/modules/logistics/logistics.model');
 } catch (e) {}
 
@@ -15,6 +18,7 @@ const kharchiCtrl = require('./src/modules/billing/kharchi/kharchi.controller');
 const eicherCtrl = require('./src/modules/billing/eicher/eicher.controller');
 const pickupCtrl = require('./src/modules/billing/pickup/pickup.controller');
 const fuelCtrl = require('./src/modules/billing/fuel/fuel.controller');
+const agentCtrl = require('./src/modules/billing/commission-agent/commissionAgent.controller');
 
 // Mock req and res for testing controllers directly
 function createMockReqRes(query = {}, body = {}, params = {}) {
@@ -203,6 +207,60 @@ async function runTests() {
   const fHist = createMockReqRes({ page: 1, limit: 5 });
   await fuelCtrl.getPaymentHistory(fHist.req, fHist.res);
   console.log(`Fuel Payment History (Total: ${fHist.getResult().data?.pagination?.total || 0})`);
+
+  console.log('\n=====================================================');
+  console.log('5. TESTING COMMISSION AGENT BILLING MODULE');
+  console.log('=====================================================');
+
+  // 5a. Create Agent
+  const cCreate = createMockReqRes(
+    {},
+    {
+      agentName: 'Bharat Deshmukh',
+      harvestType: 'Sahyadri',
+      commissionStructure: 'Per box',
+      commissionValue: 10,
+      totalBusiness: 6200000,
+      totalCommission: 184000,
+    }
+  );
+  await agentCtrl.create(cCreate.req, cCreate.res);
+  console.log('Commission Agent Created:', JSON.stringify(cCreate.getResult().data, null, 2));
+
+  const newAgentId = cCreate.getResult().data?.data?._id;
+
+  // 5b. Summary
+  const cSum = createMockReqRes();
+  await agentCtrl.getSummary(cSum.req, cSum.res);
+  console.log('Commission Agent Summary Cards:', JSON.stringify(cSum.getResult().data, null, 2));
+
+  // 5c. Agent List
+  const cAgents = createMockReqRes({ page: 1, limit: 5 });
+  await agentCtrl.getAll(cAgents.req, cAgents.res);
+  console.log(`Commission Agents List (Total: ${cAgents.getResult().data?.pagination?.total || 0}):`);
+  console.log(JSON.stringify(cAgents.getResult().data?.data?.slice(0, 2), null, 2));
+
+  // 5d. Record Agent Payment
+  const cPay = createMockReqRes(
+    {},
+    {
+      agentRef: newAgentId,
+      agentName: 'Bharat Deshmukh',
+      amountPaid: 50000,
+      bankName: 'HDFC Bank',
+      beneficiaryName: 'Bharat Deshmukh',
+      accountNo: '50100987654321',
+      paymentMode: 'Bank Transfer',
+      remark: 'Monthly commission payout test',
+    }
+  );
+  await agentCtrl.createPayment(cPay.req, cPay.res);
+  console.log('Commission Agent Payment Recorded:', JSON.stringify(cPay.getResult().data, null, 2));
+
+  // 5e. Payment History
+  const cHist = createMockReqRes({ page: 1, limit: 5 });
+  await agentCtrl.getPayments(cHist.req, cHist.res);
+  console.log(`Commission Payment History (Total: ${cHist.getResult().data?.pagination?.total || 0})`);
 
   console.log('\n=====================================================');
   console.log('ALL BILLING MODULE FLOW TESTS COMPLETED SUCCESSFULLY ✅');
