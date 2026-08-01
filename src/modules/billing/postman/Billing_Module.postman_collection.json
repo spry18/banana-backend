@@ -908,7 +908,7 @@
       "name": "10 — Cold Storage Billing",
       "item": [
         {
-          "name": "GET All Cold Storage Entries (Completed Enquiries)",
+          "name": "GET All Cold Storage Entries",
           "request": {
             "method": "GET",
             "url": "{{base_url}}/api/billing/cold-storage/entries?search=&page=1&limit=20"
@@ -919,6 +919,57 @@
           "request": {
             "method": "GET",
             "url": "{{base_url}}/api/billing/cold-storage/summary"
+          }
+        },
+        {
+          "name": "POST Create Cold Storage Entry",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/cold-storage/entries",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2026-08-01\",\n  \"coldStorageName\": \"Dindori Unit-2\",\n  \"companyName\": \"Miraz Agro Export\",\n  \"vehicleNumber\": \"MH12AB1234\",\n  \"receiptNo\": \"REC-3507\",\n  \"containerNo\": \"CONT-D807\",\n  \"brandName\": \"Fresh Gold\",\n  \"kgBoxes\": 600,\n  \"total4h5h6h\": 240,\n  \"total7h8h\": 360,\n  \"time\": \"05:12\",\n  \"amount\": 12000\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('cold_storage_entry_id', pm.response.json().data._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Entry By ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/cold-storage/entries/{{cold_storage_entry_id}}"
+          }
+        },
+        {
+          "name": "PATCH Update Cold Storage Entry",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/cold-storage/entries/{{cold_storage_entry_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 15000,\n  \"kgBoxes\": 750\n}"
+            }
           }
         },
         {
@@ -961,14 +1012,21 @@
           "name": "GET All Procurements",
           "request": {
             "method": "GET",
-            "url": "{{base_url}}/api/billing/packing-material/procurements?page=1&limit=20"
+            "url": "{{base_url}}/api/billing/packing-material/procurements?search=&page=1&limit=20"
           }
         },
         {
-          "name": "GET Summary",
+          "name": "GET Summary Cards",
           "request": {
             "method": "GET",
             "url": "{{base_url}}/api/billing/packing-material/summary"
+          }
+        },
+        {
+          "name": "GET Procurement By ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/packing-material/procurements/{{procurement_id}}"
           }
         },
         {
@@ -991,7 +1049,7 @@
             "url": "{{base_url}}/api/billing/packing-material/procurements",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"date\": \"2025-01-15\",\n  \"billNo\": \"BILL001\",\n  \"companyName\": \"Sahyadri Farms\",\n  \"supplier\": \"Patel Packaging\",\n  \"material\": \"13 KG Boxes\",\n  \"qty\": 1000,\n  \"rate\": 35,\n  \"amount\": 35000,\n  \"vehicleNo\": \"MH15AB1234\"\n}"
+              "raw": "{\n  \"date\": \"2026-08-01\",\n  \"billNo\": \"BILL001\",\n  \"companyName\": \"ABC Farm\",\n  \"supplier\": \"PackWell Ind.\",\n  \"material\": \"2kg punnet box\",\n  \"qty\": 10000,\n  \"rate\": 8,\n  \"amount\": 80000,\n  \"vehicleNo\": \"MH12AB1234\"\n}"
             }
           },
           "event": [
@@ -1004,6 +1062,23 @@
               }
             }
           ]
+        },
+        {
+          "name": "PATCH Update Procurement",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/billing/packing-material/procurements/{{procurement_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"qty\": 12000,\n  \"amount\": 96000\n}"
+            }
+          }
         },
         {
           "name": "POST Upload Bill Photo",
@@ -1036,8 +1111,15 @@
             "url": "{{base_url}}/api/billing/packing-material/payments",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"date\": \"2025-01-20\",\n  \"vendorName\": \"Patel Packaging\",\n  \"amount\": 35000,\n  \"bankName\": \"HDFC Bank\",\n  \"beneficiaryName\": \"Patel Packaging Pvt Ltd\",\n  \"accountNo\": \"50101234567\",\n  \"remark\": \"Payment for January box supply\"\n}"
+              "raw": "{\n  \"date\": \"2026-08-01\",\n  \"vendorName\": \"PackWell Ind.\",\n  \"amountPaid\": 50000,\n  \"bankName\": \"HDFC Bank\",\n  \"beneficiaryName\": \"PackWell Ind. Pvt Ltd\",\n  \"accountNo\": \"50100987654321\",\n  \"paymentMode\": \"Bank Transfer\",\n  \"transactionId\": \"TXN987654327\",\n  \"remark\": \"Monthly packing material supply payout by Admin\"\n}"
             }
+          }
+        },
+        {
+          "name": "GET Packing Payment History",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/billing/packing-material/payments/history?page=1&limit=20"
           }
         }
       ]

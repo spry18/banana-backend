@@ -248,10 +248,20 @@ exports.syncFromExecution = asyncHandler(async (req, res) => {
   const eicherTripData = {
     date: new Date(),
     vehicleNumber,
+    vehicleRef: vehicle._id || null,
+    assignmentRef: assignment._id,
+    enquiryRef: enq._id || null,
+    enquiryId: enq.enquiryId || null,
+    tripRef: eicherTripDoc?._id || null,
+    driverName: `${driver.firstName || ''} ${driver.lastName || ''}`.trim() || 'Driver',
+    driverRef: driver._id || null,
     route: `${eicherTripDoc?.startRoute || 'Plot'} -> ${eicherTripDoc?.destination || companyName}`,
     km: eicherTripDoc?.totalKm || 0,
+    ratePerKm: 25,
     toll: eicherTripDoc?.tollExpense || 0,
+    hault: eicherTripDoc?.isHault ? 500 : 0,
     dieselAdvance: totalDieselAdvance,
+    status: 'PENDING',
     period: 'Daily',
   };
 
@@ -259,14 +269,22 @@ exports.syncFromExecution = asyncHandler(async (req, res) => {
   const pickupTripData = {
     date: new Date(),
     vehicleNumber: pickupTripDoc ? vehicleNumber : 'Pickup-Local',
-    driver: `${pickupDriver.firstName || ''} ${pickupDriver.lastName || ''}`.trim(),
+    vehicleRef: vehicle._id || null,
+    assignmentRef: assignment._id,
+    enquiryRef: enq._id || null,
+    enquiryId: enq.enquiryId || null,
+    tripRef: pickupTripDoc?._id || null,
+    driver: `${pickupDriver.firstName || ''} ${pickupDriver.lastName || ''}`.trim() || 'Driver',
+    driverRef: pickupDriver._id || null,
     route1: pickupTripDoc?.startRoute || location,
     route2: pickupTripDoc?.destination || 'Nashik Center',
     km: pickupTripDoc?.totalKm || 0,
+    ratePerKm: 15,
     fuel: totalPetrolAdvance,
     toll: pickupTripDoc?.tollExpense || 0,
-    amount: (pickupTripDoc?.totalKm || 0) * 15,
+    status: 'PENDING',
   };
+
 
   // Execute Creation Operations
   const [createdFarmerBill, createdCompanyBill, createdMunshiLedger, createdEicherTrip, createdPickupTrip] = await Promise.all([

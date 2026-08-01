@@ -64,36 +64,57 @@ exports.getAll = asyncHandler(async (req, res) => {
   // Build query for OMKharchi
   const omQuery = {};
   if (targetStatus && targetStatus !== 'All') {
-    omQuery.status = targetStatus;
+    if (targetStatus === 'Approved') {
+      omQuery.status = { $in: ['Approved', 'Paid'] };
+    } else {
+      omQuery.status = targetStatus;
+    }
   }
-  if (targetType) {
-    omQuery.category = targetType;
+  if (targetType && targetType !== 'All') {
+    omQuery.$or = [
+      { category: targetType },
+      { type: targetType },
+      { category: { $regex: targetType, $options: 'i' } },
+    ];
   }
-  if (term) {
-    omQuery.term = term;
+  if (term && term !== 'All') {
+    omQuery.type = { $regex: term, $options: 'i' };
   }
   if (search) {
-    omQuery.$or = [
+    const sClause = [
       { nature: { $regex: search, $options: 'i' } },
       { recipientName: { $regex: search, $options: 'i' } },
       { natureInDetail: { $regex: search, $options: 'i' } },
       { type: { $regex: search, $options: 'i' } },
+      { category: { $regex: search, $options: 'i' } },
     ];
+    if (omQuery.$or) {
+      omQuery.$and = [{ $or: omQuery.$or }, { $or: sClause }];
+      delete omQuery.$or;
+    } else {
+      omQuery.$or = sClause;
+    }
   }
   if (date) {
     const start = new Date(new Date(date).setHours(0, 0, 0, 0));
     const end = new Date(new Date(date).setHours(23, 59, 59, 999));
-    omQuery.transferDate = { $gte: start, $lte: end };
+    omQuery.createdAt = { $gte: start, $lte: end };
   } else {
     const pf = periodFilter(filter);
-    if (pf) omQuery.transferDate = pf;
+    if (pf) omQuery.createdAt = pf;
   }
 
   // Build query for Kharchi
   const billingQuery = {};
-  if (targetStatus && targetStatus !== 'All') billingQuery.status = targetStatus;
-  if (targetType) billingQuery.type = targetType;
-  if (term) billingQuery.term = term;
+  if (targetStatus && targetStatus !== 'All') {
+    if (targetStatus === 'Approved') {
+      billingQuery.status = { $in: ['Approved', 'Paid'] };
+    } else {
+      billingQuery.status = targetStatus;
+    }
+  }
+  if (targetType && targetType !== 'All') billingQuery.type = targetType;
+  if (term && term !== 'All') billingQuery.term = term;
   if (search) {
     billingQuery.$or = [
       { nature: { $regex: search, $options: 'i' } },
@@ -136,7 +157,7 @@ exports.getAll = asyncHandler(async (req, res) => {
     ...billingData.map((item) => normalizeExpense(item, 'Billing')),
   ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-  const total = omCount + billingCount;
+  const total = combined.length;
   const skip = (Number(page) - 1) * Number(limit);
   const paginatedData = combined.slice(skip, skip + Number(limit));
 
