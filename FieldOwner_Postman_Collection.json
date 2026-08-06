@@ -2631,7 +2631,137 @@
                     ]
                 },
                 {
-                    "name": "7. Packing Material & Cold Storage",
+                    "name": "7. Kharchi Billing & Field Advances",
+                    "item": [
+                        {
+                            "name": "GET Kharchi Summary Cards",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/kharchi/summary",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "kharchi",
+                                        "summary"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns Kharchi KPI totals (total approved expenses, total paid amount, pending amount, active expenses)."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET All Kharchi Expenses (Paid & Pending)",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/kharchi/expenses?search=&status=",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "kharchi",
+                                        "expenses"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "search",
+                                            "value": "",
+                                            "description": "Search by staff name or category"
+                                        },
+                                        {
+                                            "key": "status",
+                                            "value": "",
+                                            "description": "Filter by status (APPROVED, PENDING, PAID)"
+                                        }
+                                    ]
+                                },
+                                "description": "Returns list of staff expenses and field advances with payment status, amounts, and approval states."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Kharchi Expense Details by ID",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/kharchi/expenses/REPLACE_WITH_EXPENSE_ID",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "kharchi",
+                                        "expenses",
+                                        "REPLACE_WITH_EXPENSE_ID"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns complete details of a specific staff expense or advance entry."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Kharchi Payment History",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/kharchi/payments/history",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "kharchi",
+                                        "payments",
+                                        "history"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns recorded payments and payout history for staff advances/kharchi."
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "8. Packing Material & Cold Storage",
                     "item": [
                         {
                             "name": "GET Packing Material Vendor Dues (Paid & Pending)",
@@ -2776,7 +2906,7 @@
                     ]
                 },
                 {
-                    "name": "8. Commission Agents",
+                    "name": "9. Commission Agents",
                     "item": [
                         {
                             "name": "GET Commission Agent Summary Cards",
@@ -2865,7 +2995,7 @@
                     ]
                 },
                 {
-                    "name": "9. Staff Salary & Profiles",
+                    "name": "10. Staff Salary & Profiles",
                     "item": [
                         {
                             "name": "GET Staff Salary Summary Cards",
@@ -2996,7 +3126,7 @@
                     ]
                 },
                 {
-                    "name": "10. Master Data & Dropdowns",
+                    "name": "11. Master Data & Dropdowns",
                     "item": [
                         {
                             "name": "GET Banks List",
