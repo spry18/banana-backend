@@ -5,7 +5,7 @@ const { protect, authorize } = require('../../../middlewares/auth.middleware');
 const ctrl = require('./packingMaterial.controller');
 const { billingUpload } = require('../shared/billing.upload');
 
-router.use(protect, authorize('Admin'));
+router.use(protect, authorize('Admin', 'Operational Manager', 'Field Owner'));
 
 router.get('/summary', ctrl.getSummary);
 router.get('/vendor-summary', ctrl.getVendorSummary);

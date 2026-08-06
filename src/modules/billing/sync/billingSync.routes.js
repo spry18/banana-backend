@@ -5,7 +5,7 @@ const { protect, authorize } = require('../../../middlewares/auth.middleware');
 const { getUnbilledExecutions, syncFromExecution } = require('./billingSync.controller');
 
 // Enforce Admin-only access (Gap 6 constraint)
-router.use(protect, authorize('Admin'));
+router.use(protect, authorize('Admin', 'Operational Manager', 'Field Owner'));
 
 /** GET /api/billing/sync/unbilled-executions */
 router.get('/unbilled-executions', getUnbilledExecutions);

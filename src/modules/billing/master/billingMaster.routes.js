@@ -13,7 +13,7 @@ const {
   getBrands,
 } = require('./billingMaster.controller');
 
-router.use(protect, authorize('Admin'));
+router.use(protect, authorize('Admin', 'Operational Manager', 'Field Owner'));
 
 /** GET /api/billing/master/banks */
 router.get('/banks', getBanks);

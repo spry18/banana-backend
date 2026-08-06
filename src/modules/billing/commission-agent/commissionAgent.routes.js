@@ -4,7 +4,7 @@ const router = express.Router();
 const { protect, authorize } = require('../../../middlewares/auth.middleware');
 const ctrl = require('./commissionAgent.controller');
 
-router.use(protect, authorize('Admin'));
+router.use(protect, authorize('Admin', 'Operational Manager', 'Field Owner'));
 
 router.get('/summary', ctrl.getSummary);
 router.route('/payments').get(ctrl.getPayments).post(ctrl.createPayment);

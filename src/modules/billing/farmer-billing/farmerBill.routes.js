@@ -4,7 +4,7 @@ const router = express.Router();
 const { protect, authorize } = require('../../../middlewares/auth.middleware');
 const ctrl = require('./farmerBill.controller');
 
-router.use(protect, authorize('Admin'));
+router.use(protect, authorize('Admin', 'Operational Manager', 'Field Owner'));
 
 /** GET /api/billing/farmer/bills/approved-enquiries — Fetch all admin-approved enquiries ready for farmer billing */
 router.get('/approved-enquiries', ctrl.getApprovedEnquiries);
