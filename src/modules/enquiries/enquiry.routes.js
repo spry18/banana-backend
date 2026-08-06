@@ -16,11 +16,23 @@ const {
     reassignSelector,
     editFixedPlot,
     deleteFixedPlot,
+    submitPublicEnquiry,
+    getPublicEnquiries,
+    approvePublicEnquiry,
+    rejectPublicEnquiry,
 } = require('./enquiry.controller');
 const { protect, authorize } = require('../../middlewares/auth.middleware');
 
-// Apply 'protect' to all routes
+// --- Public / Unauthenticated route for farmer self-submission ---
+router.post('/public', submitPublicEnquiry);
+
+// Apply 'protect' to remaining routes
 router.use(protect);
+
+// --- Public Enquiry Review & Approval Routes ---
+router.get('/public-requests', authorize('Admin', 'Field Owner'), getPublicEnquiries);
+router.patch('/public-requests/:id/approve', authorize('Admin', 'Field Owner'), approvePublicEnquiry);
+router.patch('/public-requests/:id/reject', authorize('Admin', 'Field Owner'), rejectPublicEnquiry);
 
 // --- Admin-specific patch routes (must come BEFORE /:id to avoid conflicts) ---
 router.get('/reports/missed', authorize('Admin', 'Field Owner'), getMissedPlots);

@@ -5537,6 +5537,175 @@
                     ]
                 }
             ]
+        },
+        {
+            "name": "Farmer Self-Submitted Enquiries (Public Link & Review)",
+            "item": [
+                {
+                    "name": "POST Public Farmer Enquiry Submission (Unauthenticated)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"farmerName\": \"Suresh Deshmukh\",\n  \"mobileNumber\": \"9876543210\",\n  \"village\": \"Pachora\",\n  \"totalPlants\": 3000,\n  \"variation\": \"Mother\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries/public",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries",
+                                "public"
+                            ]
+                        },
+                        "description": "Unauthenticated endpoint used by farmers to submit self-enquiries from a shared public link. Stores submission with status = PENDING_REVIEW."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET All Self-Submitted Farmer Requests (Admin & FO Review)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries/public-requests?status=PENDING_REVIEW&search=&page=1&limit=20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries",
+                                "public-requests"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "PENDING_REVIEW",
+                                    "description": "Filter by PENDING_REVIEW, APPROVED, or REJECTED"
+                                },
+                                {
+                                    "key": "search",
+                                    "value": "",
+                                    "description": "Search by farmer name, mobile number, or village"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1",
+                                    "description": "Page number"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20",
+                                    "description": "Records per page"
+                                }
+                            ]
+                        },
+                        "description": "Returns paginated list of self-submitted farmer enquiries with counts for pendingReview, approved, and rejected."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "PATCH Approve Farmer Request & Convert to Official Enquiry",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"assignedSelectorId\": \"\",\n  \"generationId\": \"\",\n  \"agentId\": \"\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries/public-requests/REPLACE_WITH_REQUEST_ID/approve",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries",
+                                "public-requests",
+                                "REPLACE_WITH_REQUEST_ID",
+                                "approve"
+                            ]
+                        },
+                        "description": "Approves self-submitted farmer request, updates status = APPROVED, creates formal record in Enquiry collection (ENQ-XXXX), and syncs farmer profile."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "PATCH Reject Farmer Request",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reason\": \"Invalid contact details or duplicate submission\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/enquiries/public-requests/REPLACE_WITH_REQUEST_ID/reject",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "enquiries",
+                                "public-requests",
+                                "REPLACE_WITH_REQUEST_ID",
+                                "reject"
+                            ]
+                        },
+                        "description": "Rejects self-submitted farmer enquiry request with a specified rejection reason."
+                    },
+                    "response": []
+                }
+            ]
         }
     ]
 }

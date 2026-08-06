@@ -1,7 +1,9 @@
 const mongoose = require('mongoose');
 const Enquiry = require('./enquiry.model');
+const FarmerPublicRequest = require('./farmerPublicRequest.model');
 const User = require('../users/user.model');
 const Agent = require('../master-data/agent.model');
+const Generation = require('../master-data/generation.model');
 const Farmer = require('../farmers/farmer.model');
 const { logSystemAction } = require('../../utils/auditLogger');
 const NotificationService = require('../../services/notification.service');
@@ -1245,6 +1247,195 @@ const deleteFixedPlot = async (req, res) => {
     }
 };
 
+// @desc    Submit public farmer self-enquiry (unauthenticated)
+// @route   POST /api/enquiries/public
+// @access  Public
+const submitPublicEnquiry = async (req, res) => {
+    try {
+        const { farmerName, mobileNumber, village, totalPlants, variation } = req.body;
+        if (!farmerName || !mobileNumber || !village || !totalPlants) {
+            return res.status(400).json({ success: false, message: 'Please provide farmerName, mobileNumber, village, and totalPlants' });
+        }
+        if (!/^\d{10}$/.test(String(mobileNumber).trim())) {
+            return res.status(400).json({ success: false, message: 'Mobile number must be a valid 10-digit number' });
+        }
+        const requestNo = `REQ-${Date.now().toString().slice(-6)}${Math.floor(10 + Math.random() * 90)}`;
+        const publicRequest = await FarmerPublicRequest.create({
+            requestNo,
+            farmerName: String(farmerName).trim(),
+            mobileNumber: String(mobileNumber).trim(),
+            village: String(village).trim(),
+            totalPlants: Number(totalPlants),
+            variation: variation || 'Mother',
+            status: 'PENDING_REVIEW',
+        });
+        res.status(201).json({
+            success: true,
+            message: 'Your enquiry request has been submitted successfully. Our team will contact you shortly.',
+            data: publicRequest,
+        });
+    } catch (error) {
+        console.error('Error in submitPublicEnquiry:', error);
+        res.status(500).json({ success: false, message: error.message || 'Server error while submitting public enquiry' });
+    }
+};
+
+// @desc    Get all self-submitted public farmer enquiries
+// @route   GET /api/enquiries/public-requests
+// @access  Protected (Admin, Field Owner)
+const getPublicEnquiries = async (req, res) => {
+    try {
+        const { status = '', search = '', page = 1, limit = 20 } = req.query;
+        const query = {};
+        if (status) {
+            query.status = status;
+        }
+        if (search) {
+            query.$or = [
+                { farmerName: { $regex: search, $options: 'i' } },
+                { mobileNumber: { $regex: search, $options: 'i' } },
+                { village: { $regex: search, $options: 'i' } },
+                { requestNo: { $regex: search, $options: 'i' } },
+            ];
+        }
+        const skip = (Number(page) - 1) * Number(limit);
+        const [data, total, pendingCount, approvedCount, rejectedCount] = await Promise.all([
+            FarmerPublicRequest.find(query).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)).lean(),
+            FarmerPublicRequest.countDocuments(query),
+            FarmerPublicRequest.countDocuments({ status: 'PENDING_REVIEW' }),
+            FarmerPublicRequest.countDocuments({ status: 'APPROVED' }),
+            FarmerPublicRequest.countDocuments({ status: 'REJECTED' }),
+        ]);
+        res.status(200).json({
+            success: true,
+            data,
+            pagination: { total, page: Number(page), limit: Number(limit) },
+            summary: { pendingReview: pendingCount, approved: approvedCount, rejected: rejectedCount },
+        });
+    } catch (error) {
+        console.error('Error in getPublicEnquiries:', error);
+        res.status(500).json({ success: false, message: 'Server error while fetching public enquiries' });
+    }
+};
+
+// @desc    Approve self-submitted farmer enquiry & convert to official Enquiry
+// @route   PATCH /api/enquiries/public-requests/:id/approve
+// @access  Protected (Admin, Field Owner)
+const approvePublicEnquiry = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { assignedSelectorId, generationId, agentId } = req.body;
+        const publicReq = await FarmerPublicRequest.findById(id);
+        if (!publicReq) {
+            return res.status(404).json({ success: false, message: 'Farmer request not found' });
+        }
+        if (publicReq.status === 'APPROVED') {
+            return res.status(400).json({ success: false, message: 'Farmer request is already approved' });
+        }
+        if (publicReq.status === 'REJECTED') {
+            return res.status(400).json({ success: false, message: 'Cannot approve a rejected request' });
+        }
+
+        // Split farmerName into firstName and lastName
+        const nameParts = publicReq.farmerName.trim().split(/\s+/);
+        const farmerFirstName = nameParts[0] || 'Farmer';
+        const farmerLastName = nameParts.slice(1).join(' ') || 'User';
+
+        // Resolve generation
+        let genId = generationId;
+        if (!genId) {
+            const defaultGen = await Generation.findOne();
+            genId = defaultGen ? defaultGen._id : null;
+        }
+
+        // Generate official Enquiry ID
+        const enquiryId = `ENQ-${Date.now()}`;
+        const editableUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+        // Create formal Enquiry
+        const newEnquiry = await Enquiry.create({
+            enquiryId,
+            farmerFirstName,
+            farmerLastName,
+            farmerMobile: publicReq.mobileNumber,
+            location: publicReq.village,
+            subLocation: `Variation: ${publicReq.variation}`,
+            plantCount: publicReq.totalPlants,
+            generation: genId,
+            agentId: agentId || null,
+            agentAttached: Boolean(agentId),
+            visitPriority: 'Medium',
+            fieldOwnerId: req.user._id,
+            assignedSelectorId: assignedSelectorId || null,
+            status: assignedSelectorId ? 'ASSIGNED' : 'PENDING',
+            editableUntil,
+            remarks: `Public self-submitted request (${publicReq.requestNo}). Variation: ${publicReq.variation}`,
+        });
+
+        // Update public request
+        publicReq.status = 'APPROVED';
+        publicReq.convertedEnquiryId = newEnquiry._id;
+        publicReq.approvedBy = req.user._id;
+        publicReq.approvedAt = new Date();
+        await publicReq.save();
+
+        // Sync with master Farmer collection
+        try {
+            await Farmer.findOneAndUpdate(
+                { mobile: publicReq.mobileNumber },
+                { name: publicReq.farmerName, location: publicReq.village },
+                { upsert: true, new: true }
+            );
+        } catch (e) {
+            console.warn('Farmer sync warning:', e.message);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Farmer request approved and converted to official Enquiry ${enquiryId}`,
+            data: {
+                publicRequest: publicReq,
+                enquiry: newEnquiry,
+            },
+        });
+    } catch (error) {
+        console.error('Error in approvePublicEnquiry:', error);
+        res.status(500).json({ success: false, message: error.message || 'Server error while approving public enquiry' });
+    }
+};
+
+// @desc    Reject self-submitted farmer enquiry
+// @route   PATCH /api/enquiries/public-requests/:id/reject
+// @access  Protected (Admin, Field Owner)
+const rejectPublicEnquiry = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { reason = 'Request rejected by admin' } = req.body;
+        const publicReq = await FarmerPublicRequest.findById(id);
+        if (!publicReq) {
+            return res.status(404).json({ success: false, message: 'Farmer request not found' });
+        }
+        if (publicReq.status === 'APPROVED') {
+            return res.status(400).json({ success: false, message: 'Cannot reject an already approved request' });
+        }
+
+        publicReq.status = 'REJECTED';
+        publicReq.rejectionReason = reason;
+        publicReq.approvedBy = req.user._id;
+        publicReq.approvedAt = new Date();
+        await publicReq.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Farmer request rejected successfully',
+            data: publicReq,
+        });
+    } catch (error) {
+        console.error('Error in rejectPublicEnquiry:', error);
+        res.status(500).json({ success: false, message: 'Server error while rejecting public enquiry' });
+    }
+};
+
 module.exports = {
     createEnquiry,
     getEnquiries,
@@ -1261,4 +1452,8 @@ module.exports = {
     reassignSelector,
     editFixedPlot,
     deleteFixedPlot,
+    submitPublicEnquiry,
+    getPublicEnquiries,
+    approvePublicEnquiry,
+    rejectPublicEnquiry,
 };
