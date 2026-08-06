@@ -1594,6 +1594,1553 @@
                 "description": "Fetches dynamic app configuration (e.g. screenshot restrictions)."
             },
             "response": []
+        },
+        {
+            "name": "8. Billing Management (Paid & Pending Dues)",
+            "item": [
+                {
+                    "name": "1. Dashboard & Overview",
+                    "item": [
+                        {
+                            "name": "GET Billing Summary Cards",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/dashboard/summary",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "dashboard",
+                                        "summary"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns top-level KPI cards for total company sales, total paid amount, pending amount, active farmers, and active companies."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Sales & Dues by Company",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/dashboard/sales-by-company",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "dashboard",
+                                        "sales-by-company"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns company-wise breakdown of total billed amount, total paid, and pending balance."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Overdue Farmers List",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/dashboard/overdue-farmers",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "dashboard",
+                                        "overdue-farmers"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns list of farmers with overdue pending dues along with overdue days count."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Harvest Volume Chart",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/dashboard/harvest-chart",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "dashboard",
+                                        "harvest-chart"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns monthly harvesting trends in box count and weight."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Outstanding Trend Chart",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/dashboard/outstanding-chart",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "dashboard",
+                                        "outstanding-chart"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns monthly outstanding dues breakdown for companies and farmers."
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "2. Farmer Billing & Payments",
+                    "item": [
+                        {
+                            "name": "GET Farmer Billing Summary Cards",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/farmer/bills/summary",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "farmer",
+                                        "bills",
+                                        "summary"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns summary of total farmer billed amount, total paid, and total pending."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET All Farmer Bills (Paid & Pending)",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/farmer/bills?search=&status=&date=&page=1&limit=20",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "farmer",
+                                        "bills"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "search",
+                                            "value": "",
+                                            "description": "Search by farmer name or bill number"
+                                        },
+                                        {
+                                            "key": "status",
+                                            "value": "",
+                                            "description": "Filter by status: Paid, Pending, Partial"
+                                        },
+                                        {
+                                            "key": "date",
+                                            "value": "",
+                                            "description": "Filter by date (YYYY-MM-DD)"
+                                        },
+                                        {
+                                            "key": "page",
+                                            "value": "1",
+                                            "description": "Page number"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "20",
+                                            "description": "Records per page"
+                                        }
+                                    ]
+                                },
+                                "description": "Returns paginated list of farmer bills with clear status indicators (Paid, Pending, Partial), gross amount, deductions, net payable, and amount paid."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Unpaid Farmers List",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/farmer/payments/unpaid-bills",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "farmer",
+                                        "payments",
+                                        "unpaid-bills"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns list of all farmers with unpaid balances and pending bill counts."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Approved Enquiries Ready for Billing",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/farmer/bills/approved-enquiries",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "farmer",
+                                        "bills",
+                                        "approved-enquiries"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns harvest dispatches approved by admin that are ready to be billed."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Farmer Bill Details by ID",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/farmer/bills/REPLACE_WITH_BILL_ID",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "farmer",
+                                        "bills",
+                                        "REPLACE_WITH_BILL_ID"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns complete line-item breakdown of a specific farmer bill."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Farmer Payment History",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/farmer/payments?page=1&limit=20",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "farmer",
+                                        "payments"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "page",
+                                            "value": "1",
+                                            "description": "Page number"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "20",
+                                            "description": "Records per page"
+                                        }
+                                    ]
+                                },
+                                "description": "Returns list of disbursed payment transactions to farmers."
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "3. Company Billing & Payments",
+                    "item": [
+                        {
+                            "name": "GET Company Billing Summary Cards",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/company/bills/summary",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "company",
+                                        "bills",
+                                        "summary"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns total invoiced amount, total received, and total outstanding dues from buyers/companies."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Outstanding Dues by Company",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/company/bills/outstanding",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "company",
+                                        "bills",
+                                        "outstanding"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns breakdown of outstanding pending balances grouped by company."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET All Company Invoices (Paid & Pending)",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/company/bills?search=&status=&page=1&limit=20",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "company",
+                                        "bills"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "search",
+                                            "value": "",
+                                            "description": "Search by company name or invoice number"
+                                        },
+                                        {
+                                            "key": "status",
+                                            "value": "",
+                                            "description": "Filter by status: Paid, Pending"
+                                        },
+                                        {
+                                            "key": "page",
+                                            "value": "1",
+                                            "description": "Page number"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "20",
+                                            "description": "Records per page"
+                                        }
+                                    ]
+                                },
+                                "description": "Returns list of sales invoices sent to companies with Paid / Pending status."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Approved Dispatches Ready for Invoicing",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/company/bills/approved-dispatches",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "company",
+                                        "bills",
+                                        "approved-dispatches"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns dispatches delivered to companies that are ready to generate invoices."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Company Invoice Details by ID",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/company/bills/REPLACE_WITH_BILL_ID",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "company",
+                                        "bills",
+                                        "REPLACE_WITH_BILL_ID"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns full invoice details including line items, vehicle number, crate counts, and bank payment info."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Company Payment Receipts",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/company/payments",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "company",
+                                        "payments"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns history of payment receipts received from companies."
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "4. Munshi Billing & Commissions",
+                    "item": [
+                        {
+                            "name": "GET Munshi Summary Cards",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/munshi/summary",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "munshi",
+                                        "summary"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns total Munshis, total payable balance, boxes handled count, and amount paid this week."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Munshi Payment Breakdown (Paid & Pending)",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/munshi/payment-summary",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "munshi",
+                                        "payment-summary"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns Munshi-wise summary showing total bill, paid amount, and pending balance."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Munshi Ledger Entries",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/munshi/ledger?search=&date=&month=&page=1&limit=20",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "munshi",
+                                        "ledger"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "search",
+                                            "value": "",
+                                            "description": "Search by Munshi or farmer name"
+                                        },
+                                        {
+                                            "key": "date",
+                                            "value": "",
+                                            "description": "Filter by single date YYYY-MM-DD"
+                                        },
+                                        {
+                                            "key": "month",
+                                            "value": "",
+                                            "description": "Filter by month YYYY-MM"
+                                        },
+                                        {
+                                            "key": "page",
+                                            "value": "1",
+                                            "description": "Page number"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "20",
+                                            "description": "Records per page"
+                                        }
+                                    ]
+                                },
+                                "description": "Returns completed harvest ledger per Munshi with box counts and calculated payable amounts."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Munshi Disbursed Payment History",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/munshi/payments/history",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "munshi",
+                                        "payments",
+                                        "history"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns history of payout disbursements made to Munshis."
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "5. Logistics & Vehicle Billing (Eicher & Pickup)",
+                    "item": [
+                        {
+                            "name": "GET Eicher Billing Summary Cards",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/eicher/summary",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "eicher",
+                                        "summary"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns total Eicher trips, freight charges, paid freight, and pending freight."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Eicher Transport Payment Summary (Paid & Pending)",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/eicher/payment-summary",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "eicher",
+                                        "payment-summary"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns owner/vehicle-wise payment breakdown showing total freight, paid amount, and pending balance."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Eicher Trip Ledger",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/eicher/trips",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "eicher",
+                                        "trips"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns list of Eicher vehicle trips with freight calculation."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Eicher Freight Payment History",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/eicher/payments/history",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "eicher",
+                                        "payments",
+                                        "history"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns history of freight payments made to Eicher vehicle owners."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Pickup Billing Summary Cards",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/pickup/summary",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "pickup",
+                                        "summary"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns total Pickup trips, total freight amount, paid amount, and pending balance."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Pickup Transport Payment Summary (Paid & Pending)",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/pickup/payment-summary",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "pickup",
+                                        "payment-summary"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns vehicle owner-wise freight summary showing total, paid, and pending balance."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Pickup Trip Ledger",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/pickup/trips",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "pickup",
+                                        "trips"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns trip list for Pickup vehicles."
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "6. Fuel Billing (Petrol & Diesel)",
+                    "item": [
+                        {
+                            "name": "GET Fuel Billing Summary Cards",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/fuel/summary",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "fuel",
+                                        "summary"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns today spend, monthly spend, petrol amount, and diesel amount."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Petrol Pump Dues Breakdown (Paid & Pending)",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/fuel/pump-summary",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "fuel",
+                                        "pump-summary"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns pump station breakdown showing total billed, paid amount, and pending balance."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Fuel Entries",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/fuel/entries?search=&filter=Weekly",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "fuel",
+                                        "entries"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "search",
+                                            "value": "",
+                                            "description": "Search by vehicle number or pump name"
+                                        },
+                                        {
+                                            "key": "filter",
+                                            "value": "Weekly",
+                                            "description": "Filter by Daily, Weekly, 15Days"
+                                        }
+                                    ]
+                                },
+                                "description": "Returns fuel fill-up records per vehicle and pump."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Fuel Payment History",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/fuel/payments/history",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "fuel",
+                                        "payments",
+                                        "history"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns payment receipts issued to petrol pumps."
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "7. Packing Material & Cold Storage",
+                    "item": [
+                        {
+                            "name": "GET Packing Material Vendor Dues (Paid & Pending)",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/packing-material/vendor-summary",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "packing-material",
+                                        "vendor-summary"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns vendor-wise breakdown showing total purchase, paid amount, and pending balance."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Packing Material Procurements",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/packing-material/procurements",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "packing-material",
+                                        "procurements"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns list of packing material purchases."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Cold Storage Summary Cards",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/cold-storage/summary",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "cold-storage",
+                                        "summary"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns container shifts today, total cold storage charges, and total container count."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Cold Storage Payment Cycles (Paid & Pending)",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/cold-storage/payment-cycles",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "cold-storage",
+                                        "payment-cycles"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns storage unit & company-wise payment cycle breakdown with pending amounts."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Cold Storage Shift Entries",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/cold-storage/entries",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "cold-storage",
+                                        "entries"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns container shift entry records."
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "8. Commission Agents",
+                    "item": [
+                        {
+                            "name": "GET Commission Agent Summary Cards",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/commission-agent/summary",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "commission-agent",
+                                        "summary"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns active agents count, total business generated, total commission due, and paid amount."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Commission Agents List (Paid & Pending)",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/commission-agent/agents",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "commission-agent",
+                                        "agents"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns agent list showing commission structure, total commission earned, paid amount, and commission due."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Commission Agent Payment History",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/commission-agent/payments",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "commission-agent",
+                                        "payments"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns payment history for commission agents."
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "9. Staff Salary & Profiles",
+                    "item": [
+                        {
+                            "name": "GET Staff Salary Summary Cards",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/salary/summary",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "salary",
+                                        "summary"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns total staff count on payroll, monthly payroll sum, paid amount this month, and pending amount."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Staff Profiles List (Paid & Pending Status)",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/salary/employees?search=",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "salary",
+                                        "employees"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "search",
+                                            "value": "",
+                                            "description": "Search by employee name or role"
+                                        }
+                                    ]
+                                },
+                                "description": "Returns staff profiles with monthly salary, role, and salary payment status for current month."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Staff Profile Details & Recent Payrolls",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/salary/employees/REPLACE_WITH_EMPLOYEE_ID",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "salary",
+                                        "employees",
+                                        "REPLACE_WITH_EMPLOYEE_ID"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns single staff profile metadata + last 3 recent monthly payroll payment records."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Disbursed Payroll History",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/salary/payroll/history?employeeId=",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "salary",
+                                        "payroll",
+                                        "history"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "employeeId",
+                                            "value": "",
+                                            "description": "Optional filter by employee ID"
+                                        }
+                                    ]
+                                },
+                                "description": "Returns paginated historical payroll disbursements."
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "10. Master Data & Dropdowns",
+                    "item": [
+                        {
+                            "name": "GET Banks List",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/master/banks",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "master",
+                                        "banks"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns list of registered bank accounts for payment dropdowns."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Companies List",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/master/companies",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "master",
+                                        "companies"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns list of registered companies."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Vehicles List",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/master/vehicles",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "master",
+                                        "vehicles"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns list of registered transport vehicles."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Farmers List",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/master/farmers",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "master",
+                                        "farmers"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns list of registered farmers."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET Munshis List",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{foToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/billing/master/munshis",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "billing",
+                                        "master",
+                                        "munshis"
+                                    ],
+                                    "query": []
+                                },
+                                "description": "Returns list of registered Munshis."
+                            },
+                            "response": []
+                        }
+                    ]
+                }
+            ]
         }
     ]
 }
