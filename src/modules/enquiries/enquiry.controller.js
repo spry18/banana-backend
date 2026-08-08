@@ -1436,6 +1436,77 @@ const rejectPublicEnquiry = async (req, res) => {
     }
 };
 
+// @desc    Update self-submitted public farmer enquiry (before approval)
+// @route   PUT /api/enquiries/public-requests/:id
+// @access  Protected (Admin, Field Owner)
+const updatePublicEnquiry = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { farmerName, mobileNumber, village, totalPlants, variation } = req.body;
+        const publicReq = await FarmerPublicRequest.findById(id);
+        if (!publicReq) {
+            return res.status(404).json({ success: false, message: 'Farmer request not found' });
+        }
+        if (publicReq.status !== 'PENDING_REVIEW') {
+            return res.status(400).json({ success: false, message: `Cannot edit request with status '${publicReq.status}'. Only PENDING_REVIEW requests can be edited.` });
+        }
+
+        if (mobileNumber && !/^\d{10}$/.test(String(mobileNumber).trim())) {
+            return res.status(400).json({ success: false, message: 'Mobile number must be a valid 10-digit number' });
+        }
+        if (totalPlants !== undefined && Number(totalPlants) <= 0) {
+            return res.status(400).json({ success: false, message: 'Total plants count must be greater than zero' });
+        }
+        if (variation && !['Mother', 'F1', 'Other'].includes(variation)) {
+            return res.status(400).json({ success: false, message: "Variation must be one of 'Mother', 'F1', or 'Other'" });
+        }
+
+        if (farmerName !== undefined) publicReq.farmerName = String(farmerName).trim();
+        if (mobileNumber !== undefined) publicReq.mobileNumber = String(mobileNumber).trim();
+        if (village !== undefined) publicReq.village = String(village).trim();
+        if (totalPlants !== undefined) publicReq.totalPlants = Number(totalPlants);
+        if (variation !== undefined) publicReq.variation = variation;
+
+        await publicReq.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Public farmer request updated successfully',
+            data: publicReq,
+        });
+    } catch (error) {
+        console.error('Error in updatePublicEnquiry:', error);
+        res.status(500).json({ success: false, message: error.message || 'Server error while updating public enquiry' });
+    }
+};
+
+// @desc    Delete self-submitted public farmer enquiry (before approval)
+// @route   DELETE /api/enquiries/public-requests/:id
+// @access  Protected (Admin, Field Owner)
+const deletePublicEnquiry = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const publicReq = await FarmerPublicRequest.findById(id);
+        if (!publicReq) {
+            return res.status(404).json({ success: false, message: 'Farmer request not found' });
+        }
+        if (publicReq.status !== 'PENDING_REVIEW') {
+            return res.status(400).json({ success: false, message: `Cannot delete request with status '${publicReq.status}'. Only PENDING_REVIEW requests can be deleted.` });
+        }
+
+        await FarmerPublicRequest.findByIdAndDelete(id);
+
+        res.status(200).json({
+            success: true,
+            message: 'Public farmer request deleted successfully',
+            deletedId: id,
+        });
+    } catch (error) {
+        console.error('Error in deletePublicEnquiry:', error);
+        res.status(500).json({ success: false, message: 'Server error while deleting public enquiry' });
+    }
+};
+
 module.exports = {
     createEnquiry,
     getEnquiries,
@@ -1456,4 +1527,7 @@ module.exports = {
     getPublicEnquiries,
     approvePublicEnquiry,
     rejectPublicEnquiry,
+    updatePublicEnquiry,
+    deletePublicEnquiry,
 };
+

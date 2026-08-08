@@ -20,6 +20,8 @@ const {
     getPublicEnquiries,
     approvePublicEnquiry,
     rejectPublicEnquiry,
+    updatePublicEnquiry,
+    deletePublicEnquiry,
 } = require('./enquiry.controller');
 const { protect, authorize } = require('../../middlewares/auth.middleware');
 
@@ -29,8 +31,10 @@ router.post('/public', submitPublicEnquiry);
 // Apply 'protect' to remaining routes
 router.use(protect);
 
-// --- Public Enquiry Review & Approval Routes ---
+// --- Public Enquiry Review & Management Routes ---
 router.get('/public-requests', authorize('Admin', 'Field Owner'), getPublicEnquiries);
+router.put('/public-requests/:id', authorize('Admin', 'Field Owner'), updatePublicEnquiry);
+router.delete('/public-requests/:id', authorize('Admin', 'Field Owner'), deletePublicEnquiry);
 router.patch('/public-requests/:id/approve', authorize('Admin', 'Field Owner'), approvePublicEnquiry);
 router.patch('/public-requests/:id/reject', authorize('Admin', 'Field Owner'), rejectPublicEnquiry);
 
